@@ -158,10 +158,10 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 32, // High border radius as requested
     borderWidth: 1,
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20,
     overflow: 'hidden',
   },
   cardHeader: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 4,
   },
   categoryText: {
@@ -200,10 +200,6 @@ const styles = StyleSheet.create({
     height: 180,
   },
   cardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    paddingHorizontal: 16,
-    paddingTop: 14,
     lineHeight: 24,
   },
   cardSummary: {

@@ -22,11 +22,11 @@ const CapSaveDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#0A0A0F',
-    card: '#14141F',
+    background: '#000000',
+    card: '#000000',
     text: '#FFFFFF',
-    border: '#2A2A3E',
-    primary: '#6C5CE7',
+    border: '#262626',
+    primary: '#FFB800',
   },
 };
 

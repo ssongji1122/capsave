@@ -212,8 +212,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
-    marginTop: 2,
+    fontSize: 15,
+    marginTop: 4,
+    fontWeight: '500',
   },
   statsBar: {
     flexDirection: 'row',
