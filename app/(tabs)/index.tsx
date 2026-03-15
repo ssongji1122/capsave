@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,15 +25,22 @@ export default function HomeScreen() {
 
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fabScale = useRef(new Animated.Value(1)).current;
 
+  // Debounce search query by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const loadCaptures = useCallback(async () => {
     try {
-      const items = searchQuery
-        ? await searchCaptures(searchQuery)
+      const items = debouncedQuery
+        ? await searchCaptures(debouncedQuery)
         : await getAllCaptures();
       setCaptures(items);
     } catch (error) {
@@ -42,7 +49,7 @@ export default function HomeScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [searchQuery]);
+  }, [debouncedQuery]);
 
   useFocusEffect(
     useCallback(() => {
@@ -56,8 +63,12 @@ export default function HomeScreen() {
   };
 
   const handleDelete = async (id: number) => {
-    await deleteCapture(id);
-    loadCaptures();
+    try {
+      await deleteCapture(id);
+      loadCaptures();
+    } catch (error) {
+      console.error('Failed to delete capture:', error);
+    }
   };
 
   const handleAddCapture = async () => {
@@ -314,7 +325,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6C5CE7',
+    shadowColor: '#FFB800',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

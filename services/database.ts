@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { AnalysisResult, CaptureCategory } from './ai-analyzer';
+export type { CaptureCategory };
 
 export interface CaptureItem {
   id: number;
