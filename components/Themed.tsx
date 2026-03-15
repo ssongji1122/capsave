@@ -23,11 +23,7 @@ export function useThemeColor(
   const theme = useColorScheme();
   const colorFromProps = props[theme];
 
-  if (colorFromProps) {
-    return colorFromProps;
-  } else {
-    return Colors[theme][colorName];
-  }
+  return colorFromProps ?? Colors[theme][colorName];
 }
 
 export function Text(props: TextProps) {
