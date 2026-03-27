@@ -11,9 +11,9 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { CaptureItem, getCapturesByCategory, deleteCapture } from '@/services/database';
 import { CaptureCard } from '@/components/CaptureCard';
 import { CaptureCategory } from '@/services/ai-analyzer';
+import { useCaptures } from '@/contexts/CapturesContext';
 
 interface CategoryScreenProps {
   category: CaptureCategory;
@@ -39,36 +39,25 @@ export function CategoryScreen({
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
   const surfaceColor = isPlace ? colors.placeSurface : colors.textSurface;
 
-  const [captures, setCaptures] = useState<CaptureItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { getCapturesByCategory, isLoading, refresh, deleteCapture } = useCaptures();
 
-  const loadCaptures = useCallback(async () => {
-    try {
-      const items = await getCapturesByCategory(category);
-      setCaptures(items);
-    } catch (error) {
-      console.error(`Failed to load ${category}:`, error);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  }, [category]);
+  const captures = getCapturesByCategory(category);
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      loadCaptures();
-    }, [loadCaptures])
+      refresh();
+    }, [refresh])
   );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadCaptures();
+    await refresh();
+    setRefreshing(false);
   };
 
   const handleDelete = async (id: number) => {
     await deleteCapture(id);
-    loadCaptures();
   };
 
   const renderEmptyState = () => (
