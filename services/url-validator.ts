@@ -12,10 +12,7 @@ export function isUrlSafe(url: string): boolean {
 
   const lower = url.toLowerCase().trim();
 
-  return ALLOWED_SCHEMES.some((scheme) => {
-    if (scheme === 'geo:') return lower.startsWith('geo:');
-    return lower.startsWith(scheme);
-  });
+  return ALLOWED_SCHEMES.some((scheme) => lower.startsWith(scheme));
 }
 
 export function sanitizeUrl(url: string): string | null {

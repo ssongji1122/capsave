@@ -48,6 +48,23 @@ describe('isUrlSafe', () => {
   it('blocks strings without scheme', () => {
     expect(isUrlSafe('not-a-url')).toBe(false);
   });
+
+  it('handles case-insensitive schemes', () => {
+    expect(isUrlSafe('HTTPS://example.com')).toBe(true);
+  });
+
+  it('blocks case-insensitive dangerous schemes', () => {
+    expect(isUrlSafe('JavaScript:alert(1)')).toBe(false);
+  });
+
+  it('handles whitespace-padded URLs', () => {
+    expect(isUrlSafe('  https://example.com  ')).toBe(true);
+  });
+
+  it('handles null-like inputs gracefully', () => {
+    expect(isUrlSafe(null as any)).toBe(false);
+    expect(isUrlSafe(undefined as any)).toBe(false);
+  });
 });
 
 describe('sanitizeUrl', () => {

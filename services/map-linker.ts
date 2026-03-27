@@ -60,16 +60,20 @@ export async function openMap(
 
   try {
     const canOpen = await Linking.canOpenURL(link.appUrl);
-    if (canOpen) {
+    if (canOpen && isUrlSafe(link.appUrl)) {
       await Linking.openURL(link.appUrl);
-    } else {
-      // Fallback to web version
+    } else if (isUrlSafe(link.webUrl)) {
       await Linking.openURL(link.webUrl);
+    } else {
+      Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
     }
   } catch (error) {
-    // Final fallback
     try {
-      await Linking.openURL(link.webUrl);
+      if (isUrlSafe(link.webUrl)) {
+        await Linking.openURL(link.webUrl);
+      } else {
+        Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
+      }
     } catch {
       Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
     }
