@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapSave Design System Preview</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0D0D12;
+    --surface-elevated: #14141B;
+    --border: #1E1E28;
+    --border-light: #2A2A35;
+    --text-primary: #E8D5B7;
+    --text-secondary: #9B9B9B;
+    --text-tertiary: #5A5A65;
+    --primary: #F4845F;
+    --primary-light: #F69E80;
+    --primary-surface: rgba(244, 132, 95, 0.10);
+    --primary-border: rgba(244, 132, 95, 0.25);
+    --place-accent: #34D399;
+    --place-surface: rgba(52, 211, 153, 0.08);
+    --place-border: rgba(52, 211, 153, 0.20);
+    --text-accent: #7DD3FC;
+    --text-surface: rgba(125, 211, 252, 0.08);
+    --text-border: rgba(125, 211, 252, 0.20);
+    --ai-accent: #A78BFA;
+    --ai-surface: rgba(167, 139, 250, 0.08);
+    --error: #F87171;
+    --success: #34D399;
+    --warning: #FBBF24;
+    --info: #7DD3FC;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    text-align: center;
+    padding: 80px 0 60px;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(244,132,95,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--primary-surface);
+    border: 1px solid var(--primary-border);
+    border-radius: 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary);
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  /* ===== SECTION ===== */
+  .section {
+    margin-top: 64px;
+  }
+  .section-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+
+  /* ===== FONT SPECIMENS ===== */
+  .font-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 768px) { .font-grid { grid-template-columns: 1fr; } }
+  .font-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .font-card:hover { border-color: var(--border-light); }
+  .font-role {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+  .font-sample-display {
+    font-family: 'Pretendard Variable', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .font-sample-body {
+    font-family: 'Pretendard Variable', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+  .font-sample-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-accent);
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  .font-sample-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .font-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  /* ===== COLOR PALETTE ===== */
+  .palette-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .swatch {
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+  }
+  .swatch-color {
+    height: 64px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .swatch-name { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .swatch-hex { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-tertiary); }
+
+  /* ===== UI COMPONENTS ===== */
+  .components-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .comp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .comp-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-tertiary);
+    margin-bottom: 16px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-family: 'Pretendard Variable', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: #050508; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-secondary { background: var(--surface-elevated); color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text-primary); border-color: var(--border-light); }
+  .btn-ghost { background: transparent; color: var(--primary); }
+  .btn-ghost:hover { background: var(--primary-surface); }
+  .btn-place { background: var(--place-surface); color: var(--place-accent); border: 1px solid var(--place-border); }
+
+  /* Inputs */
+  .input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: 'Pretendard Variable', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input:focus { border-color: var(--primary); }
+  .input::placeholder { color: var(--text-tertiary); }
+
+  /* Tags */
+  .tag {
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag-place { background: var(--place-surface); color: var(--place-accent); }
+  .tag-text { background: var(--text-surface); color: var(--text-accent); }
+  .tag-ai { background: var(--ai-surface); color: var(--ai-accent); }
+
+  /* Alerts */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .alert-success { background: rgba(52,211,153,0.08); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
+  .alert-error { background: rgba(248,113,113,0.08); color: var(--error); border: 1px solid rgba(248,113,113,0.2); }
+  .alert-warning { background: rgba(251,191,36,0.08); color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
+  .alert-info { background: rgba(125,211,252,0.08); color: var(--info); border: 1px solid rgba(125,211,252,0.2); }
+
+  /* ===== PRODUCT MOCKUP ===== */
+  .mockup-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .mockup-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mockup-logo {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .mockup-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .mockup-nav-item {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mockup-nav-item.active {
+    background: var(--primary-surface);
+    color: var(--primary);
+  }
+  .mockup-body {
+    display: flex;
+  }
+  .mockup-sidebar {
+    width: 220px;
+    padding: 16px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-item {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-item.active {
+    background: var(--primary-surface);
+    color: var(--primary);
+  }
+  .sidebar-item:hover:not(.active) {
+    background: var(--surface-elevated);
+  }
+  .mockup-content {
+    flex: 1;
+    padding: 20px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .stat-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* Capture cards */
+  .captures-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .capture-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .capture-card:hover {
+    transform: scale(1.01);
+    border-color: var(--border-light);
+  }
+  .capture-img {
+    height: 120px;
+    position: relative;
+  }
+  .capture-img-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .capture-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+  }
+  .capture-badge-place { background: rgba(52,211,153,0.15); color: var(--place-accent); }
+  .capture-badge-text { background: rgba(125,211,252,0.15); color: var(--text-accent); }
+  .capture-body { padding: 14px; }
+  .capture-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .capture-summary {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .capture-places {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .place-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .place-num {
+    width: 20px;
+    height: 20px;
+    background: var(--place-accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #050508;
+    flex-shrink: 0;
+  }
+  .place-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .place-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+  .capture-map-btn {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background: var(--place-surface);
+    border: 1px solid var(--place-border);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--place-accent);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .capture-map-btn:hover { background: rgba(52,211,153,0.15); }
+  .capture-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .capture-tag {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .capture-ai {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--ai-accent);
+    margin-top: 8px;
+  }
+
+  /* ===== THEME TOGGLE ===== */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    padding: 8px 16px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  /* ===== DIVIDER ===== */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .mockup-sidebar { display: none; }
+    .captures-grid { grid-template-columns: 1fr; }
+    .palette-row { flex-wrap: wrap; }
+    .swatch { min-width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">Light Mode</button>
+
+<div class="container">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Design System v1.0</div>
+    <h1>CapSave</h1>
+    <p>스크린샷을 AI로 분석하고, 장소와 텍스트를 자동 분류해서 나만의 아카이브를 만드세요.</p>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="section">
+    <div class="section-label">Typography</div>
+    <h2>서체 시스템</h2>
+    <p class="section-desc">한글 최적화 Pretendard + AI 데이터용 JetBrains Mono + 영문 라벨용 Space Grotesk</p>
+    <div class="font-grid">
+      <div class="font-card">
+        <div class="font-role">Display / Heading</div>
+        <div class="font-sample-display">벚꽃 축제 명소 모음</div>
+        <div class="font-meta">Pretendard ExtraBold 800 · 제목, 장소명, 강조</div>
+      </div>
+      <div class="font-card">
+        <div class="font-role">Body</div>
+        <div class="font-sample-body">진해 군항제, 여의도 윤중로, 석촌호수 벚꽃길 등 서울/경남 주요 벚꽃 명소를 정리한 콘텐츠입니다. AI가 이미지에서 자동으로 장소와 일정을 추출했습니다.</div>
+        <div class="font-meta">Pretendard Regular 400 · 본문, 요약, 설명</div>
+      </div>
+      <div class="font-card">
+        <div class="font-role">Data / AI Extracted</div>
+        <div class="font-sample-mono">📍 경남 창원시 진해구 충장로<br>📅 2026.03.25 ~ 2026.04.02<br>🔗 https://naver.me/5xYz123</div>
+        <div class="font-meta">JetBrains Mono 400 · AI 추출 주소, 링크, 날짜</div>
+      </div>
+      <div class="font-card">
+        <div class="font-role">English Labels</div>
+        <div class="font-sample-label">place · instagram · 3 places · captured Mar 25</div>
+        <div class="font-meta">Space Grotesk Medium 500 · 카테고리, 소스, 메타데이터</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COLOR PALETTE -->
+  <div class="section">
+    <div class="section-label">Color</div>
+    <h2>색상 팔레트</h2>
+    <p class="section-desc">"Curated Archive" — 어둠 속에서 따뜻한 빛이 비치는 개인 아카이브</p>
+
+    <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px; font-weight:600;">Backgrounds</div>
+    <div class="palette-row">
+      <div class="swatch"><div class="swatch-color" style="background:#050508;"></div><div class="swatch-name">Background</div><div class="swatch-hex">#050508</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#0D0D12;"></div><div class="swatch-name">Surface</div><div class="swatch-hex">#0D0D12</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#14141B;"></div><div class="swatch-name">Elevated</div><div class="swatch-hex">#14141B</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#1E1E28;"></div><div class="swatch-name">Border</div><div class="swatch-hex">#1E1E28</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#2A2A35;"></div><div class="swatch-name">Border Light</div><div class="swatch-hex">#2A2A35</div></div>
+    </div>
+
+    <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px; font-weight:600;">Primary & Accents</div>
+    <div class="palette-row">
+      <div class="swatch"><div class="swatch-color" style="background:#F4845F;"></div><div class="swatch-name">Primary</div><div class="swatch-hex">#F4845F</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#F69E80;"></div><div class="swatch-name">Primary Light</div><div class="swatch-hex">#F69E80</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#34D399;"></div><div class="swatch-name">Place</div><div class="swatch-hex">#34D399</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#7DD3FC;"></div><div class="swatch-name">Text</div><div class="swatch-hex">#7DD3FC</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#A78BFA;"></div><div class="swatch-name">AI</div><div class="swatch-hex">#A78BFA</div></div>
+    </div>
+
+    <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px; font-weight:600;">Text</div>
+    <div class="palette-row">
+      <div class="swatch"><div class="swatch-color" style="background:#E8D5B7;"></div><div class="swatch-name">Primary</div><div class="swatch-hex">#E8D5B7</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#9B9B9B;"></div><div class="swatch-name">Secondary</div><div class="swatch-hex">#9B9B9B</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#5A5A65;"></div><div class="swatch-name">Tertiary</div><div class="swatch-hex">#5A5A65</div></div>
+    </div>
+
+    <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px; font-weight:600;">Semantic</div>
+    <div class="palette-row">
+      <div class="swatch"><div class="swatch-color" style="background:#34D399;"></div><div class="swatch-name">Success</div><div class="swatch-hex">#34D399</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#FBBF24;"></div><div class="swatch-name">Warning</div><div class="swatch-hex">#FBBF24</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#F87171;"></div><div class="swatch-name">Error</div><div class="swatch-hex">#F87171</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#7DD3FC;"></div><div class="swatch-name">Info</div><div class="swatch-hex">#7DD3FC</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COMPONENTS -->
+  <div class="section">
+    <div class="section-label">Components</div>
+    <h2>UI 컴포넌트</h2>
+    <p class="section-desc">버튼, 인풋, 태그, 알림 — 실제 앱에서 사용되는 형태</p>
+
+    <div class="components-grid">
+      <!-- Buttons -->
+      <div class="comp-card">
+        <div class="comp-label">Buttons</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <button class="btn btn-primary">캡처 추가</button>
+          <button class="btn btn-secondary">취소</button>
+          <button class="btn btn-ghost">더 보기</button>
+          <button class="btn btn-place">🗺 지도에서 보기</button>
+        </div>
+      </div>
+
+      <!-- Inputs -->
+      <div class="comp-card">
+        <div class="comp-label">Inputs</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input class="input" placeholder="캡처 검색..." value="">
+          <input class="input" placeholder="장소 이름 입력..." style="border-color: var(--primary);" value="진해 군항제">
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="comp-card">
+        <div class="comp-label">Tags & Badges</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <span class="tag tag-place">📍 장소</span>
+          <span class="tag tag-text">📝 텍스트</span>
+          <span class="tag tag-ai">🤖 AI 분석</span>
+          <span style="font-size:12px; color:var(--text-tertiary);">#벚꽃</span>
+          <span style="font-size:12px; color:var(--text-tertiary);">#축제</span>
+          <span style="font-size:12px; color:var(--text-tertiary);">#여행</span>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="comp-card">
+        <div class="comp-label">Alerts</div>
+        <div class="alert alert-success">✅ 캡처가 저장되었습니다</div>
+        <div class="alert alert-error">❌ 이미지 업로드 실패</div>
+        <div class="alert alert-warning">⚠️ AI 분석 크레딧이 부족합니다</div>
+        <div class="alert alert-info">ℹ️ 새로운 장소 3개가 추가되었습니다</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PRODUCT MOCKUP -->
+  <div class="section">
+    <div class="section-label">Product Mockup</div>
+    <h2>실제 앱 화면</h2>
+    <p class="section-desc">디자인 시스템이 적용된 CapSave 웹 앱의 모습</p>
+
+    <div class="mockup-container">
+      <!-- Top bar -->
+      <div class="mockup-topbar">
+        <div class="mockup-logo">CapSave</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <input class="input" style="width:260px; padding:8px 14px; font-size:13px;" placeholder="🔍 캡처 검색...">
+          <button class="btn btn-primary" style="padding:8px 16px; font-size:13px; white-space:nowrap;">+ 캡처 추가</button>
+        </div>
+      </div>
+
+      <div class="mockup-body" style="min-height:500px;">
+        <!-- Sidebar -->
+        <div class="mockup-sidebar">
+          <div class="sidebar-item active">📋 전체</div>
+          <div class="sidebar-item" style="color:var(--place-accent);">📍 장소</div>
+          <div class="sidebar-item" style="color:var(--text-accent);">📝 텍스트</div>
+          <div class="sidebar-item" style="color:var(--place-accent);">🗺 지도</div>
+          <div style="flex:1;"></div>
+          <div style="padding:10px 14px; font-size:11px; color:var(--text-tertiary);">
+            <span style="color:var(--ai-accent);">🤖</span> AI 분석 24회
+          </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="mockup-content">
+          <!-- Stats -->
+          <div class="stats-bar">
+            <div class="stat-card">
+              <div class="stat-number" style="color:var(--primary);">24</div>
+              <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" style="color:var(--place-accent);">14</div>
+              <div class="stat-label">Places</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" style="color:var(--text-accent);">10</div>
+              <div class="stat-label">Texts</div>
+            </div>
+          </div>
+
+          <!-- Captures -->
+          <div class="captures-grid">
+            <!-- Card 1: Place -->
+            <div class="capture-card">
+              <div class="capture-img" style="background: linear-gradient(135deg, #2a1e2e, #1a2a1e);">
+                <div class="capture-badge capture-badge-place">📍 장소 3개</div>
+              </div>
+              <div class="capture-body">
+                <div class="capture-title">벚꽃 축제 명소 모음</div>
+                <div class="capture-summary">진해 군항제, 여의도, 석촌호수 벚꽃길 정리</div>
+                <div class="capture-places">
+                  <div class="place-row">
+                    <div class="place-num">1</div>
+                    <div>
+                      <div class="place-name">진해 군항제</div>
+                      <div class="place-meta">경남 창원시 · 3/25~4/2</div>
+                    </div>
+                  </div>
+                  <div class="place-row">
+                    <div class="place-num">2</div>
+                    <div>
+                      <div class="place-name">여의도 윤중로</div>
+                      <div class="place-meta">서울 영등포구</div>
+                    </div>
+                  </div>
+                  <div class="place-row">
+                    <div class="place-num">3</div>
+                    <div>
+                      <div class="place-name">석촌호수 벚꽃길</div>
+                      <div class="place-meta">서울 송파구</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="capture-map-btn">🗺 지도에서 보기</div>
+                <div class="capture-tags">
+                  <span class="capture-tag">#벚꽃</span>
+                  <span class="capture-tag">#축제</span>
+                  <span class="capture-tag">#여행</span>
+                </div>
+                <div class="capture-ai">🤖 AI 분석 · <span style="font-family:'Space Grotesk',sans-serif;">instagram</span></div>
+              </div>
+            </div>
+
+            <!-- Card 2: Text -->
+            <div class="capture-card">
+              <div class="capture-img" style="background: linear-gradient(135deg, #1a1e2e, #0D0D12);">
+                <div class="capture-badge capture-badge-text">📝 텍스트</div>
+              </div>
+              <div class="capture-body">
+                <div class="capture-title">ChatGPT 프롬프트 작성법</div>
+                <div class="capture-summary">효과적인 AI 프롬프트를 작성하는 5가지 팁과 예시를 정리한 가이드</div>
+                <div style="margin:10px 0; padding:10px; background:var(--ai-surface); border-radius:10px;">
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-accent); line-height:1.6;">
+                    🔗 https://blog.example.com/prompt-tips
+                  </div>
+                </div>
+                <div class="capture-tags">
+                  <span class="capture-tag">#AI</span>
+                  <span class="capture-tag">#프롬프트</span>
+                  <span class="capture-tag">#팁</span>
+                </div>
+                <div class="capture-ai">🤖 AI 분석 · <span style="font-family:'Space Grotesk',sans-serif;">threads</span></div>
+              </div>
+            </div>
+
+            <!-- Card 3: Place -->
+            <div class="capture-card">
+              <div class="capture-img" style="background: linear-gradient(135deg, #2a2a1e, #12120D);">
+                <div class="capture-badge capture-badge-place">📍 장소 2개</div>
+              </div>
+              <div class="capture-body">
+                <div class="capture-title">일본 사우나 추천</div>
+                <div class="capture-summary">하코네, 벳부 지역 온천 사우나 리스트</div>
+                <div class="capture-places">
+                  <div class="place-row">
+                    <div class="place-num">1</div>
+                    <div>
+                      <div class="place-name">하코네 유넷산</div>
+                      <div class="place-meta">가나가와현 하코네</div>
+                    </div>
+                  </div>
+                  <div class="place-row">
+                    <div class="place-num">2</div>
+                    <div>
+                      <div class="place-name">벳부 온천</div>
+                      <div class="place-meta">오이타현 벳부시</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="capture-map-btn">🗺 지도에서 보기</div>
+                <div class="capture-tags">
+                  <span class="capture-tag">#사우나</span>
+                  <span class="capture-tag">#일본</span>
+                  <span class="capture-tag">#온천</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Text -->
+            <div class="capture-card">
+              <div class="capture-img" style="background: linear-gradient(135deg, #1e1a2a, #0D0D12);">
+                <div class="capture-badge capture-badge-text">📝 텍스트</div>
+              </div>
+              <div class="capture-body">
+                <div class="capture-title">을지로 맛집 리스트</div>
+                <div class="capture-summary">을지로 골목 숨은 맛집 5곳 정리. 노포부터 뉴트로 카페까지.</div>
+                <div style="margin:10px 0; padding:10px; background:var(--text-surface); border-radius:10px;">
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-accent); line-height:1.6;">
+                    🔗 https://naver.me/euljiro-food
+                  </div>
+                </div>
+                <div class="capture-tags">
+                  <span class="capture-tag">#맛집</span>
+                  <span class="capture-tag">#을지로</span>
+                  <span class="capture-tag">#서울</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center; padding:48px 0; color:var(--text-tertiary); font-size:12px;">
+    <div style="color:var(--primary); font-weight:800; font-size:16px; margin-bottom:8px;">CapSave</div>
+    Design System v1.0 · Curated Archive Theme
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const root = document.documentElement;
+  const btn = document.querySelector('.theme-toggle');
+  const isLight = btn.textContent === 'Dark Mode';
+
+  if (isLight) {
+    root.style.setProperty('--bg', '#050508');
+    root.style.setProperty('--surface', '#0D0D12');
+    root.style.setProperty('--surface-elevated', '#14141B');
+    root.style.setProperty('--border', '#1E1E28');
+    root.style.setProperty('--border-light', '#2A2A35');
+    root.style.setProperty('--text-primary', '#E8D5B7');
+    root.style.setProperty('--text-secondary', '#9B9B9B');
+    root.style.setProperty('--text-tertiary', '#5A5A65');
+    btn.textContent = 'Light Mode';
+  } else {
+    root.style.setProperty('--bg', '#FAFAF8');
+    root.style.setProperty('--surface', '#FFFFFF');
+    root.style.setProperty('--surface-elevated', '#F5F5F0');
+    root.style.setProperty('--border', '#E5E5E0');
+    root.style.setProperty('--border-light', '#D5D5D0');
+    root.style.setProperty('--text-primary', '#1A1A1A');
+    root.style.setProperty('--text-secondary', '#6B6B6B');
+    root.style.setProperty('--text-tertiary', '#9B9B9B');
+    btn.textContent = 'Dark Mode';
+  }
+}
+</script>
+</body>
+</html>
