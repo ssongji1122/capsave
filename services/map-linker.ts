@@ -1,4 +1,5 @@
 import { Linking, Alert, Platform } from 'react-native';
+import { isUrlSafe } from './url-validator';
 
 export type MapProvider = 'naver' | 'google' | 'kakao';
 
@@ -59,16 +60,20 @@ export async function openMap(
 
   try {
     const canOpen = await Linking.canOpenURL(link.appUrl);
-    if (canOpen) {
+    if (canOpen && isUrlSafe(link.appUrl)) {
       await Linking.openURL(link.appUrl);
-    } else {
-      // Fallback to web version
+    } else if (isUrlSafe(link.webUrl)) {
       await Linking.openURL(link.webUrl);
+    } else {
+      Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
     }
   } catch (error) {
-    // Final fallback
     try {
-      await Linking.openURL(link.webUrl);
+      if (isUrlSafe(link.webUrl)) {
+        await Linking.openURL(link.webUrl);
+      } else {
+        Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
+      }
     } catch {
       Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
     }
@@ -76,6 +81,11 @@ export async function openMap(
 }
 
 export async function openUrl(url: string): Promise<void> {
+  if (!isUrlSafe(url)) {
+    Alert.alert('안전하지 않은 링크', '이 링크는 열 수 없습니다.');
+    return;
+  }
+
   try {
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {

@@ -15,18 +15,19 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { CaptureItem, getAllCaptures, searchCaptures, deleteCapture } from '@/services/database';
+import { CaptureItem } from '@/services/database';
 import { CaptureCard } from '@/components/CaptureCard';
+import { useCaptures } from '@/contexts/CapturesContext';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
+  const { captures: allCaptures, isLoading, refresh, deleteCapture, searchCaptures } = useCaptures();
 
-  const [captures, setCaptures] = useState<CaptureItem[]>([]);
+  const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fabScale = useRef(new Animated.Value(1)).current;
@@ -37,38 +38,33 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const loadCaptures = useCallback(async () => {
-    try {
-      const items = debouncedQuery
-        ? await searchCaptures(debouncedQuery)
-        : await getAllCaptures();
-      setCaptures(items);
-    } catch (error) {
-      console.error('Failed to load captures:', error);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  }, [debouncedQuery]);
+  // Sync display captures with context and debounced search
+  useEffect(() => {
+    const updateCaptures = async () => {
+      if (debouncedQuery) {
+        const results = await searchCaptures(debouncedQuery);
+        setDisplayCaptures(results);
+      } else {
+        setDisplayCaptures(allCaptures);
+      }
+    };
+    updateCaptures();
+  }, [allCaptures, debouncedQuery, searchCaptures]);
 
   useFocusEffect(
     useCallback(() => {
-      loadCaptures();
-    }, [loadCaptures])
+      refresh();
+    }, [refresh])
   );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadCaptures();
+    await refresh();
+    setRefreshing(false);
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteCapture(id);
-      loadCaptures();
-    } catch (error) {
-      console.error('Failed to delete capture:', error);
-    }
+    await deleteCapture(id);
   };
 
   const handleAddCapture = async () => {
@@ -97,9 +93,9 @@ export default function HomeScreen() {
     }
   };
 
-  const totalCount = captures.length;
-  const placeCount = captures.filter((c) => c.category === 'place').length;
-  const textCount = captures.filter((c) => c.category === 'text').length;
+  const totalCount = displayCaptures.length;
+  const placeCount = displayCaptures.filter((c) => c.category === 'place').length;
+  const textCount = displayCaptures.filter((c) => c.category === 'text').length;
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -125,7 +121,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -165,11 +161,10 @@ export default function HomeScreen() {
           placeholderTextColor={colors.textTertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          onSubmitEditing={loadCaptures}
           returnKeyType="search"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => { setSearchQuery(''); }}>
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
             <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         )}
@@ -177,12 +172,12 @@ export default function HomeScreen() {
 
       {/* List */}
       <FlatList
-        data={captures}
+        data={displayCaptures}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <CaptureCard item={item} onDelete={handleDelete} />
         )}
-        contentContainerStyle={captures.length === 0 ? styles.emptyContainer : styles.listContent}
+        contentContainerStyle={displayCaptures.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
         refreshControl={
           <RefreshControl

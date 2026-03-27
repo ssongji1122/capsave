@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -18,6 +18,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { analyzeImage, AnalysisResult } from '@/services/ai-analyzer';
 import { saveCapture } from '@/services/database';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
+import { useCaptures } from '@/contexts/CapturesContext';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
 
@@ -26,12 +27,14 @@ export default function AnalyzeScreen() {
   const colors = Colors[colorScheme];
   const router = useRouter();
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
+  const { refresh } = useCaptures();
 
   const [status, setStatus] = useState<AnalyzeStatus>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const isAnalyzing = useRef(false);
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -64,6 +67,8 @@ export default function AnalyzeScreen() {
   }, [imageUri]);
 
   const runAnalysis = async () => {
+    if (isAnalyzing.current) return;
+    isAnalyzing.current = true;
     setStatus('analyzing');
     try {
       const analysisResult = await analyzeImage(imageUri!);
@@ -72,6 +77,8 @@ export default function AnalyzeScreen() {
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.');
       setStatus('error');
+    } finally {
+      isAnalyzing.current = false;
     }
   };
 
@@ -81,6 +88,7 @@ export default function AnalyzeScreen() {
     setIsSaving(true);
     try {
       await saveCapture(result, imageUri);
+      await refresh();
       router.back();
     } catch (error) {
       Alert.alert('저장 실패', '캡처를 저장하는 중 오류가 발생했습니다.');
@@ -112,7 +120,12 @@ export default function AnalyzeScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Preview */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+          />
           {status === 'analyzing' && (
             <Animated.View style={[styles.imageOverlay, { opacity: pulseAnim }]}>
               <View style={[styles.scanLine, { backgroundColor: colors.primary }]} />

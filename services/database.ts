@@ -2,6 +2,21 @@ import * as SQLite from 'expo-sqlite';
 import { AnalysisResult, CaptureCategory } from './ai-analyzer';
 export type { CaptureCategory };
 
+interface CaptureRow {
+  id: number;
+  category: string;
+  title: string;
+  summary: string;
+  place_name: string | null;
+  address: string | null;
+  extracted_text: string;
+  links: string;
+  tags: string;
+  source: string;
+  image_uri: string;
+  created_at: string;
+}
+
 export interface CaptureItem {
   id: number;
   category: CaptureCategory;
@@ -72,7 +87,7 @@ export async function saveCapture(
 
 export async function getAllCaptures(): Promise<CaptureItem[]> {
   const database = await getDatabase();
-  const rows = await database.getAllAsync<any>(
+  const rows = await database.getAllAsync<CaptureRow>(
     'SELECT * FROM captures ORDER BY created_at DESC'
   );
 
@@ -83,7 +98,7 @@ export async function getCapturesByCategory(
   category: CaptureCategory
 ): Promise<CaptureItem[]> {
   const database = await getDatabase();
-  const rows = await database.getAllAsync<any>(
+  const rows = await database.getAllAsync<CaptureRow>(
     'SELECT * FROM captures WHERE category = ? ORDER BY created_at DESC',
     [category]
   );
@@ -94,7 +109,7 @@ export async function getCapturesByCategory(
 export async function searchCaptures(query: string): Promise<CaptureItem[]> {
   const database = await getDatabase();
   const searchTerm = `%${query}%`;
-  const rows = await database.getAllAsync<any>(
+  const rows = await database.getAllAsync<CaptureRow>(
     `SELECT * FROM captures 
      WHERE title LIKE ? OR summary LIKE ? OR extracted_text LIKE ? OR place_name LIKE ? OR tags LIKE ?
      ORDER BY created_at DESC`,
@@ -111,17 +126,17 @@ export async function deleteCapture(id: number): Promise<void> {
 
 export async function getCaptureById(id: number): Promise<CaptureItem | null> {
   const database = await getDatabase();
-  const row = await database.getFirstAsync<any>(
+  const row = await database.getFirstAsync<CaptureRow>(
     'SELECT * FROM captures WHERE id = ?',
     [id]
   );
   return row ? mapRowToCapture(row) : null;
 }
 
-function mapRowToCapture(row: any): CaptureItem {
+function mapRowToCapture(row: CaptureRow): CaptureItem {
   return {
     id: row.id,
-    category: row.category,
+    category: row.category as CaptureCategory,
     title: row.title,
     summary: row.summary,
     placeName: row.place_name,

@@ -9,78 +9,61 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, ThemeColors } from '@/constants/Colors';
+import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { CaptureItem, CaptureCategory, getCapturesByCategory, deleteCapture } from '@/services/database';
 import { CaptureCard } from '@/components/CaptureCard';
+import { CaptureCategory } from '@/services/ai-analyzer';
+import { useCaptures } from '@/contexts/CapturesContext';
 
-interface CategoryListScreenProps {
+interface CategoryScreenProps {
   category: CaptureCategory;
   title: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  accentColor: (colors: ThemeColors) => string;
-  surfaceColor: (colors: ThemeColors) => string;
-  emptyIcon: React.ComponentProps<typeof Ionicons>['name'];
+  icon: keyof typeof Ionicons.glyphMap;
+  emptyIcon: keyof typeof Ionicons.glyphMap;
   emptyTitle: string;
   emptySubtitle: string;
 }
 
-export function CategoryListScreen({
+export function CategoryScreen({
   category,
   title,
   icon,
-  accentColor,
-  surfaceColor,
   emptyIcon,
   emptyTitle,
   emptySubtitle,
-}: CategoryListScreenProps) {
-  const colorScheme = useColorScheme();
+}: CategoryScreenProps) {
+  const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
 
-  const [captures, setCaptures] = useState<CaptureItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const isPlace = category === 'place';
+  const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
+  const surfaceColor = isPlace ? colors.placeSurface : colors.textSurface;
+
+  const { getCapturesByCategory, isLoading, refresh, deleteCapture } = useCaptures();
+
+  const captures = getCapturesByCategory(category);
   const [refreshing, setRefreshing] = useState(false);
-
-  const accent = accentColor(colors);
-  const surface = surfaceColor(colors);
-
-  const loadCaptures = useCallback(async () => {
-    try {
-      const items = await getCapturesByCategory(category);
-      setCaptures(items);
-    } catch (error) {
-      console.error(`Failed to load ${category}:`, error);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  }, [category]);
 
   useFocusEffect(
     useCallback(() => {
-      loadCaptures();
-    }, [loadCaptures])
+      refresh();
+    }, [refresh])
   );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadCaptures();
+    await refresh();
+    setRefreshing(false);
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteCapture(id);
-      loadCaptures();
-    } catch (error) {
-      console.error('Failed to delete capture:', error);
-    }
+    await deleteCapture(id);
   };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <View style={[styles.emptyIcon, { backgroundColor: surface }]}>
-        <Ionicons name={emptyIcon} size={48} color={accent} />
+      <View style={[styles.emptyIcon, { backgroundColor: surfaceColor }]}>
+        <Ionicons name={emptyIcon} size={48} color={accentColor} />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
         {emptyTitle}
@@ -96,10 +79,10 @@ export function CategoryListScreen({
       <StatusBar barStyle="light-content" />
 
       <View style={styles.header}>
-        <Ionicons name={icon} size={24} color={accent} />
+        <Ionicons name={icon} size={24} color={accentColor} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
-        <View style={[styles.countBadge, { backgroundColor: surface }]}>
-          <Text style={[styles.countText, { color: accent }]}>
+        <View style={[styles.countBadge, { backgroundColor: surfaceColor }]}>
+          <Text style={[styles.countText, { color: accentColor }]}>
             {captures.length}
           </Text>
         </View>
@@ -117,7 +100,7 @@ export function CategoryListScreen({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={accent}
+            tintColor={accentColor}
           />
         }
         showsVerticalScrollIndicator={false}
