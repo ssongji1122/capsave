@@ -5,23 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
-  ScrollView,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
-import { getMapLinks, openMap, openUrl, MapProvider } from '@/services/map-linker';
+import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 
 interface CaptureCardProps {
   item: CaptureItem;
   onDelete?: (id: number) => void;
 }
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   const colorScheme = useColorScheme() ?? 'dark';
@@ -200,7 +195,11 @@ const styles = StyleSheet.create({
     height: 180,
   },
   cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     lineHeight: 24,
+    paddingHorizontal: 16,
+    paddingTop: 10,
   },
   cardSummary: {
     fontSize: 14,
