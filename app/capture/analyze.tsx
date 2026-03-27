@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -120,7 +120,12 @@ export default function AnalyzeScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Preview */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+          />
           {status === 'analyzing' && (
             <Animated.View style={[styles.imageOverlay, { opacity: pulseAnim }]}>
               <View style={[styles.scanLine, { backgroundColor: colors.primary }]} />

@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Constants from 'expo-constants';
 
 export type CaptureCategory = 'place' | 'text';
@@ -48,8 +49,14 @@ export async function analyzeImage(imageUri: string): Promise<AnalysisResult> {
     throw new Error('OpenAI API Key가 설정되지 않았습니다. app.json의 extra.openaiApiKey를 확인해주세요.');
   }
 
-  // Read image as base64
-  const base64Image = await FileSystem.readAsStringAsync(imageUri, {
+  // Resize image to reduce memory and bandwidth
+  const manipulated = await ImageManipulator.manipulateAsync(
+    imageUri,
+    [{ resize: { width: 1024 } }],
+    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+  );
+
+  const base64Image = await FileSystem.readAsStringAsync(manipulated.uri, {
     encoding: 'base64',
   });
 

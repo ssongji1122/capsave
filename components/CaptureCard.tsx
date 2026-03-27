@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -77,7 +77,13 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
 
       {/* Image Preview */}
       {item.imageUri && (
-        <Image source={{ uri: item.imageUri }} style={styles.cardImage} resizeMode="cover" />
+        <Image
+          source={{ uri: item.imageUri }}
+          style={styles.cardImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
       )}
 
       {/* Title & Summary */}
