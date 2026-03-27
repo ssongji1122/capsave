@@ -1,4 +1,5 @@
 import { Linking, Alert, Platform } from 'react-native';
+import { isUrlSafe } from './url-validator';
 
 export type MapProvider = 'naver' | 'google' | 'kakao';
 
@@ -76,6 +77,11 @@ export async function openMap(
 }
 
 export async function openUrl(url: string): Promise<void> {
+  if (!isUrlSafe(url)) {
+    Alert.alert('안전하지 않은 링크', '이 링크는 열 수 없습니다.');
+    return;
+  }
+
   try {
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
