@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
     height: 180,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     lineHeight: 24,
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
   },
   cardSummary: {
     fontSize: 14,

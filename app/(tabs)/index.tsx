@@ -27,25 +27,29 @@ export default function HomeScreen() {
 
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const fabScale = useRef(new Animated.Value(1)).current;
 
-  // Sync display captures with context
+  // Debounce search query by 300ms
   useEffect(() => {
-    if (!searchQuery) {
-      setDisplayCaptures(allCaptures);
-    }
-  }, [allCaptures, searchQuery]);
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const handleSearch = useCallback(async () => {
-    if (searchQuery) {
-      const results = await searchCaptures(searchQuery);
-      setDisplayCaptures(results);
-    } else {
-      setDisplayCaptures(allCaptures);
-    }
-  }, [searchQuery, allCaptures, searchCaptures]);
+  // Sync display captures with context and debounced search
+  useEffect(() => {
+    const updateCaptures = async () => {
+      if (debouncedQuery) {
+        const results = await searchCaptures(debouncedQuery);
+        setDisplayCaptures(results);
+      } else {
+        setDisplayCaptures(allCaptures);
+      }
+    };
+    updateCaptures();
+  }, [allCaptures, debouncedQuery, searchCaptures]);
 
   useFocusEffect(
     useCallback(() => {
@@ -157,11 +161,10 @@ export default function HomeScreen() {
           placeholderTextColor={colors.textTertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          onSubmitEditing={handleSearch}
           returnKeyType="search"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => { setSearchQuery(''); setDisplayCaptures(allCaptures); }}>
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
             <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         )}
@@ -317,7 +320,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6C5CE7',
+    shadowColor: '#FFB800',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

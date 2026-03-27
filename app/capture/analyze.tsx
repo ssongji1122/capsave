@@ -74,8 +74,8 @@ export default function AnalyzeScreen() {
       const analysisResult = await analyzeImage(imageUri!);
       setResult(analysisResult);
       setStatus('done');
-    } catch (error: any) {
-      setErrorMessage(error.message || '분석 중 오류가 발생했습니다.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.');
       setStatus('error');
     } finally {
       isAnalyzing.current = false;
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginTop: 24,
     gap: 8,
-    shadowColor: '#6C5CE7',
+    shadowColor: '#FFB800',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
