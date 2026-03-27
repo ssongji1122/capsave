@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { CaptureItem, PlaceInfo, getMapLinks, MapLink } from '@capsave/shared';
+import Link from 'next/link';
+import { CaptureItem, PlaceInfo } from '@capsave/shared';
 
 interface CaptureCardProps {
   item: CaptureItem;
@@ -26,7 +27,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   };
 
   return (
-    <div className={`rounded-3xl overflow-hidden border ${borderColor} bg-surface transition-transform hover:scale-[1.01]`}>
+    <div className={`rounded-3xl overflow-hidden border ${borderColor} bg-surface transition-all duration-200 hover:scale-[1.01] hover:border-border-light`}>
       {/* Image */}
       {item.imageUrl && (
         <div className="relative w-full h-44 bg-surface-elevated">
@@ -38,7 +39,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
-            {isPlace ? '📍 장소' : '📝 텍스트'}
+            {isPlace ? `📍 장소 ${item.places.length}개` : '📝 텍스트'}
           </div>
           <button
             onClick={handleDelete}
@@ -55,49 +56,35 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
           <p className="text-sm text-text-secondary mt-1.5 leading-5 line-clamp-2">{item.summary}</p>
         )}
 
-        {/* Places list */}
+        {/* Numbered place list */}
         {isPlace && item.places.length > 0 && (
-          <div className="mt-3 flex flex-col gap-2">
-            {item.places.map((place: PlaceInfo, idx: number) => {
-              const mapLinks = getMapLinks(place.name, place.address);
-              return (
-                <div key={idx} className={`p-3 rounded-xl ${surfaceBg}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className={`font-semibold text-sm ${accentColor}`}>{place.name}</p>
-                      {place.date && (
-                        <p className="text-xs text-text-tertiary mt-0.5">{place.date}</p>
-                      )}
-                      {place.address && (
-                        <p className="text-xs text-text-tertiary mt-0.5">{place.address}</p>
-                      )}
-                    </div>
-                  </div>
-                  {/* Place-specific links */}
-                  {place.links && place.links.length > 0 && (
-                    <div className="mt-1.5">
-                      {place.links.map((link, li) => (
-                        <a key={li} href={link} target="_blank" rel="noopener noreferrer" className="text-xs text-text-accent hover:underline truncate block">
-                          🔗 {link}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                  {/* Map buttons per place */}
-                  <div className="flex gap-1.5 mt-2">
-                    {mapLinks.map((link: MapLink) => (
-                      <button
-                        key={link.provider}
-                        onClick={() => window.open(link.webUrl, '_blank')}
-                        className="flex-1 py-1.5 rounded-lg bg-surface text-xs font-medium text-text-secondary hover:text-text-primary transition-colors text-center"
-                      >
-                        {link.emoji} {link.label}
-                      </button>
-                    ))}
-                  </div>
+          <div className="mt-3 flex flex-col">
+            {item.places.map((place: PlaceInfo, idx: number) => (
+              <div
+                key={idx}
+                className={`flex items-center gap-3 py-2 ${
+                  idx < item.places.length - 1 ? 'border-b border-border' : ''
+                }`}
+              >
+                <div className="w-5 h-5 rounded-full bg-place-accent flex items-center justify-center text-[10px] font-bold text-background flex-shrink-0">
+                  {idx + 1}
                 </div>
-              );
-            })}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-text-primary truncate">{place.name}</p>
+                  <p className="text-xs text-text-tertiary font-mono truncate">
+                    {[place.address, place.date].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {/* Single map button */}
+            <Link
+              href={`/map?capture=${item.id}`}
+              className="mt-3 block w-full py-2.5 rounded-xl bg-place-surface border border-place-border text-center text-sm font-semibold text-place-accent hover:bg-[rgba(52,211,153,0.15)] transition-colors"
+            >
+              🗺 지도에서 보기
+            </Link>
           </div>
         )}
 
@@ -110,7 +97,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                 href={link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-text-accent hover:underline truncate"
+                className="text-xs text-text-accent font-mono hover:underline truncate"
               >
                 🔗 {link}
               </a>
