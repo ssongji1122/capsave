@@ -16,7 +16,7 @@ export function BottomSheet({ places, onPlaceSelect, selectedPlace }: BottomShee
   useEffect(() => {
     if (selectedPlace && scrollRef.current) {
       const idx = places.findIndex(
-        (p) => p.name === selectedPlace.name && p.captureId === selectedPlace.captureId
+        (p) => p.captureId === selectedPlace.captureId && p.placeIndex === selectedPlace.placeIndex
       );
       if (idx >= 0) {
         const card = scrollRef.current.children[idx] as HTMLElement;
@@ -26,7 +26,7 @@ export function BottomSheet({ places, onPlaceSelect, selectedPlace }: BottomShee
   }, [selectedPlace, places]);
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl z-10 pb-safe">
+    <div className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl z-10 pb-[env(safe-area-inset-bottom)]">
       {/* Handle bar */}
       <div className="flex justify-center py-2">
         <div className="w-9 h-1 bg-border-light rounded-full" />
@@ -40,8 +40,8 @@ export function BottomSheet({ places, onPlaceSelect, selectedPlace }: BottomShee
       >
         {places.map((place, idx) => {
           const isSelected =
-            selectedPlace?.name === place.name &&
-            selectedPlace?.captureId === place.captureId;
+            selectedPlace?.captureId === place.captureId &&
+            selectedPlace?.placeIndex === place.placeIndex;
 
           return (
             <button

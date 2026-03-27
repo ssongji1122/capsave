@@ -4,8 +4,12 @@ export async function POST(request: NextRequest) {
   try {
     const { name, address } = await request.json();
 
-    if (!name) {
+    if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+
+    if (name.length > 200 || (address && address.length > 300)) {
+      return NextResponse.json({ error: 'input too long' }, { status: 400 });
     }
 
     const query = address ? `${name} ${address}` : name;

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { PlaceInfo } from '@capsave/shared';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 
@@ -31,74 +30,81 @@ export function MapView() {
   const [selectedPlace, setSelectedPlace] = useState<MapPlace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter captures that have places
-  const placeCaptures = captures.filter(
-    (c) => c.category === 'place' && c.places.length > 0
+  // Memoize place captures with stable identity key
+  const placeCaptures = useMemo(
+    () => captures.filter((c) => c.category === 'place' && c.places.length > 0),
+    [captures]
   );
+  const captureIds = placeCaptures.map((c) => c.id).sort().join(',');
+  const hasGeocoded = useRef(false);
 
-  // Geocode all places
-  const geocodePlaces = useCallback(async () => {
-    setIsLoading(true);
-    const allPlaces: MapPlace[] = [];
+  // Geocode all places with parallel requests
+  useEffect(() => {
+    if (placeCaptures.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+    if (hasGeocoded.current) return;
+    hasGeocoded.current = true;
 
-    for (const capture of placeCaptures) {
-      for (let i = 0; i < capture.places.length; i++) {
-        const place = capture.places[i];
+    const run = async () => {
+      setIsLoading(true);
 
-        // Skip if already has coordinates
-        if (place.lat && place.lng) {
-          allPlaces.push({
-            name: place.name,
-            address: place.address,
-            date: place.date,
-            lat: place.lat,
-            lng: place.lng,
-            captureId: capture.id,
-            captureTitle: capture.title,
-            captureImageUrl: capture.imageUrl,
-            placeIndex: i,
-          });
-          continue;
+      type PlaceEntry = { place: typeof placeCaptures[0]['places'][0]; capture: typeof placeCaptures[0]; index: number };
+      const withCoords: MapPlace[] = [];
+      const toGeocode: PlaceEntry[] = [];
+
+      for (const capture of placeCaptures) {
+        for (let i = 0; i < capture.places.length; i++) {
+          const place = capture.places[i];
+          if (place.lat && place.lng) {
+            withCoords.push({
+              name: place.name, address: place.address, date: place.date,
+              lat: place.lat, lng: place.lng,
+              captureId: capture.id, captureTitle: capture.title,
+              captureImageUrl: capture.imageUrl, placeIndex: i,
+            });
+          } else {
+            toGeocode.push({ place, capture, index: i });
+          }
         }
+      }
 
-        // Geocode
-        try {
-          const res = await fetch('/api/geocode', {
+      // Parallel geocoding with Promise.allSettled
+      const results = await Promise.allSettled(
+        toGeocode.map(({ place }) =>
+          fetch('/api/geocode', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: place.name, address: place.address }),
-          });
-          const data = await res.json();
-          if (data.lat && data.lng) {
-            allPlaces.push({
-              name: place.name,
-              address: place.address || data.formattedAddress,
-              date: place.date,
-              lat: data.lat,
-              lng: data.lng,
-              captureId: capture.id,
-              captureTitle: capture.title,
-              captureImageUrl: capture.imageUrl,
-              placeIndex: i,
-            });
-          }
-        } catch (err) {
-          console.error(`Geocoding failed for ${place.name}:`, err);
-        }
-      }
-    }
+          }).then((res) => res.json())
+        )
+      );
 
-    setPlaces(allPlaces);
-    setIsLoading(false);
-  }, [placeCaptures.length]);
+      const geocoded: MapPlace[] = results
+        .map((result, i) => {
+          if (result.status !== 'fulfilled' || !result.value.lat || !result.value.lng) return null;
+          const { place, capture, index } = toGeocode[i];
+          return {
+            name: place.name,
+            address: place.address || result.value.formattedAddress,
+            date: place.date,
+            lat: result.value.lat,
+            lng: result.value.lng,
+            captureId: capture.id,
+            captureTitle: capture.title,
+            captureImageUrl: capture.imageUrl,
+            placeIndex: index,
+          } as MapPlace;
+        })
+        .filter((p): p is MapPlace => p !== null);
 
-  useEffect(() => {
-    if (placeCaptures.length > 0) {
-      geocodePlaces();
-    } else {
+      setPlaces([...withCoords, ...geocoded]);
       setIsLoading(false);
-    }
-  }, [placeCaptures.length]);
+    };
+
+    run();
+  }, [captureIds]);
 
   // Filter by capture if query param present
   const filteredPlaces = captureFilter
