@@ -48,3 +48,6 @@ out/
 
 # Build outputs
 packages/*/dist/
+
+# Superpowers brainstorm sessions
+.superpowers/
