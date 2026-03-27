@@ -32,6 +32,7 @@ export default function AnalyzeScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const isAnalyzing = useRef(false);
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -64,6 +65,8 @@ export default function AnalyzeScreen() {
   }, [imageUri]);
 
   const runAnalysis = async () => {
+    if (isAnalyzing.current) return;
+    isAnalyzing.current = true;
     setStatus('analyzing');
     try {
       const analysisResult = await analyzeImage(imageUri!);
@@ -72,6 +75,8 @@ export default function AnalyzeScreen() {
     } catch (error: any) {
       setErrorMessage(error.message || '분석 중 오류가 발생했습니다.');
       setStatus('error');
+    } finally {
+      isAnalyzing.current = false;
     }
   };
 
