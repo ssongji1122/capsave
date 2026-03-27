@@ -6,6 +6,8 @@ export interface PlaceInfo {
   address?: string;
   date?: string;
   links?: string[];
+  lat?: number;
+  lng?: number;
 }
 
 export interface AnalysisResult {
