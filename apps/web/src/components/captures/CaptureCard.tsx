@@ -39,7 +39,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
-            {isPlace ? `장소 ${item.places.length}개` : '텍스트'}
+            <span style={{ fontFamily: 'var(--font-label)' }}>{isPlace ? `장소 ${item.places.length}개` : '텍스트'}</span>
           </div>
           <button
             onClick={handleDelete}
@@ -107,14 +107,14 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
 
         {/* Tags & date */}
         <div className="flex items-center justify-between mt-3">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" style={{ fontFamily: 'var(--font-label)' }}>
             {item.tags.slice(0, 4).map((tag, i) => (
               <span key={i} className="text-xs text-text-tertiary">
                 #{tag}
               </span>
             ))}
           </div>
-          <span className="text-xs text-text-tertiary">{formatDate(item.createdAt)}</span>
+          <span className="text-xs text-text-tertiary" style={{ fontFamily: 'var(--font-label)' }}>{formatDate(item.createdAt)}</span>
         </div>
       </div>
     </div>
