@@ -18,6 +18,9 @@ export { isUrlSafe, sanitizeUrl } from './utils/url-validator';
 export { getMapLinks } from './utils/map-linker';
 export type { MapProvider, MapLink } from './utils/map-linker';
 export { safeJsonParse } from './utils/json';
+export { extractBearerToken } from './utils/auth';
+export { getDayBoundaries } from './utils/date';
+export { countDistinctUsers } from './utils/analytics';
 
 // AI
 export { AI_MODEL, AI_MODEL_ENDPOINT } from './ai/config';

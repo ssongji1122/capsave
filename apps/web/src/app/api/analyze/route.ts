@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient } from '@capsave/shared';
+import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@capsave/shared';
 import { createClient } from '@/lib/supabase/server';
+import { extractGeminiText } from '@/lib/gemini';
 
 async function getAuthUser(request: NextRequest) {
   // 1. Try Bearer token auth (mobile clients)
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice(7);
+  const token = extractBearerToken(request.headers.get('authorization'));
+  if (token) {
     const supabase = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -99,11 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-
-    // Extract text part (skip thinking parts)
-    const parts = data.candidates?.[0]?.content?.parts ?? [];
-    const textPart = parts.find((p: { text?: string; thought?: boolean }) => p.text && !p.thought);
-    const content = textPart?.text;
+    const content = extractGeminiText(data.candidates);
 
     if (!content) {
       console.error('No text content in response:', JSON.stringify(data.candidates?.[0]?.content));

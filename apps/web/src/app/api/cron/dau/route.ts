@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { extractBearerToken, getDayBoundaries, countDistinctUsers } from '@capsave/shared';
+import { generateDauNotificationHtml } from '@/lib/notifications';
 
 const DAU_THRESHOLD = 10;
 
@@ -9,10 +11,10 @@ const DAU_THRESHOLD = 10;
  * Requires CRON_SECRET env var for authentication.
  */
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
+  const token = extractBearerToken(request.headers.get('authorization'));
   const cronSecret = process.env.CRON_SECRET;
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || token !== cronSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -21,25 +23,22 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Count distinct users who created captures today
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const { start, end } = getDayBoundaries();
 
   const { data: captures } = await supabase
     .from('captures')
     .select('user_id')
-    .gte('created_at', today)
-    .lt('created_at', tomorrow)
+    .gte('created_at', start)
+    .lt('created_at', end)
     .not('user_id', 'is', null);
 
-  const distinctUsers = new Set(captures?.map((c) => c.user_id)).size;
+  const distinctUsers = countDistinctUsers(captures ?? []);
 
   // Upsert DAU via SQL function (analytics schema not accessible via JS client)
   await supabase.rpc('count_dau' as never);
 
   // Check milestone and notify
   if (distinctUsers >= DAU_THRESHOLD) {
-    // Check if already notified (use raw SQL via rpc)
     const { data: dauRow } = await supabase.rpc('check_dau_notified' as never);
     const alreadyNotified = dauRow as unknown as boolean;
 
@@ -58,17 +57,14 @@ export async function GET(request: NextRequest) {
             from: 'CapSave <noreply@capsave.app>',
             to: [ownerEmail],
             subject: `CapSave Phase 1 Validated — DAU ${distinctUsers} reached!`,
-            html: `<h2>Phase 1 Validation Gate Passed</h2>
-              <p>CapSave has reached <strong>${distinctUsers} daily active users</strong> today (${today}).</p>
-              <p>Time to move to Phase 2 growth features.</p>`,
+            html: generateDauNotificationHtml(distinctUsers, start),
           }),
         });
 
-        // Mark as notified
         await supabase.rpc('mark_dau_notified' as never);
       }
     }
   }
 
-  return NextResponse.json({ date: today, dau: distinctUsers });
+  return NextResponse.json({ date: start, dau: distinctUsers });
 }
