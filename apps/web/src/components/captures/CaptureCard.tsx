@@ -43,7 +43,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
           </div>
           <button
             onClick={handleDelete}
-            className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-text-tertiary hover:text-error transition-colors"
+            className="absolute top-2 right-2 w-11 h-11 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-text-tertiary hover:text-error transition-colors"
           >
             ✕
           </button>
@@ -97,7 +97,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                 href={link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-text-accent font-mono hover:underline truncate"
+                className="text-xs text-text-accent font-mono hover:underline truncate py-2 min-h-[44px] flex items-center"
               >
                 🔗 {link}
               </a>
