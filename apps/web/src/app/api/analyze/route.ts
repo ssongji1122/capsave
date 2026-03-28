@@ -3,6 +3,9 @@ import sharp from 'sharp';
 import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@capsave/shared';
 import { createClient } from '@/lib/supabase/server';
 import { extractGeminiText } from '@/lib/gemini';
+import { createRateLimiter } from '@/lib/rate-limit';
+
+const guestRateLimiter = createRateLimiter(5, 24 * 60 * 60 * 1000); // 5 requests per day
 
 async function getAuthUser(request: NextRequest) {
   // 1. Try Bearer token auth (mobile clients)
@@ -27,7 +30,11 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser(request);
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // Guest: apply rate limit
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+      if (!guestRateLimiter.isAllowed(ip)) {
+        return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
+      }
     }
 
     const formData = await request.formData();

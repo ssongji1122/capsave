@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/browser';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -25,7 +27,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
       } else {
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       }
     } else {
@@ -50,6 +52,17 @@ export default function LoginPage() {
         <h1 className="text-3xl font-extrabold text-primary text-center mb-2">CapSave</h1>
         <p className="text-text-secondary text-center text-sm mb-8">AI 캡처 오거나이저</p>
 
+        {/* OAuth buttons */}
+        <OAuthButtons />
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-text-tertiary text-xs">또는</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        {/* Email/password form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="email"
@@ -87,6 +100,13 @@ export default function LoginPage() {
         >
           {mode === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
         </button>
+
+        <Link
+          href="/"
+          className="block w-full mt-3 text-center text-sm text-text-tertiary hover:text-primary transition-colors"
+        >
+          ← 체험하기
+        </Link>
       </div>
     </div>
   );

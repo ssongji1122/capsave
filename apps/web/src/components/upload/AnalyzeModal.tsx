@@ -3,14 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { AnalysisResult, PlaceInfo } from '@capsave/shared';
+import { fileToBase64 } from '@/lib/image-utils';
 
 interface AnalyzeModalProps {
   file: File;
   onSave: (result: AnalysisResult, imageUrl: string) => void;
   onCancel: () => void;
+  isGuest?: boolean;
 }
 
-export function AnalyzeModal({ file, onSave, onCancel }: AnalyzeModalProps) {
+export function AnalyzeModal({ file, onSave, onCancel, isGuest = false }: AnalyzeModalProps) {
   const [status, setStatus] = useState<'analyzing' | 'done' | 'error'>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -28,12 +30,19 @@ export function AnalyzeModal({ file, onSave, onCancel }: AnalyzeModalProps) {
     try {
       setStatus('analyzing');
 
-      const uploadForm = new FormData();
-      uploadForm.append('file', file);
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-      if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-      const { url } = await uploadRes.json();
-      setImageUrl(url);
+      if (isGuest) {
+        // Guest: convert to base64 locally, skip upload
+        const base64 = await fileToBase64(file);
+        setImageUrl(base64);
+      } else {
+        // Authenticated: upload to Supabase Storage
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+        if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
+        const { url } = await uploadRes.json();
+        setImageUrl(url);
+      }
 
       const analyzeForm = new FormData();
       analyzeForm.append('file', file);

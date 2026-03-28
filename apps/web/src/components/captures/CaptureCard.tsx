@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CaptureItem, PlaceInfo } from '@capsave/shared';
+import { isDataUri } from '@/lib/image-utils';
 
 interface CaptureCardProps {
   item: CaptureItem;
@@ -31,14 +32,23 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
       {/* Image */}
       {item.imageUrl && (
         <div className="relative w-full h-44 bg-surface-elevated">
-          <Image
-            src={item.imageUrl}
-            alt={item.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading="eager"
-          />
+          {isDataUri(item.imageUrl) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt={item.title}
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <Image
+              src={item.imageUrl}
+              alt={item.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              loading="eager"
+            />
+          )}
           <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
             <span style={{ fontFamily: 'var(--font-label)' }}>{isPlace ? `장소 ${item.places.length}개` : '텍스트'}</span>
           </div>

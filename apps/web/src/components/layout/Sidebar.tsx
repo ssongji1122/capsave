@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
 
 const navItems = [
-  { href: '/', label: '홈', icon: '🏠', description: '전체 캡처' },
+  { href: '/dashboard', label: '홈', icon: '🏠', description: '전체 캡처' },
   { href: '/places', label: '장소', icon: '📍', description: '맛집·카페·여행지' },
   { href: '/texts', label: '텍스트', icon: '📝', description: 'AI·코드·레시피' },
   { href: '/map', label: '지도', icon: '🗺', description: '저장 장소 지도' },
