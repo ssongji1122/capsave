@@ -39,7 +39,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
-            {isPlace ? `📍 장소 ${item.places.length}개` : '📝 텍스트'}
+            {isPlace ? `장소 ${item.places.length}개` : '텍스트'}
           </div>
           <button
             onClick={handleDelete}
@@ -83,7 +83,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
               href={`/map?capture=${item.id}`}
               className="mt-3 block w-full py-2.5 rounded-xl bg-place-surface border border-place-border text-center text-sm font-semibold text-place-accent hover:bg-[rgba(52,211,153,0.15)] transition-colors"
             >
-              🗺 지도에서 보기
+              지도에서 보기
             </Link>
           </div>
         )}
@@ -99,7 +99,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                 rel="noopener noreferrer"
                 className="text-xs text-text-accent font-mono hover:underline truncate py-2 min-h-[44px] flex items-center"
               >
-                🔗 {link}
+                {link}
               </a>
             ))}
           </div>
