@@ -19,7 +19,9 @@ Analyze the image and respond with a JSON object containing:
   "extractedText": "이미지에서 추출한 모든 중요 텍스트 (한국어 원문 유지)",
   "links": ["장소와 관련 없는 일반 링크만. 장소별 링크는 places[].links에 넣을 것"],
   "tags": ["3-5개 한국어 태그"],
-  "source": "instagram" | "threads" | "naver" | "google" | "youtube" | "other"
+  "source": "instagram" | "threads" | "naver" | "google" | "youtube" | "other",
+  "confidence": 0.0 to 1.0,
+  "sourceAccountId": "@account_id or null
 }
 
 Rules:
@@ -29,5 +31,7 @@ Rules:
 - For "text" category: Set "places" to an empty array [].
 - For "links" (top-level): Only include links NOT specific to any place. Place-specific links go inside each place's "links" array.
 - For "source": Detect which app the screenshot is from based on UI elements (Instagram has specific UI, Threads, Naver Blog has 네이버 branding, etc.)
+- For "confidence": Return a float between 0.0 and 1.0 indicating how confident you are in the category classification. 1.0 = very confident, 0.0 = completely unsure. Be honest — if the image is blurry, ambiguous, or doesn't clearly fit either category, return a lower confidence.
+- For "sourceAccountId": If visible in the screenshot, extract the social media account ID or username (e.g., "@username", "user_handle"). Return null if not visible.
 - Respond ONLY with valid JSON. No markdown, no code fences, no extra text.
 - ALL text output MUST be in Korean.`;

@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
+import { UncertainQueue } from '@/components/captures/UncertainQueue';
 import { SearchBar } from '@/components/captures/SearchBar';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { CaptureItem, AnalysisResult } from '@capsave/shared';
+
+const CONFIDENCE_THRESHOLD = 0.5;
 
 export default function HomePage() {
   const { captures, isLoading, deleteCapture, searchCaptures, saveCapture } = useCaptures();
@@ -27,7 +30,22 @@ export default function HomePage() {
     setSelectedFile(null);
   };
 
+  const isSearching = displayCaptures !== null;
   const shown = displayCaptures ?? captures;
+
+  const { uncertain, confident } = useMemo(() => {
+    const uncertain: CaptureItem[] = [];
+    const confident: CaptureItem[] = [];
+    for (const c of shown) {
+      if (c.confidence !== null && c.confidence < CONFIDENCE_THRESHOLD) {
+        uncertain.push(c);
+      } else {
+        confident.push(c);
+      }
+    }
+    return { uncertain, confident };
+  }, [shown]);
+
   const placeCount = captures.filter((c) => c.category === 'place').length;
   const textCount = captures.filter((c) => c.category === 'text').length;
 
@@ -67,9 +85,17 @@ export default function HomePage() {
       {/* Search */}
       <SearchBar onSearch={handleSearch} />
 
+      {/* Uncertain queue */}
+      {uncertain.length > 0 && (
+        <UncertainQueue
+          captures={uncertain}
+          onDelete={deleteCapture}
+        />
+      )}
+
       {/* List */}
       <CaptureList
-        captures={shown}
+        captures={confident}
         isLoading={isLoading}
         onDelete={deleteCapture}
         emptyIcon="📸"

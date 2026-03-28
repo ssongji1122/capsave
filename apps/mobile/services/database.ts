@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { AnalysisResult, CaptureCategory } from './ai-analyzer';
+import { AnalysisResult, CaptureCategory, PlaceInfo } from './ai-analyzer';
 export type { CaptureCategory };
 
 interface CaptureRow {
@@ -9,11 +9,14 @@ interface CaptureRow {
   summary: string;
   place_name: string | null;
   address: string | null;
+  places: string | null;
   extracted_text: string;
   links: string;
   tags: string;
   source: string;
   image_uri: string;
+  confidence: number | null;
+  source_account_id: string | null;
   created_at: string;
 }
 
@@ -22,13 +25,14 @@ export interface CaptureItem {
   category: CaptureCategory;
   title: string;
   summary: string;
-  placeName: string | null;
-  address: string | null;
+  places: PlaceInfo[];
   extractedText: string;
   links: string[];
   tags: string[];
   source: string;
   imageUri: string;
+  confidence: number | null;
+  sourceAccountId: string | null;
   createdAt: string;
 }
 
@@ -36,9 +40,10 @@ let db: SQLite.SQLiteDatabase | null = null;
 
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (db) return db;
-  
+
   db = await SQLite.openDatabaseAsync('capsave.db');
-  
+
+  // Create table if not exists (original schema)
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS captures (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,6 +61,22 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
     );
   `);
 
+  // Migration: add new Phase 2 columns
+  const columns = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(captures)"
+  );
+  const columnNames = new Set(columns.map(c => c.name));
+
+  if (!columnNames.has('places')) {
+    await db.execAsync("ALTER TABLE captures ADD COLUMN places TEXT DEFAULT NULL");
+  }
+  if (!columnNames.has('confidence')) {
+    await db.execAsync("ALTER TABLE captures ADD COLUMN confidence REAL DEFAULT NULL");
+  }
+  if (!columnNames.has('source_account_id')) {
+    await db.execAsync("ALTER TABLE captures ADD COLUMN source_account_id TEXT DEFAULT NULL");
+  }
+
   return db;
 }
 
@@ -65,20 +86,26 @@ export async function saveCapture(
 ): Promise<number> {
   const database = await getDatabase();
 
+  // Derive place_name/address from first place for backward compat
+  const firstPlace = analysis.places[0];
+
   const result = await database.runAsync(
-    `INSERT INTO captures (category, title, summary, place_name, address, extracted_text, links, tags, source, image_uri)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO captures (category, title, summary, place_name, address, places, extracted_text, links, tags, source, image_uri, confidence, source_account_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       analysis.category,
       analysis.title,
       analysis.summary,
-      analysis.placeName || null,
-      analysis.address || null,
+      firstPlace?.name || null,
+      firstPlace?.address || null,
+      JSON.stringify(analysis.places),
       analysis.extractedText,
       JSON.stringify(analysis.links),
       JSON.stringify(analysis.tags),
       analysis.source,
       imageUri,
+      analysis.confidence,
+      analysis.sourceAccountId,
     ]
   );
 
@@ -110,10 +137,10 @@ export async function searchCaptures(query: string): Promise<CaptureItem[]> {
   const database = await getDatabase();
   const searchTerm = `%${query}%`;
   const rows = await database.getAllAsync<CaptureRow>(
-    `SELECT * FROM captures 
-     WHERE title LIKE ? OR summary LIKE ? OR extracted_text LIKE ? OR place_name LIKE ? OR tags LIKE ?
+    `SELECT * FROM captures
+     WHERE title LIKE ? OR summary LIKE ? OR extracted_text LIKE ? OR place_name LIKE ? OR tags LIKE ? OR places LIKE ?
      ORDER BY created_at DESC`,
-    [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]
+    [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]
   );
 
   return rows.map(mapRowToCapture);
@@ -134,18 +161,27 @@ export async function getCaptureById(id: number): Promise<CaptureItem | null> {
 }
 
 function mapRowToCapture(row: CaptureRow): CaptureItem {
+  // Parse places from JSONB column, fall back to legacy place_name/address
+  let places: PlaceInfo[] = [];
+  if (row.places) {
+    places = safeJsonParse(row.places, []);
+  } else if (row.place_name) {
+    places = [{ name: row.place_name, ...(row.address && { address: row.address }) }];
+  }
+
   return {
     id: row.id,
     category: row.category as CaptureCategory,
     title: row.title,
     summary: row.summary,
-    placeName: row.place_name,
-    address: row.address,
+    places,
     extractedText: row.extracted_text,
     links: safeJsonParse(row.links, []),
     tags: safeJsonParse(row.tags, []),
     source: row.source,
     imageUri: row.image_uri,
+    confidence: row.confidence,
+    sourceAccountId: row.source_account_id,
     createdAt: row.created_at,
   };
 }

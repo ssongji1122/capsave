@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory } from '../types/capture';
+import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory, PlaceInfo } from '../types/capture';
 import { mapRowToCapture } from './mappers';
 
 export async function getAllCaptures(client: SupabaseClient): Promise<CaptureItem[]> {
@@ -46,21 +46,30 @@ export async function searchCaptures(
 export async function saveCapture(
   client: SupabaseClient,
   analysis: AnalysisResult,
-  imageUrl: string
+  imageUrl: string,
+  userId?: string
 ): Promise<CaptureItem> {
+  const insertData: Record<string, unknown> = {
+    category: analysis.category,
+    title: analysis.title,
+    summary: analysis.summary,
+    places: analysis.places,
+    extracted_text: analysis.extractedText,
+    links: analysis.links,
+    tags: analysis.tags,
+    source: analysis.source,
+    image_url: imageUrl,
+    confidence: analysis.confidence,
+    source_account_id: analysis.sourceAccountId,
+  };
+
+  if (userId) {
+    insertData.user_id = userId;
+  }
+
   const { data, error } = await client
     .from('captures')
-    .insert({
-      category: analysis.category,
-      title: analysis.title,
-      summary: analysis.summary,
-      places: analysis.places,
-      extracted_text: analysis.extractedText,
-      links: analysis.links,
-      tags: analysis.tags,
-      source: analysis.source,
-      image_url: imageUrl,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -91,4 +100,54 @@ export async function getCaptureById(
     throw error;
   }
   return mapRowToCapture(data as CaptureRow);
+}
+
+export async function updateCapturePlaces(
+  client: SupabaseClient,
+  id: number,
+  places: PlaceInfo[]
+): Promise<CaptureItem> {
+  const { data, error } = await client
+    .from('captures')
+    .update({ places })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapRowToCapture(data as CaptureRow);
+}
+
+export async function reclassifyCapture(
+  client: SupabaseClient,
+  id: number,
+  category: CaptureCategory,
+  places: PlaceInfo[] | null
+): Promise<CaptureItem> {
+  const { data, error } = await client
+    .from('captures')
+    .update({
+      category,
+      places: places ?? [],
+      confidence: 1.0,
+      reclassified_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapRowToCapture(data as CaptureRow);
+}
+
+export async function softDeleteCapture(
+  client: SupabaseClient,
+  id: number
+): Promise<void> {
+  const { error } = await client
+    .from('captures')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw error;
 }

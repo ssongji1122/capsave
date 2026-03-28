@@ -21,6 +21,10 @@ export function parseAnalysisResult(content: string): AnalysisResult {
     places = [{ name: result.placeName, ...(result.address && { address: result.address }) }];
   }
 
+  // Clamp confidence to 0.0–1.0 (guard against model drift)
+  const rawConfidence = typeof result.confidence === 'number' ? result.confidence : 1.0;
+  const confidence = Math.max(0, Math.min(1, rawConfidence));
+
   return {
     category: result.category === 'place' ? 'place' : 'text',
     title: result.title || '제목 없음',
@@ -30,5 +34,7 @@ export function parseAnalysisResult(content: string): AnalysisResult {
     links: Array.isArray(result.links) ? result.links : [],
     tags: Array.isArray(result.tags) ? result.tags : [],
     source: result.source || 'other',
+    confidence,
+    sourceAccountId: typeof result.sourceAccountId === 'string' ? result.sourceAccountId : null,
   };
 }

@@ -19,6 +19,8 @@ export interface AnalysisResult {
   links: string[];
   tags: string[];
   source: SourceApp;
+  confidence: number;
+  sourceAccountId: string | null;
 }
 
 export interface CaptureItem {
@@ -33,6 +35,11 @@ export interface CaptureItem {
   source: string;
   imageUrl: string;
   createdAt: string;
+  userId: string | null;
+  confidence: number | null;
+  reclassifiedAt: string | null;
+  deletedAt: string | null;
+  sourceAccountId: string | null;
 }
 
 export interface CaptureRow {
@@ -47,6 +54,11 @@ export interface CaptureRow {
   source: string;
   image_url: string;
   created_at: string;
+  user_id: string | null;
+  confidence: number | null;
+  reclassified_at: string | null;
+  deleted_at: string | null;
+  source_account_id: string | null;
 }
 
 export interface ImageAnalyzer {

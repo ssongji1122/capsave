@@ -20,6 +20,7 @@ export type { MapProvider, MapLink } from './utils/map-linker';
 export { safeJsonParse } from './utils/json';
 
 // AI
+export { AI_MODEL, AI_MODEL_ENDPOINT } from './ai/config';
 export { SYSTEM_PROMPT } from './ai/prompts';
 export { parseAnalysisResult } from './ai/parse-result';
 
@@ -32,5 +33,8 @@ export {
   saveCapture,
   deleteCapture,
   getCaptureById,
+  updateCapturePlaces,
+  reclassifyCapture,
+  softDeleteCapture,
 } from './supabase/queries';
 export { mapRowToCapture, mapCaptureToRow } from './supabase/mappers';

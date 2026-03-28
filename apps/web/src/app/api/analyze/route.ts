@@ -1,14 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { SYSTEM_PROMPT, parseAnalysisResult } from '@capsave/shared';
+import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient } from '@capsave/shared';
+import { createClient } from '@/lib/supabase/server';
+
+async function getAuthUser(request: NextRequest) {
+  // 1. Try Bearer token auth (mobile clients)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await supabase.auth.getUser(token);
+    return user;
+  }
+
+  // 2. Try cookie-based auth (web clients)
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser(request);
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // Enforce 1MB size limit (CEO plan: server rejects > 1MB)
+    if (file.size > 1_048_576) {
+      return NextResponse.json({ error: 'Image exceeds 1MB limit' }, { status: 413 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -25,9 +56,8 @@ export async function POST(request: NextRequest) {
 
     const base64Image = resized.toString('base64');
 
-    // Call Gemini Vision API (2.5-flash with thinking disabled for structured output)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `${AI_MODEL_ENDPOINT}?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

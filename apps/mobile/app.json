@@ -46,7 +46,9 @@
       "typedRoutes": true
     },
     "extra": {
-      "openaiApiKey": "${OPENAI_API_KEY}"
+      "openaiApiKey": "${OPENAI_API_KEY}",
+      "serverUrl": "${CAPSAVE_SERVER_URL}",
+      "aiProvider": "${AI_PROVIDER}"
     }
   }
 }

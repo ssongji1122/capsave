@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/browser';
 
 const navItems = [
   { href: '/', label: '홈', icon: '🏠', description: '전체 캡처' },
@@ -12,6 +13,14 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <>
@@ -43,6 +52,25 @@ export function Sidebar() {
             );
           })}
         </nav>
+        <div className="p-3 border-t border-border space-y-1">
+          <Link
+            href="/settings"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+              pathname.startsWith('/settings')
+                ? 'bg-surface-elevated text-primary'
+                : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
+            }`}
+          >
+            <span className="text-lg">⚙️</span>
+            <span className="font-semibold text-sm">설정</span>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-3 rounded-xl text-text-tertiary hover:bg-surface-elevated hover:text-text-secondary text-sm font-medium text-left transition-colors"
+          >
+            로그아웃
+          </button>
+        </div>
       </aside>
 
       {/* Mobile bottom tab bar */}

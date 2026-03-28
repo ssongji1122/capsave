@@ -13,6 +13,11 @@ export function mapRowToCapture(row: CaptureRow): CaptureItem {
     source: row.source,
     imageUrl: row.image_url,
     createdAt: row.created_at,
+    userId: row.user_id,
+    confidence: row.confidence,
+    reclassifiedAt: row.reclassified_at,
+    deletedAt: row.deleted_at,
+    sourceAccountId: row.source_account_id,
   };
 }
 
@@ -27,5 +32,10 @@ export function mapCaptureToRow(item: Partial<CaptureItem>): Record<string, unkn
   if (item.tags !== undefined) row.tags = item.tags;
   if (item.source !== undefined) row.source = item.source;
   if (item.imageUrl !== undefined) row.image_url = item.imageUrl;
+  if (item.userId !== undefined) row.user_id = item.userId;
+  if (item.confidence !== undefined) row.confidence = item.confidence;
+  if (item.reclassifiedAt !== undefined) row.reclassified_at = item.reclassifiedAt;
+  if (item.deletedAt !== undefined) row.deleted_at = item.deletedAt;
+  if (item.sourceAccountId !== undefined) row.source_account_id = item.sourceAccountId;
   return row;
 }

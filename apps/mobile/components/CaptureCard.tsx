@@ -96,32 +96,36 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
         </Text>
       ) : null}
 
-      {/* Place Actions */}
-      {isPlace && item.placeName && (
+      {/* Places */}
+      {isPlace && item.places.length > 0 && (
         <View style={styles.placeSection}>
-          <View style={[styles.placeInfo, { backgroundColor: surfaceColor }]}>
-            <Ionicons name="pin" size={14} color={accentColor} />
-            <Text style={[styles.placeName, { color: colors.text }]} numberOfLines={1}>
-              {item.placeName}
-            </Text>
-          </View>
-          {item.address && (
-            <Text style={[styles.addressText, { color: colors.textSecondary }]} numberOfLines={1}>
-              {item.address}
-            </Text>
-          )}
-          <View style={styles.mapButtons}>
-            {getMapLinks(item.placeName, item.address).map((link) => (
-              <TouchableOpacity
-                key={link.provider}
-                style={[styles.mapButton, { borderColor }]}
-                onPress={() => openMap(link.provider, item.placeName!, item.address)}
-              >
-                <Text style={styles.mapEmoji}>{link.emoji}</Text>
-                <Text style={[styles.mapLabel, { color: colors.text }]}>{link.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {item.places.map((place, idx) => (
+            <View key={idx} style={{ marginBottom: idx < item.places.length - 1 ? 10 : 0 }}>
+              <View style={[styles.placeInfo, { backgroundColor: surfaceColor }]}>
+                <Ionicons name="pin" size={14} color={accentColor} />
+                <Text style={[styles.placeName, { color: colors.text }]} numberOfLines={1}>
+                  {place.name}
+                </Text>
+              </View>
+              {place.address && (
+                <Text style={[styles.addressText, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {place.address}
+                </Text>
+              )}
+              <View style={styles.mapButtons}>
+                {getMapLinks(place.name, place.address).map((link) => (
+                  <TouchableOpacity
+                    key={link.provider}
+                    style={[styles.mapButton, { borderColor }]}
+                    onPress={() => openMap(link.provider, place.name, place.address)}
+                  >
+                    <Text style={styles.mapEmoji}>{link.emoji}</Text>
+                    <Text style={[styles.mapLabel, { color: colors.text }]}>{link.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
         </View>
       )}
 

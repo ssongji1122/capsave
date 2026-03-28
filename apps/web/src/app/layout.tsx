@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { CapturesProvider } from '@/contexts/CapturesContext';
-import { Sidebar } from '@/components/layout/Sidebar';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -29,14 +27,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <CapturesProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 lg:ml-60">
-              {children}
-            </main>
-          </div>
-        </CapturesProvider>
+        {children}
       </body>
     </html>
   );

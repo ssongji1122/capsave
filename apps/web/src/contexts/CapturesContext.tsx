@@ -3,22 +3,17 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import {
   CaptureItem,
+  CaptureRow,
   CaptureCategory,
   AnalysisResult,
-  createSupabaseClient,
   getAllCaptures,
   getCapturesByCategory as getCapturesByCategoryQuery,
   searchCaptures as searchCapturesQuery,
   saveCapture as saveCaptureQuery,
   deleteCapture as deleteCaptureQuery,
+  mapRowToCapture,
 } from '@capsave/shared';
-
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return { url, key };
-}
+import { createClient } from '@/lib/supabase/browser';
 
 interface CapturesContextValue {
   captures: CaptureItem[];
@@ -35,14 +30,16 @@ const CapturesContext = createContext<CapturesContextValue | null>(null);
 export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [client] = useState(() => {
-    const config = getSupabaseConfig();
-    if (!config) return null;
-    return createSupabaseClient(config.url, config.key);
-  });
+  const [client] = useState(() => createClient());
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    client.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null);
+    });
+  }, [client]);
 
   const refresh = useCallback(async () => {
-    if (!client) { setIsLoading(false); return; }
     try {
       setIsLoading(true);
       const items = await getAllCaptures(client);
@@ -58,27 +55,63 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  // Realtime subscription — INSERT / UPDATE / DELETE
+  useEffect(() => {
+    const channel = client
+      .channel('captures-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'captures' },
+        (payload) => {
+          const newItem = mapRowToCapture(payload.new as CaptureRow);
+          setCaptures((prev) => {
+            if (prev.some((c) => c.id === newItem.id)) return prev;
+            return [newItem, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'captures' },
+        (payload) => {
+          const updated = mapRowToCapture(payload.new as CaptureRow);
+          setCaptures((prev) =>
+            prev.map((c) => (c.id === updated.id ? updated : c))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'captures' },
+        (payload) => {
+          const deletedId = (payload.old as { id: number }).id;
+          setCaptures((prev) => prev.filter((c) => c.id !== deletedId));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [client]);
+
   const handleDelete = useCallback(async (id: number) => {
-    if (!client) return;
     await deleteCaptureQuery(client, id);
     setCaptures((prev) => prev.filter((c) => c.id !== id));
   }, [client]);
 
   const handleSearch = useCallback(async (query: string) => {
-    if (!client) return [];
     return searchCapturesQuery(client, query);
   }, [client]);
 
   const handleGetByCategory = useCallback(async (category: CaptureCategory) => {
-    if (!client) return [];
     return getCapturesByCategoryQuery(client, category);
   }, [client]);
 
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
-    if (!client) return;
-    const newCapture = await saveCaptureQuery(client, result, imageUrl);
+    const newCapture = await saveCaptureQuery(client, result, imageUrl, userId ?? undefined);
     setCaptures((prev) => [newCapture, ...prev]);
-  }, [client]);
+  }, [client, userId]);
 
   return (
     <CapturesContext.Provider

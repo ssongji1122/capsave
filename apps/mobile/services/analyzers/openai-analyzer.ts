@@ -5,28 +5,39 @@ import { AnalysisResult, ImageAnalyzer } from './types';
 
 const SYSTEM_PROMPT = `You are an AI assistant that analyzes screenshots from mobile apps.
 Your job is to extract structured information from the screenshot.
+IMPORTANT: All text fields MUST be written in Korean (한국어).
 
 Analyze the image and respond with a JSON object containing:
 
 {
   "category": "place" or "text",
-  "title": "A concise title describing the main content",
-  "summary": "A 1-2 sentence summary of the key information",
-  "placeName": "Name of the place/restaurant/cafe if it's a location (null if not)",
-  "address": "Full address if visible (null if not)",
-  "extractedText": "All important text content extracted from the image",
-  "links": ["Any URLs visible in the image, or relevant search URLs you can construct"],
-  "tags": ["3-5 relevant tags for categorization"],
-  "source": "instagram" | "threads" | "naver" | "google" | "youtube" | "other"
+  "title": "핵심 내용을 요약한 간결한 한국어 제목",
+  "summary": "주요 정보를 1-2문장으로 한국어 요약",
+  "places": [
+    {
+      "name": "장소 이름",
+      "address": "주소 (없으면 생략)",
+      "date": "일정/날짜 (없으면 생략)",
+      "links": ["해당 장소에 대한 검색/참고 URL"]
+    }
+  ],
+  "extractedText": "이미지에서 추출한 모든 중요 텍스트 (한국어 원문 유지)",
+  "links": ["장소와 관련 없는 일반 링크만"],
+  "tags": ["3-5개 한국어 태그"],
+  "source": "instagram" | "threads" | "naver" | "google" | "youtube" | "other",
+  "confidence": 0.0 to 1.0,
+  "sourceAccountId": "@account_id or null
 }
 
 Rules:
 - If the screenshot contains a restaurant, cafe, hotel, tourist spot, or any physical location → category = "place"
 - If it contains AI tips, code, articles, recipes, product info, or general text → category = "text"
-- For "place" category: Always try to extract the place name and address. If the address is not visible, leave it null but still set category to "place".
-- For "links": If no URLs are visible, construct useful search URLs (e.g., Google search for the topic, Naver search for Korean places).
-- For "source": Detect which app the screenshot is from based on UI elements (Instagram has specific UI, Threads, Naver Blog has 네이버 branding, etc.)
-- Respond ONLY with valid JSON. No markdown, no code fences, no extra text.`;
+- For "place" category: Extract ALL places into the "places" array.
+- For "text" category: Set "places" to an empty array [].
+- For "confidence": Float 0.0–1.0 indicating classification confidence.
+- For "sourceAccountId": Extract visible social media account ID. null if not visible.
+- Respond ONLY with valid JSON. No markdown, no code fences, no extra text.
+- ALL text output MUST be in Korean.`;
 
 export class OpenAIAnalyzer implements ImageAnalyzer {
   private apiKey: string;
@@ -40,7 +51,6 @@ export class OpenAIAnalyzer implements ImageAnalyzer {
   }
 
   async analyze(imageUri: string): Promise<AnalysisResult> {
-    // Resize image to reduce memory and bandwidth
     const manipulated = await ImageManipulator.manipulateAsync(
       imageUri,
       [{ resize: { width: 1024 } }],
@@ -60,28 +70,19 @@ export class OpenAIAnalyzer implements ImageAnalyzer {
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT,
-          },
+          { role: 'system', content: SYSTEM_PROMPT },
           {
             role: 'user',
             content: [
-              {
-                type: 'text',
-                text: 'Analyze this screenshot and extract structured information.',
-              },
+              { type: 'text', text: 'Analyze this screenshot and extract structured information.' },
               {
                 type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high',
-                },
+                image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: 'high' },
               },
             ],
           },
         ],
-        max_tokens: 1000,
+        max_tokens: 2048,
         temperature: 0.1,
       }),
     });
@@ -98,29 +99,24 @@ export class OpenAIAnalyzer implements ImageAnalyzer {
       throw new Error('AI 분석 결과가 비어있습니다.');
     }
 
-    try {
-      // Clean potential markdown code fences
-      const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const result: AnalysisResult = JSON.parse(cleaned);
+    const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const result = JSON.parse(cleaned);
 
-      // Validate required fields
-      if (!result.category || !result.title) {
-        throw new Error('필수 필드가 누락되었습니다.');
-      }
-
-      return {
-        category: result.category === 'place' ? 'place' : 'text',
-        title: result.title || '제목 없음',
-        summary: result.summary || '',
-        placeName: result.placeName || undefined,
-        address: result.address || undefined,
-        extractedText: result.extractedText || '',
-        links: Array.isArray(result.links) ? result.links : [],
-        tags: Array.isArray(result.tags) ? result.tags : [],
-        source: result.source || 'other',
-      };
-    } catch (parseError) {
-      throw new Error(`AI 결과 파싱 실패: ${content.substring(0, 200)}`);
+    if (!result.category || !result.title) {
+      throw new Error('필수 필드가 누락되었습니다.');
     }
+
+    return {
+      category: result.category === 'place' ? 'place' : 'text',
+      title: result.title || '제목 없음',
+      summary: result.summary || '',
+      places: Array.isArray(result.places) ? result.places.filter((p: { name?: string }) => p.name) : [],
+      extractedText: result.extractedText || '',
+      links: Array.isArray(result.links) ? result.links : [],
+      tags: Array.isArray(result.tags) ? result.tags : [],
+      source: result.source || 'other',
+      confidence: typeof result.confidence === 'number' ? Math.max(0, Math.min(1, result.confidence)) : 1.0,
+      sourceAccountId: typeof result.sourceAccountId === 'string' ? result.sourceAccountId : null,
+    };
   }
 }
