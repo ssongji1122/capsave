@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAnalysisResult } from '../ai/parse-result';
+import { parseAnalysisResult, parseBatchAnalysisResult } from '../ai/parse-result';
 
 describe('parseAnalysisResult', () => {
   it('parses a valid place result with places array', () => {
@@ -185,5 +185,56 @@ describe('parseAnalysisResult', () => {
     const input = JSON.stringify({ category: 'text', title: 'Test', relatedSearchTerms: 42 });
     const result = parseAnalysisResult(input);
     expect(result.relatedSearchTerms).toBeUndefined();
+  });
+});
+
+describe('tryParseJSON — truncated JSON recovery', () => {
+  it('recovers when trailing value is truncated mid-string', () => {
+    // Simulates AI output cut off: summary value never closed
+    const truncated = '{"category":"text","title":"AI 뉴스","summary":"Anthropic이 새로운 모델을 발';
+    const result = parseAnalysisResult(truncated);
+    expect(result.category).toBe('text');
+    expect(result.title).toBe('AI 뉴스');
+  });
+
+  it('recovers when trailing key-value pair is incomplete', () => {
+    const truncated = '{"category":"place","title":"벚꽃 축제","tags":["봄","축제"],"summary":"전국 벚꽃 축제 일정을 정리한 이미지입니다","extractedText":"진해군항제 2026.03.27';
+    const result = parseAnalysisResult(truncated);
+    expect(result.category).toBe('place');
+    expect(result.title).toBe('벚꽃 축제');
+    expect(result.tags).toEqual(['봄', '축제']);
+  });
+
+  it('recovers batch array truncated after first complete item', () => {
+    const truncated = '[{"category":"text","title":"Item 1","summary":"first"},{"category":"text","title":"Item 2","summary":"second is cut o';
+    const results = parseBatchAnalysisResult(truncated);
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results[0].title).toBe('Item 1');
+  });
+
+  it('recovers when object inside array is truncated', () => {
+    const truncated = '[{"category":"place","title":"장소1","summary":"ok"},{"category":"place","title":"장소2","summary":"trun';
+    const results = parseBatchAnalysisResult(truncated);
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results[0].title).toBe('장소1');
+  });
+
+  it('recovers when nested places array is truncated', () => {
+    const truncated = '{"category":"place","title":"축제 모음","places":[{"name":"진해군항제"},{"name":"여의도 벚꽃축제","date":"2026.04.03';
+    const result = parseAnalysisResult(truncated);
+    expect(result.title).toBe('축제 모음');
+    expect(result.places.length).toBeGreaterThanOrEqual(1);
+    expect(result.places[0].name).toBe('진해군항제');
+  });
+
+  it('still throws for completely unparseable content', () => {
+    expect(() => parseAnalysisResult('이것은 JSON이 아닙니다')).toThrow();
+  });
+
+  it('passes through valid JSON unchanged', () => {
+    const valid = '{"category":"text","title":"Valid","summary":"ok","tags":["a"]}';
+    const result = parseAnalysisResult(valid);
+    expect(result.title).toBe('Valid');
+    expect(result.tags).toEqual(['a']);
   });
 });

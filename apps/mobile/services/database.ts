@@ -186,6 +186,49 @@ function mapRowToCapture(row: CaptureRow): CaptureItem {
   };
 }
 
+/** Replace all cached captures with fresh server data */
+export async function replaceAllCaptures(captures: CaptureItem[]): Promise<void> {
+  const database = await getDatabase();
+  await database.execAsync('DELETE FROM captures');
+  for (const c of captures) {
+    const firstPlace = c.places[0];
+    await database.runAsync(
+      `INSERT INTO captures (id, category, title, summary, place_name, address, places, extracted_text, links, tags, source, image_uri, confidence, source_account_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        c.id,
+        c.category,
+        c.title,
+        c.summary,
+        firstPlace?.name || null,
+        firstPlace?.address || null,
+        JSON.stringify(c.places),
+        c.extractedText,
+        JSON.stringify(c.links),
+        JSON.stringify(c.tags),
+        c.source,
+        c.imageUri,
+        c.confidence,
+        c.sourceAccountId,
+        c.createdAt,
+      ]
+    );
+  }
+}
+
+/** Clear all cached captures */
+export async function clearAllCaptures(): Promise<void> {
+  const database = await getDatabase();
+  await database.execAsync('DELETE FROM captures');
+}
+
+/** Get count of local captures (for migration check) */
+export async function getLocalCaptureCount(): Promise<number> {
+  const database = await getDatabase();
+  const row = await database.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM captures');
+  return row?.count ?? 0;
+}
+
 function safeJsonParse<T>(value: string, fallback: T): T {
   try {
     return JSON.parse(value);

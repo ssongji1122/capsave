@@ -1,16 +1,28 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Alert } from 'react-native';
 import {
   CaptureItem,
-  getAllCaptures,
+  getAllCaptures as getCachedCaptures,
+  replaceAllCaptures,
   deleteCapture as dbDeleteCapture,
   searchCaptures as dbSearchCaptures,
+  saveCapture as dbSaveCapture,
 } from '@/services/database';
-import { CaptureCategory } from '@/services/ai-analyzer';
+import { CaptureCategory, AnalysisResult } from '@/services/ai-analyzer';
+import { useAuth } from './AuthContext';
+import { supabase } from '@/services/supabase';
+import {
+  getAllCaptures as supaGetAll,
+  saveCapture as supaSave,
+  deleteCapture as supaDelete,
+  mapRowToCapture,
+} from '@scrave/shared';
 
 interface CapturesContextValue {
   captures: CaptureItem[];
   isLoading: boolean;
   refresh: () => Promise<void>;
+  saveCapture: (analysis: AnalysisResult, imageUrl: string) => Promise<void>;
   deleteCapture: (id: number) => Promise<void>;
   searchCaptures: (query: string) => Promise<CaptureItem[]>;
   getCapturesByCategory: (category: CaptureCategory) => CaptureItem[];
@@ -18,29 +30,105 @@ interface CapturesContextValue {
 
 const CapturesContext = createContext<CapturesContextValue | null>(null);
 
+/** Map shared CaptureItem to mobile CaptureItem (imageUrl → imageUri) */
+function toMobileCapture(item: ReturnType<typeof mapRowToCapture>): CaptureItem {
+  return {
+    id: item.id,
+    category: item.category as CaptureCategory,
+    title: item.title,
+    summary: item.summary,
+    places: item.places,
+    extractedText: item.extractedText,
+    links: item.links,
+    tags: item.tags,
+    source: item.source,
+    imageUri: item.imageUrl,
+    confidence: item.confidence,
+    sourceAccountId: item.sourceAccountId,
+    createdAt: item.createdAt,
+  };
+}
+
 export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { session } = useAuth();
 
   const refresh = useCallback(async () => {
     try {
-      const items = await getAllCaptures();
-      setCaptures(items);
+      setIsLoading(true);
+
+      // 1. Load cache immediately
+      const cached = await getCachedCaptures();
+      if (cached.length > 0) {
+        setCaptures(cached);
+        setIsLoading(false);
+      }
+
+      // 2. Fetch from Supabase if authenticated
+      if (session) {
+        const serverItems = await supaGetAll(supabase);
+        const mobileItems = serverItems.map(toMobileCapture);
+        setCaptures(mobileItems);
+        await replaceAllCaptures(mobileItems);
+      }
     } catch (error) {
       console.error('Failed to load captures:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
+  const saveCapture = useCallback(async (analysis: AnalysisResult, imageUrl: string) => {
+    if (!session) {
+      // Fallback to local-only save
+      const id = await dbSaveCapture(analysis, imageUrl);
+      const newItem: CaptureItem = {
+        id,
+        category: analysis.category as CaptureCategory,
+        title: analysis.title,
+        summary: analysis.summary,
+        places: analysis.places,
+        extractedText: analysis.extractedText,
+        links: analysis.links,
+        tags: analysis.tags,
+        source: analysis.source,
+        imageUri: imageUrl,
+        confidence: analysis.confidence,
+        sourceAccountId: analysis.sourceAccountId,
+        createdAt: new Date().toISOString(),
+      };
+      setCaptures((prev) => [newItem, ...prev]);
+      return;
+    }
+
+    try {
+      const saved = await supaSave(supabase, analysis, imageUrl, session.user.id);
+      const mobileItem = toMobileCapture(saved);
+      await dbSaveCapture(analysis, imageUrl);
+      setCaptures((prev) => [mobileItem, ...prev]);
+    } catch (error) {
+      Alert.alert('저장 실패', '인터넷 연결을 확인해주세요.');
+      throw error;
+    }
+  }, [session]);
+
   const deleteCapture = useCallback(async (id: number) => {
+    if (session) {
+      try {
+        await supaDelete(supabase, id);
+      } catch (error) {
+        Alert.alert('삭제 실패', '인터넷 연결을 확인해주세요.');
+        return;
+      }
+    }
     await dbDeleteCapture(id);
     setCaptures((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+  }, [session]);
 
   const searchCaptures = useCallback(async (query: string): Promise<CaptureItem[]> => {
     if (!query) return captures;
@@ -56,7 +144,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CapturesContext.Provider
-      value={{ captures, isLoading, refresh, deleteCapture, searchCaptures, getCapturesByCategory }}
+      value={{ captures, isLoading, refresh, saveCapture, deleteCapture, searchCaptures, getCapturesByCategory }}
     >
       {children}
     </CapturesContext.Provider>

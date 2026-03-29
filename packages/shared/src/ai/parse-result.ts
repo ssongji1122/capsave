@@ -47,24 +47,48 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
   };
 }
 
-/** Try to repair truncated JSON by closing open brackets/braces */
+/** Build closing sequence by scanning open brackets/braces in order */
+function buildClosingSequence(s: string): string {
+  const stack: string[] = [];
+  let inString = false;
+  let escape = false;
+  for (const ch of s) {
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') stack.push('}');
+    else if (ch === '[') stack.push(']');
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  return stack.reverse().join('');
+}
+
+/** Try to repair truncated JSON by progressively trimming and closing brackets */
 function tryParseJSON(raw: string): unknown {
   try {
     return JSON.parse(raw);
   } catch {
-    // Attempt to repair truncated JSON
     let repaired = raw;
-    // Remove trailing incomplete key-value (e.g. `"key": "unterminated...`)
-    repaired = repaired.replace(/,\s*"[^"]*"?\s*:\s*"?[^"]*$/, '');
-    repaired = repaired.replace(/,\s*\{[^}]*$/, '');
-    // Close any open brackets
-    const opens = (repaired.match(/\[/g) || []).length;
-    const closes = (repaired.match(/\]/g) || []).length;
-    const openBraces = (repaired.match(/\{/g) || []).length;
-    const closeBraces = (repaired.match(/\}/g) || []).length;
-    for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
-    for (let i = 0; i < opens - closes; i++) repaired += ']';
-    return JSON.parse(repaired);
+    for (let attempt = 0; attempt < 15; attempt++) {
+      // Close any unterminated string
+      const quotes = (repaired.match(/(?<!\\)"/g) || []).length;
+      if (quotes % 2 !== 0) repaired += '"';
+      // Remove trailing incomplete key-value or object
+      repaired = repaired.replace(/,\s*"[^"]*"\s*:\s*"[^"]*"?\s*$/, '');
+      repaired = repaired.replace(/,\s*\{[^}]*$/, '');
+      repaired = repaired.replace(/,\s*$/, '');
+      // Close open brackets/braces in correct nesting order
+      const candidate = repaired + buildClosingSequence(repaired);
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // Trim one more trailing token and retry
+        repaired = repaired.replace(/[,\s]*"?[^,\[\]{}]*$/, '');
+        if (!repaired.trim()) break;
+      }
+    }
+    return JSON.parse(raw);
   }
 }
 

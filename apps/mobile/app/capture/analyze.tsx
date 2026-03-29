@@ -16,9 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { analyzeImage, AnalysisResult, PlaceInfo } from '@/services/ai-analyzer';
-import { saveCapture } from '@/services/database';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { supabase } from '@/services/supabase';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
 
@@ -27,7 +27,7 @@ export default function AnalyzeScreen() {
   const colors = Colors[colorScheme];
   const router = useRouter();
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
-  const { refresh } = useCaptures();
+  const { refresh, saveCapture } = useCaptures();
 
   const [status, setStatus] = useState<AnalyzeStatus>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -71,7 +71,11 @@ export default function AnalyzeScreen() {
     isAnalyzing.current = true;
     setStatus('analyzing');
     try {
-      const analysisResult = await analyzeImage(imageUri!);
+      const getToken = async () => {
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+      };
+      const analysisResult = await analyzeImage(imageUri!, getToken);
       setResult(analysisResult);
       setStatus('done');
     } catch (error) {
