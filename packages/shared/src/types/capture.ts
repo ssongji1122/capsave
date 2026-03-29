@@ -21,6 +21,8 @@ export interface AnalysisResult {
   source: SourceApp;
   confidence: number;
   sourceAccountId: string | null;
+  keyInsights?: string[];
+  relatedSearchTerms?: string[];
 }
 
 export interface CaptureItem {
@@ -40,6 +42,8 @@ export interface CaptureItem {
   reclassifiedAt: string | null;
   deletedAt: string | null;
   sourceAccountId: string | null;
+  keyInsights?: string[];
+  relatedSearchTerms?: string[];
 }
 
 export interface CaptureRow {

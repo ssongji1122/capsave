@@ -10,6 +10,9 @@ export interface GuestCapture {
   tags: string[];
   places: PlaceInfo[];
   createdAt: string;
+  extractedText?: string;
+  keyInsights?: string[];
+  relatedSearchTerms?: string[];
 }
 
 export function parseGuestCaptures(raw: string | null): GuestCapture[] {
@@ -51,7 +54,7 @@ export function guestCaptureToItem(gc: GuestCapture): CaptureItem {
     title: gc.title,
     summary: gc.summary,
     places: gc.places,
-    extractedText: '',
+    extractedText: gc.extractedText || '',
     links: [],
     tags: gc.tags,
     source: 'other',
@@ -62,5 +65,7 @@ export function guestCaptureToItem(gc: GuestCapture): CaptureItem {
     reclassifiedAt: null,
     deletedAt: null,
     sourceAccountId: null,
+    ...(gc.keyInsights && { keyInsights: gc.keyInsights }),
+    ...(gc.relatedSearchTerms && { relatedSearchTerms: gc.relatedSearchTerms }),
   };
 }

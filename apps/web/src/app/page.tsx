@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AnalysisResult } from '@capsave/shared';
+import { AnalysisResult } from '@scrave/shared';
 import { GuestCapturesProvider, useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
+import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
 import { CaptureList } from '@/components/captures/CaptureList';
 
 function LandingContent() {
-  const { guestCaptures, remainingSlots, isGuestFull, addCapture } = useGuestCaptures();
+  const { guestCaptures, remainingSlots, isGuestFull, addCapture, deleteCapture } = useGuestCaptures();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
 
   const handleFileSelected = (file: File) => {
@@ -19,6 +21,17 @@ function LandingContent() {
       return;
     }
     setSelectedFile(file);
+    setBatchFiles(null);
+  };
+
+  const handleMultipleFiles = (files: File[]) => {
+    if (isGuestFull) {
+      setShowSignupPrompt(true);
+      return;
+    }
+    // 모든 이미지를 분석에 넘김 (합쳐질 수 있으므로 미리 자르지 않음)
+    setBatchFiles(files.slice(0, 10)); // API 최대 10장
+    setSelectedFile(null);
   };
 
   const handleSave = (result: AnalysisResult, imageBase64: string) => {
@@ -26,12 +39,20 @@ function LandingContent() {
     setSelectedFile(null);
   };
 
+  const handleBatchSave = (results: AnalysisResult[], imageUrls: string[]) => {
+    for (let i = 0; i < results.length; i++) {
+      const imageUrl = imageUrls[Math.min(i, imageUrls.length - 1)];
+      addCapture(results[i], imageUrl);
+    }
+    setBatchFiles(null);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div>
-          <h1 className="text-xl font-extrabold text-primary">CapSave</h1>
+          <h1 className="text-xl font-extrabold text-primary">Scrave</h1>
         </div>
         <Link
           href="/login"
@@ -53,7 +74,11 @@ function LandingContent() {
 
       {/* Upload */}
       <div className="px-4 mb-2">
-        <UploadZone onImageSelected={handleFileSelected} />
+        <UploadZone
+          onImageSelected={handleFileSelected}
+          onMultipleSelected={handleMultipleFiles}
+          multiple
+        />
       </div>
 
       {/* Remaining slots */}
@@ -90,7 +115,7 @@ function LandingContent() {
           <CaptureList
             captures={guestCaptures}
             isLoading={false}
-            onDelete={() => {}}
+            onDelete={deleteCapture}
             emptyIcon="📸"
             emptyTitle=""
             emptySubtitle=""
@@ -151,12 +176,22 @@ function LandingContent() {
         </div>
       )}
 
-      {/* Analyze Modal */}
+      {/* Single file analyze modal */}
       {selectedFile && (
         <AnalyzeModal
           file={selectedFile}
           onSave={handleSave}
           onCancel={() => setSelectedFile(null)}
+          isGuest
+        />
+      )}
+
+      {/* Batch analyze modal — multiple files */}
+      {batchFiles && batchFiles.length > 0 && (
+        <BatchAnalyzeModal
+          files={batchFiles}
+          onSave={handleBatchSave}
+          onCancel={() => setBatchFiles(null)}
           isGuest
         />
       )}

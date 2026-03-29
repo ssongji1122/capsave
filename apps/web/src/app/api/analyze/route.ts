@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sharp from 'sharp';
-import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@capsave/shared';
+import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/server';
 import { extractGeminiText } from '@/lib/gemini';
 import { createRateLimiter } from '@/lib/rate-limit';
@@ -37,31 +36,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const body = await request.json();
+    const base64Image: string = body.image;
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
-
-    // Enforce 1MB size limit (CEO plan: server rejects > 1MB)
-    if (file.size > 1_048_576) {
-      return NextResponse.json({ error: 'Image exceeds 1MB limit' }, { status: 413 });
+    if (!base64Image) {
+      return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
-
-    // Resize image to max 1024px width
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const resized = await sharp(buffer)
-      .resize(1024, undefined, { withoutEnlargement: true })
-      .jpeg({ quality: 70 })
-      .toBuffer();
-
-    const base64Image = resized.toString('base64');
 
     const response = await fetch(
       `${AI_MODEL_ENDPOINT}?key=${apiKey}`,

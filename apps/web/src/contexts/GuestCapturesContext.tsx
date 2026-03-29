@@ -10,16 +10,17 @@ import {
   addGuestCapture,
   getNextGuestId,
   guestCaptureToItem,
-} from '@capsave/shared';
+} from '@scrave/shared';
 
-const STORAGE_KEY = 'capsave_guest_captures';
+const STORAGE_KEY = 'scrave_guest_captures';
 const MAX_GUEST_CAPTURES = 3;
 
 interface GuestCapturesContextValue {
   guestCaptures: CaptureItem[];
   remainingSlots: number;
   isGuestFull: boolean;
-  addCapture: (result: AnalysisResult, imageBase64: string) => void;
+  addCapture: (result: AnalysisResult, imageBase64: string) => Promise<void>;
+  deleteCapture: (id: number) => void;
   clearCaptures: () => void;
 }
 
@@ -38,11 +39,31 @@ export function GuestCapturesProvider({ children }: { children: React.ReactNode 
     setRawCaptures(captures);
   }, []);
 
-  const addCapture = useCallback((result: AnalysisResult, imageBase64: string) => {
+  const addCapture = useCallback(async (result: AnalysisResult, imageBase64: string) => {
+    // Compress image to thumbnail for sessionStorage (5MB limit)
+    let thumbnail = imageBase64;
+    try {
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject();
+        img.src = imageBase64;
+      });
+      const scale = Math.min(1, 400 / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      thumbnail = canvas.toDataURL('image/jpeg', 0.5);
+    } catch {
+      // Fallback: use original if resize fails
+    }
+
     setRawCaptures((prev) => {
       const newCapture: GuestCapture = {
         id: getNextGuestId(prev),
-        imageBase64,
+        imageBase64: thumbnail,
         title: result.title,
         summary: result.summary,
         category: result.category,
@@ -50,8 +71,23 @@ export function GuestCapturesProvider({ children }: { children: React.ReactNode 
         tags: result.tags,
         places: result.places,
         createdAt: new Date().toISOString(),
+        extractedText: result.extractedText || undefined,
+        keyInsights: result.keyInsights,
+        relatedSearchTerms: result.relatedSearchTerms,
       };
       const updated = addGuestCapture(prev, newCapture, MAX_GUEST_CAPTURES);
+      try {
+        sessionStorage.setItem(STORAGE_KEY, serializeGuestCaptures(updated));
+      } catch {
+        // sessionStorage full — still keep in-memory state
+      }
+      return updated;
+    });
+  }, []);
+
+  const deleteCapture = useCallback((id: number) => {
+    setRawCaptures((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
       sessionStorage.setItem(STORAGE_KEY, serializeGuestCaptures(updated));
       return updated;
     });
@@ -68,7 +104,7 @@ export function GuestCapturesProvider({ children }: { children: React.ReactNode 
 
   return (
     <GuestCapturesContext.Provider
-      value={{ guestCaptures, remainingSlots, isGuestFull, addCapture, clearCaptures }}
+      value={{ guestCaptures, remainingSlots, isGuestFull, addCapture, deleteCapture, clearCaptures }}
     >
       {children}
     </GuestCapturesContext.Provider>

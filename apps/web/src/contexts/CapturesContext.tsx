@@ -12,7 +12,7 @@ import {
   saveCapture as saveCaptureQuery,
   deleteCapture as deleteCaptureQuery,
   mapRowToCapture,
-} from '@capsave/shared';
+} from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 
 interface CapturesContextValue {
@@ -101,7 +101,8 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const handleSearch = useCallback(async (query: string) => {
-    return searchCapturesQuery(client, query);
+    const { items } = await searchCapturesQuery(client, query);
+    return items;
   }, [client]);
 
   const handleGetByCategory = useCallback(async (category: CaptureCategory) => {
@@ -110,7 +111,13 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
 
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
     const newCapture = await saveCaptureQuery(client, result, imageUrl, userId ?? undefined);
-    setCaptures((prev) => [newCapture, ...prev]);
+    // Attach ephemeral fields from analysis result (not persisted to DB)
+    const enriched: CaptureItem = {
+      ...newCapture,
+      ...(result.keyInsights && { keyInsights: result.keyInsights }),
+      ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
+    };
+    setCaptures((prev) => [enriched, ...prev]);
   }, [client, userId]);
 
   return (

@@ -142,4 +142,48 @@ describe('parseAnalysisResult', () => {
   it('throws on invalid JSON', () => {
     expect(() => parseAnalysisResult('not json')).toThrow();
   });
+
+  it('parses keyInsights when present', () => {
+    const input = JSON.stringify({
+      category: 'text',
+      title: '감자 레시피',
+      keyInsights: ['감자는 삶으면 더 맛있다', '소금을 꼭 넣어야 한다', '버터로 마무리'],
+    });
+    const result = parseAnalysisResult(input);
+    expect(result.keyInsights).toEqual(['감자는 삶으면 더 맛있다', '소금을 꼭 넣어야 한다', '버터로 마무리']);
+  });
+
+  it('returns undefined keyInsights when field absent', () => {
+    const input = JSON.stringify({ category: 'text', title: 'Test' });
+    const result = parseAnalysisResult(input);
+    expect(result.keyInsights).toBeUndefined();
+  });
+
+  it('returns undefined keyInsights when field is not an array', () => {
+    const input = JSON.stringify({ category: 'text', title: 'Test', keyInsights: 'not an array' });
+    const result = parseAnalysisResult(input);
+    expect(result.keyInsights).toBeUndefined();
+  });
+
+  it('parses relatedSearchTerms when present', () => {
+    const input = JSON.stringify({
+      category: 'text',
+      title: '감자 레시피',
+      relatedSearchTerms: ['감자 반찬 레시피', '한식 밑반찬'],
+    });
+    const result = parseAnalysisResult(input);
+    expect(result.relatedSearchTerms).toEqual(['감자 반찬 레시피', '한식 밑반찬']);
+  });
+
+  it('returns undefined relatedSearchTerms when field absent', () => {
+    const input = JSON.stringify({ category: 'text', title: 'Test' });
+    const result = parseAnalysisResult(input);
+    expect(result.relatedSearchTerms).toBeUndefined();
+  });
+
+  it('returns undefined relatedSearchTerms when field is not an array', () => {
+    const input = JSON.stringify({ category: 'text', title: 'Test', relatedSearchTerms: 42 });
+    const result = parseAnalysisResult(input);
+    expect(result.relatedSearchTerms).toBeUndefined();
+  });
 });

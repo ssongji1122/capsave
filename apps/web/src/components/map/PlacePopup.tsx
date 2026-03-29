@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { getMapLinks } from '@capsave/shared';
+import { getMapLinks, getReviewLinks } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 import { MapPlace } from './MapView';
 
@@ -13,14 +13,20 @@ interface PlacePopupProps {
 export function PlacePopup({ place, onClose }: PlacePopupProps) {
   const { preferences } = useUserPreferences();
   const links = getMapLinks(place.name, place.address);
+  const reviewLinks = getReviewLinks(place.name, place.address);
   const preferred = links.find((l) => l.provider === preferences.preferredNavApp);
   const others = links.filter((l) => l.provider !== preferences.preferredNavApp);
 
   return (
-    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 w-64 bg-surface-elevated border border-border rounded-2xl p-4 shadow-2xl shadow-black/50">
+    <div
+      role="dialog"
+      aria-label={`${place.name} 장소 정보`}
+      className="absolute top-16 left-1/2 -translate-x-1/2 z-20 w-64 bg-surface-elevated border border-border rounded-2xl p-4 shadow-2xl shadow-black/50"
+    >
       {/* Close */}
       <button
         onClick={onClose}
+        aria-label="팝업 닫기"
         className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-sm"
       >
         ✕
@@ -67,9 +73,25 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
         ))}
       </div>
 
+      {/* Review links */}
+      <div className="flex gap-1.5 mt-2 pt-2 border-t border-border">
+        {reviewLinks.map((link) => (
+          <a
+            key={link.provider}
+            href={link.webUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 py-1.5 rounded-lg bg-surface text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
+            title={link.label}
+          >
+            {link.emoji} 리뷰
+          </a>
+        ))}
+      </div>
+
       {/* View capture */}
       <Link
-        href={`/?highlight=${place.captureId}`}
+        href={`/dashboard?highlight=${place.captureId}`}
         className="mt-2 block w-full py-2 rounded-lg bg-surface text-center text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
       >
         캡처 보기

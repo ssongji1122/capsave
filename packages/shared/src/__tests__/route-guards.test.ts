@@ -32,8 +32,8 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/settings')).toBe(false);
   });
 
-  it('returns false for /map', () => {
-    expect(isPublicRoute('/map')).toBe(false);
+  it('returns true for /map (guest-accessible for demo)', () => {
+    expect(isPublicRoute('/map')).toBe(true);
   });
 });
 

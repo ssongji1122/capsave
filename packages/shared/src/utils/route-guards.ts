@@ -1,4 +1,4 @@
-const PUBLIC_PREFIXES = ['/login', '/auth', '/api'];
+const PUBLIC_PREFIXES = ['/login', '/auth', '/api', '/map'];
 
 export function isPublicRoute(pathname: string): boolean {
   if (pathname === '/') return true;
