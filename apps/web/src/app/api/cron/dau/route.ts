@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { extractBearerToken, getDayBoundaries, countDistinctUsers } from '@capsave/shared';
+import { extractBearerToken, getDayBoundaries, countDistinctUsers } from '@scrave/shared';
 import { generateDauNotificationHtml } from '@/lib/notifications';
 
 const DAU_THRESHOLD = 10;
@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'CapSave <noreply@capsave.app>',
+            from: 'Scrave <noreply@scrave.app>',
             to: [ownerEmail],
-            subject: `CapSave Phase 1 Validated — DAU ${distinctUsers} reached!`,
+            subject: `Scrave Phase 1 Validated — DAU ${distinctUsers} reached!`,
             html: generateDauNotificationHtml(distinctUsers, start),
           }),
         });

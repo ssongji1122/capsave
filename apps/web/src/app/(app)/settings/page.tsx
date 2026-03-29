@@ -1,6 +1,6 @@
 'use client';
 
-import { getMapLinks, MapProvider } from '@capsave/shared';
+import { getMapLinks, MapProvider } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 
 const NAV_OPTIONS = getMapLinks('preview', null);

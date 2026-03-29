@@ -49,7 +49,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-extrabold text-primary text-center mb-2">CapSave</h1>
+        <h1 className="text-3xl font-extrabold text-primary text-center mb-2">Scrave</h1>
         <p className="text-text-secondary text-center text-sm mb-8">AI 캡처 오거나이저</p>
 
         {/* OAuth buttons */}

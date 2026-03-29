@@ -19,7 +19,7 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 // Custom dark theme that matches our app design
-const CapSaveDarkTheme = {
+const ScraveDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
@@ -57,7 +57,7 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : CapSaveDarkTheme}>
+    <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : ScraveDarkTheme}>
       <CapturesProvider>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

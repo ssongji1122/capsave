@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@capsave/shared'],
+  transpilePackages: ['@scrave/shared'],
   images: {
     remotePatterns: [
       {

@@ -1,5 +1,5 @@
 {
-  "name": "capsave-monorepo",
+  "name": "scrave-monorepo",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -10,9 +10,9 @@
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
-    "dev:web": "turbo dev --filter=@capsave/web",
+    "dev:web": "turbo dev --filter=@scrave/web",
     "dev:mobile": "cd apps/mobile && npx expo start",
-    "build:shared": "turbo build --filter=@capsave/shared"
+    "build:shared": "turbo build --filter=@scrave/shared"
   },
   "devDependencies": {
     "turbo": "^2.5.0"

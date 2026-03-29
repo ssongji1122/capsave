@@ -14,6 +14,11 @@ function LandingContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'place' | 'text'>('all');
+
+  const filteredCaptures = categoryFilter === 'all'
+    ? guestCaptures
+    : guestCaptures.filter((c) => c.category === categoryFilter);
 
   const handleFileSelected = (file: File) => {
     if (isGuestFull) {
@@ -92,33 +97,45 @@ function LandingContent() {
       {guestCaptures.length > 0 && (
         <div className="px-4 mb-6">
           <div className="flex mx-0 mb-4 p-3 rounded-2xl bg-surface border border-border">
-            <div className="flex-1 text-center">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('all')}
+              className={`flex-1 text-center py-1 rounded-xl transition-colors ${categoryFilter === 'all' ? 'bg-surface-elevated' : ''}`}
+            >
               <div className="text-xl font-extrabold text-primary">{guestCaptures.length}</div>
               <div className="text-xs text-text-secondary">체험 캡처</div>
-            </div>
+            </button>
             <div className="w-px bg-border" />
-            <div className="flex-1 text-center">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('place')}
+              className={`flex-1 text-center py-1 rounded-xl transition-colors ${categoryFilter === 'place' ? 'bg-surface-elevated' : ''}`}
+            >
               <div className="text-xl font-extrabold text-place-accent">
                 {guestCaptures.filter((c) => c.category === 'place').length}
               </div>
               <div className="text-xs text-text-secondary">장소</div>
-            </div>
+            </button>
             <div className="w-px bg-border" />
-            <div className="flex-1 text-center">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('text')}
+              className={`flex-1 text-center py-1 rounded-xl transition-colors ${categoryFilter === 'text' ? 'bg-surface-elevated' : ''}`}
+            >
               <div className="text-xl font-extrabold text-text-accent">
                 {guestCaptures.filter((c) => c.category === 'text').length}
               </div>
               <div className="text-xs text-text-secondary">텍스트</div>
-            </div>
+            </button>
           </div>
 
           <CaptureList
-            captures={guestCaptures}
+            captures={filteredCaptures}
             isLoading={false}
             onDelete={deleteCapture}
-            emptyIcon="📸"
-            emptyTitle=""
-            emptySubtitle=""
+            emptyIcon={categoryFilter === 'place' ? '📍' : categoryFilter === 'text' ? '📝' : '📸'}
+            emptyTitle={categoryFilter === 'place' ? '저장된 장소가 없습니다' : categoryFilter === 'text' ? '저장된 텍스트가 없습니다' : ''}
+            emptySubtitle={categoryFilter !== 'all' ? '스크린샷을 업로드하면 자동 분류됩니다' : ''}
           />
         </div>
       )}

@@ -27,7 +27,7 @@ export function Sidebar() {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-surface border-r border-border">
         <div className="p-6">
-          <h1 className="text-2xl font-extrabold text-primary">CapSave</h1>
+          <h1 className="text-2xl font-extrabold text-primary">Scrave</h1>
           <p className="text-sm text-text-secondary mt-1">AI 캡처 오거나이저</p>
         </div>
         <nav className="flex-1 px-3">

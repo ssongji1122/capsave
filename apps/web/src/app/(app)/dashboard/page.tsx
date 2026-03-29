@@ -7,7 +7,8 @@ import { UncertainQueue } from '@/components/captures/UncertainQueue';
 import { SearchBar } from '@/components/captures/SearchBar';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
-import { CaptureItem, AnalysisResult } from '@capsave/shared';
+import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
+import { CaptureItem, AnalysisResult } from '@scrave/shared';
 
 const CONFIDENCE_THRESHOLD = 0.5;
 
@@ -15,6 +16,7 @@ export default function HomePage() {
   const { captures, isLoading, deleteCapture, searchCaptures, saveCapture } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
 
   const handleSearch = useCallback(async (query: string) => {
     if (query) {
@@ -25,9 +27,29 @@ export default function HomePage() {
     }
   }, [searchCaptures]);
 
+  const handleSingleFile = useCallback((file: File) => {
+    setSelectedFile(file);
+    setBatchFiles(null);
+  }, []);
+
+  const handleMultipleFiles = useCallback((files: File[]) => {
+    setBatchFiles(files);
+    setSelectedFile(null);
+  }, []);
+
   const handleSave = async (result: AnalysisResult, imageUrl: string) => {
     await saveCapture(result, imageUrl);
     setSelectedFile(null);
+  };
+
+  const handleBatchSave = async (results: AnalysisResult[], imageUrls: string[]) => {
+    // Save each result. For merged results (1 result from N images), use first image URL.
+    // For separate results, pair each with corresponding image URL.
+    for (let i = 0; i < results.length; i++) {
+      const imageUrl = imageUrls[Math.min(i, imageUrls.length - 1)];
+      await saveCapture(results[i], imageUrl);
+    }
+    setBatchFiles(null);
   };
 
   const isSearching = displayCaptures !== null;
@@ -53,7 +75,7 @@ export default function HomePage() {
     <div className="pb-20 lg:pb-8">
       {/* Header */}
       <div className="px-5 pt-8 pb-3 lg:pt-10">
-        <h1 className="text-3xl font-extrabold tracking-tight lg:hidden">CapSave</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight lg:hidden">Scrave</h1>
         <p className="text-text-secondary text-sm mt-1 lg:hidden">AI 캡처 오거나이저</p>
       </div>
 
@@ -79,7 +101,11 @@ export default function HomePage() {
 
       {/* Upload */}
       <div className="px-4 mb-4">
-        <UploadZone onImageSelected={setSelectedFile} />
+        <UploadZone
+          onImageSelected={handleSingleFile}
+          onMultipleSelected={handleMultipleFiles}
+          multiple
+        />
       </div>
 
       {/* Search */}
@@ -103,12 +129,21 @@ export default function HomePage() {
         emptySubtitle={'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}
       />
 
-      {/* Analyze Modal */}
+      {/* Single file analyze modal */}
       {selectedFile && (
         <AnalyzeModal
           file={selectedFile}
           onSave={handleSave}
           onCancel={() => setSelectedFile(null)}
+        />
+      )}
+
+      {/* Batch analyze modal — multiple files */}
+      {batchFiles && batchFiles.length > 0 && (
+        <BatchAnalyzeModal
+          files={batchFiles}
+          onSave={handleBatchSave}
+          onCancel={() => setBatchFiles(null)}
         />
       )}
     </div>

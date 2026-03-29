@@ -3,9 +3,9 @@ import {
   parseGuestCaptures,
   base64ToBlob,
   buildMigrationPayload,
-} from '@capsave/shared';
+} from '@scrave/shared';
 
-const STORAGE_KEY = 'capsave_guest_captures';
+const STORAGE_KEY = 'scrave_guest_captures';
 
 export async function migrateGuestCaptures(
   supabase: SupabaseClient,

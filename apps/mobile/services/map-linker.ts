@@ -25,7 +25,7 @@ export function getMapLinks(placeName: string, address?: string | null): MapLink
       provider: 'naver',
       label: '네이버 지도',
       emoji: '🟢',
-      appUrl: `nmap://search?query=${placeEncoded}&appname=com.capsave.app`,
+      appUrl: `nmap://search?query=${placeEncoded}&appname=com.scrave.app`,
       webUrl: `https://map.naver.com/v5/search/${encoded}`,
     },
     {

@@ -2,7 +2,7 @@
 
 ## Mobile map-linker migration to shared package
 
-**What:** Migrate `apps/mobile/services/map-linker.ts` to import from `@capsave/shared` instead of local copy.
+**What:** Migrate `apps/mobile/services/map-linker.ts` to import from `@scrave/shared` instead of local copy.
 
 **Why:** Two separate map-linker implementations exist. Tmap has been added to the shared package, but mobile won't get it until this migration happens. One source of truth across mobile + web.
 
@@ -114,7 +114,7 @@
 
 **Cons:** New dependency (~20KB gzipped for lucide-react). Requires design decision on icon style (outlined vs. filled).
 
-**Context:** CaptureCard emoji were removed in commit `6f2413b`. Sidebar and modal emoji are deferred because they need an icon library rather than simple text replacement. See design review report: `~/.gstack/projects/ssongji1122-capsave/design-reports/2026-03-28-design-review.md`
+**Context:** CaptureCard emoji were removed in commit `6f2413b`. Sidebar and modal emoji are deferred because they need an icon library rather than simple text replacement. See design review report: `~/.gstack/projects/ssongji1122-scrave/design-reports/2026-03-28-design-review.md`
 
 **Effort:** S (human: ~2 hours / CC: ~15 min)
 

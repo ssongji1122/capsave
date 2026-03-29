@@ -41,7 +41,7 @@ let db: SQLite.SQLiteDatabase | null = null;
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (db) return db;
 
-  db = await SQLite.openDatabaseAsync('capsave.db');
+  db = await SQLite.openDatabaseAsync('scrave.db');
 
   // Create table if not exists (original schema)
   await db.execAsync(`

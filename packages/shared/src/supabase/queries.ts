@@ -28,19 +28,29 @@ export async function getCapturesByCategory(
 
 export async function searchCaptures(
   client: SupabaseClient,
-  query: string
-): Promise<CaptureItem[]> {
+  query: string,
+  options?: { limit?: number; offset?: number }
+): Promise<{ items: CaptureItem[]; total: number }> {
+  const limit = options?.limit ?? 20;
+  const offset = options?.offset ?? 0;
   const pattern = `%${query}%`;
-  const { data, error } = await client
+
+  const baseQuery = client
     .from('captures')
-    .select('*')
+    .select('*', { count: 'exact' })
     .or(
       `title.ilike.${pattern},summary.ilike.${pattern},extracted_text.ilike.${pattern}`
     )
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const { data, error, count } = await baseQuery;
 
   if (error) throw error;
-  return (data as CaptureRow[]).map(mapRowToCapture);
+  return {
+    items: (data as CaptureRow[]).map(mapRowToCapture),
+    total: count ?? 0,
+  };
 }
 
 export async function saveCapture(

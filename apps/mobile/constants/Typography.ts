@@ -1,4 +1,4 @@
-// CapSave Typography System — How We Feel Inspired
+// Scrave Typography System — How We Feel Inspired
 // Warm, calm, introspective tone with generous spacing
 
 export const FontSize = {

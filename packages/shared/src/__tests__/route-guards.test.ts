@@ -24,8 +24,12 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/dashboard')).toBe(false);
   });
 
-  it('returns false for /places', () => {
-    expect(isPublicRoute('/places')).toBe(false);
+  it('returns true for /places (guest-accessible)', () => {
+    expect(isPublicRoute('/places')).toBe(true);
+  });
+
+  it('returns true for /texts (guest-accessible)', () => {
+    expect(isPublicRoute('/texts')).toBe(true);
   });
 
   it('returns false for /settings', () => {

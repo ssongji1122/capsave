@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CaptureItem, CaptureCategory, reclassifyCapture } from '@capsave/shared';
+import { CaptureItem, CaptureCategory, reclassifyCapture } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 import { CaptureCard } from './CaptureCard';
 

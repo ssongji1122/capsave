@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "CapSave",
-    "slug": "capsave",
+    "name": "Scrave",
+    "slug": "scrave",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "capsave",
+    "scheme": "scrave",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -47,7 +47,7 @@
     },
     "extra": {
       "openaiApiKey": "${OPENAI_API_KEY}",
-      "serverUrl": "${CAPSAVE_SERVER_URL}",
+      "serverUrl": "${SCRAVE_SERVER_URL}",
       "aiProvider": "${AI_PROVIDER}"
     }
   }

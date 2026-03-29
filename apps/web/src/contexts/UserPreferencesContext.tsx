@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { MapProvider } from '@capsave/shared';
+import { MapProvider } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 
 interface UserPreferences {
