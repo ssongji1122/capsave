@@ -5,7 +5,6 @@ interface RateLimitEntry {
 
 interface RateLimiter {
   isAllowed(key: string): boolean;
-  remaining(key: string): number;
 }
 
 export function createRateLimiter(maxRequests: number, windowMs: number): RateLimiter {
@@ -30,11 +29,6 @@ export function createRateLimiter(maxRequests: number, windowMs: number): RateLi
       if (entry.count >= maxRequests) return false;
       entry.count++;
       return true;
-    },
-
-    remaining(key: string): number {
-      const entry = getEntry(key);
-      return Math.max(0, maxRequests - entry.count);
     },
   };
 }

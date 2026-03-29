@@ -47,9 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Images are already resized + base64-encoded on the client
-    console.log(`[batch-analyze] Received ${images.length} pre-resized images`);
-    const imageParts = images.map((base64Data, idx) => {
-      console.log(`[batch-analyze] Image ${idx}: ${(base64Data.length / 1024).toFixed(0)}KB base64`);
+    const imageParts = images.map((base64Data) => {
       return {
         inlineData: {
           mimeType: 'image/jpeg',
@@ -63,9 +61,6 @@ export async function POST(request: NextRequest) {
       { text: `${BATCH_ANALYSIS_INSTRUCTION}\n\nI'm uploading ${images.length} screenshots. Analyze them together.` },
       ...imageParts,
     ];
-
-    const totalBase64Size = imageParts.reduce((sum, p) => sum + p.inlineData.data.length, 0);
-    console.log(`[batch-analyze] Sending to Gemini: ${images.length} images, total base64 size: ${(totalBase64Size / 1024 / 1024).toFixed(1)}MB`);
 
     const response = await fetch(
       `${AI_MODEL_ENDPOINT}?key=${apiKey}`,
@@ -97,7 +92,6 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
     const content = extractGeminiText(data.candidates);
-    console.log(`[batch-analyze] Gemini response received, content length: ${content?.length ?? 0}`);
 
     if (!content) {
       console.error('[batch-analyze] Empty AI response, raw candidates:', JSON.stringify(data.candidates));
@@ -105,7 +99,6 @@ export async function POST(request: NextRequest) {
     }
 
     const results = parseBatchAnalysisResult(content);
-    console.log(`[batch-analyze] Parsed ${results.length} results`);
     return NextResponse.json({ results });
   } catch (error) {
     console.error('Batch analyze error:', error);

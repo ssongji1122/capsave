@@ -37,10 +37,4 @@ describe('createRateLimiter', () => {
     expect(limiter.isAllowed('ip1')).toBe(true);
   });
 
-  it('returns remaining count', () => {
-    const limiter = createRateLimiter(3, 60_000);
-    expect(limiter.remaining('ip1')).toBe(3);
-    limiter.isAllowed('ip1');
-    expect(limiter.remaining('ip1')).toBe(2);
-  });
 });
