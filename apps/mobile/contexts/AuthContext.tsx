@@ -14,6 +14,7 @@ interface AuthContextValue {
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  devSkipLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -22,10 +23,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const googleClientId = Constants.expoConfig?.extra?.googleClientId ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const googleWebClientId = Constants.expoConfig?.extra?.googleClientId ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const googleIosClientId = Constants.expoConfig?.extra?.googleIosClientId ?? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
   const [, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: googleClientId,
+    iosClientId: googleIosClientId,
+    clientId: googleWebClientId,
   });
 
   // Restore session on mount
@@ -68,6 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, []);
 
+  const devSkipLogin = useCallback(() => {
+    if (!__DEV__) return;
+    setSession({ user: { id: 'dev-user', email: 'dev@test.com' } } as unknown as Session);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -76,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         signInWithGoogle,
         signOut,
+        devSkipLogin,
       }}
     >
       {children}

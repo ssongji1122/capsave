@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 
 export default function LoginScreen() {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, devSkipLogin } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleGoogle = async () => {
@@ -33,6 +33,16 @@ export default function LoginScreen() {
             <Text style={styles.googleButtonText}>Google로 시작하기</Text>
           )}
         </TouchableOpacity>
+
+        {__DEV__ && (
+          <TouchableOpacity
+            style={styles.devSkipButton}
+            onPress={devSkipLogin}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.devSkipText}>[DEV] 로그인 건너뛰기</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -74,5 +84,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#191919',
+  },
+  devSkipButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+  },
+  devSkipText: {
+    fontSize: 13,
+    color: '#6B7280',
   },
 });
