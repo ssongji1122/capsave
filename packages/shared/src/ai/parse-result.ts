@@ -47,20 +47,41 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
   };
 }
 
+/** Try to repair truncated JSON by closing open brackets/braces */
+function tryParseJSON(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // Attempt to repair truncated JSON
+    let repaired = raw;
+    // Remove trailing incomplete key-value (e.g. `"key": "unterminated...`)
+    repaired = repaired.replace(/,\s*"[^"]*"?\s*:\s*"?[^"]*$/, '');
+    repaired = repaired.replace(/,\s*\{[^}]*$/, '');
+    // Close any open brackets
+    const opens = (repaired.match(/\[/g) || []).length;
+    const closes = (repaired.match(/\]/g) || []).length;
+    const openBraces = (repaired.match(/\{/g) || []).length;
+    const closeBraces = (repaired.match(/\}/g) || []).length;
+    for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+    for (let i = 0; i < opens - closes; i++) repaired += ']';
+    return JSON.parse(repaired);
+  }
+}
+
 export function parseAnalysisResult(content: string): AnalysisResult {
   const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const result = JSON.parse(cleaned);
+  const result = tryParseJSON(cleaned) as Record<string, unknown>;
   return parseSingleResult(result);
 }
 
 /** Parse batch analysis response — may return single merged result or multiple separate results */
 export function parseBatchAnalysisResult(content: string): AnalysisResult[] {
   const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const parsed = JSON.parse(cleaned);
+  const parsed = tryParseJSON(cleaned);
 
   if (Array.isArray(parsed)) {
     return parsed.map((item: Record<string, unknown>) => parseSingleResult(item));
   }
   // Single merged object
-  return [parseSingleResult(parsed)];
+  return [parseSingleResult(parsed as Record<string, unknown>)];
 }
