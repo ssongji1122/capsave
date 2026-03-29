@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +28,37 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
   const surfaceColor = isPlace ? colors.placeSurface : colors.textSurface;
   const borderColor = isPlace ? colors.placeBorder : colors.textBorder;
+
+  const handleMapPicker = useCallback((place: typeof item.places[0]) => {
+    const links = getMapLinks(place.name, place.address);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: place.name,
+          message: place.address,
+          options: [...links.map((l) => `${l.emoji} ${l.label}`), '취소'],
+          cancelButtonIndex: links.length,
+        },
+        (idx) => {
+          if (idx < links.length) {
+            openMap(links[idx].provider, place.name, place.address);
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        place.name,
+        place.address,
+        [
+          ...links.map((l) => ({
+            text: `${l.emoji} ${l.label}`,
+            onPress: () => openMap(l.provider, place.name, place.address),
+          })),
+          { text: '취소', style: 'cancel' as const },
+        ]
+      );
+    }
+  }, [item.places]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -100,31 +133,25 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
       {isPlace && item.places.length > 0 && (
         <View style={styles.placeSection}>
           {item.places.map((place, idx) => (
-            <View key={idx} style={{ marginBottom: idx < item.places.length - 1 ? 10 : 0 }}>
-              <View style={[styles.placeInfo, { backgroundColor: surfaceColor }]}>
-                <Ionicons name="pin" size={14} color={accentColor} />
+            <TouchableOpacity
+              key={idx}
+              style={[styles.placeRow, { backgroundColor: surfaceColor }, idx < item.places.length - 1 && styles.placeRowGap]}
+              onPress={() => handleMapPicker(place)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="pin" size={14} color={accentColor} style={styles.placePin} />
+              <View style={styles.placeTextGroup}>
                 <Text style={[styles.placeName, { color: colors.text }]} numberOfLines={1}>
                   {place.name}
                 </Text>
+                {place.address && (
+                  <Text style={[styles.placeAddress, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {place.address}
+                  </Text>
+                )}
               </View>
-              {place.address && (
-                <Text style={[styles.addressText, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {place.address}
-                </Text>
-              )}
-              <View style={styles.mapButtons}>
-                {getMapLinks(place.name, place.address).map((link) => (
-                  <TouchableOpacity
-                    key={link.provider}
-                    style={[styles.mapButton, { borderColor }]}
-                    onPress={() => openMap(link.provider, place.name, place.address)}
-                  >
-                    <Text style={styles.mapEmoji}>{link.emoji}</Text>
-                    <Text style={[styles.mapLabel, { color: colors.text }]}>{link.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+              <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -221,46 +248,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  placeInfo: {
+  placeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  placeRowGap: {
+    marginBottom: 6,
+  },
+  placePin: {
+    marginRight: 8,
+  },
+  placeTextGroup: {
+    flex: 1,
+    gap: 2,
   },
   placeName: {
     fontSize: 14,
     fontWeight: '600',
-    flex: 1,
   },
-  addressText: {
+  placeAddress: {
     fontSize: 12,
-    paddingTop: 6,
-    paddingHorizontal: 4,
-  },
-  mapButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingTop: 10,
-  },
-  mapButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 6,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  mapEmoji: {
-    fontSize: 14,
-  },
-  mapLabel: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   linksSection: {
     paddingHorizontal: 16,
