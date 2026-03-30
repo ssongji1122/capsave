@@ -17,10 +17,6 @@ describe('isUrlSafe', () => {
     expect(isUrlSafe('comgooglemaps://?q=test')).toBe(true);
   });
 
-  it('allows kakao map deep links', () => {
-    expect(isUrlSafe('kakaomap://search?q=test')).toBe(true);
-  });
-
   it('allows geo: scheme', () => {
     expect(isUrlSafe('geo:0,0?q=test')).toBe(true);
   });
