@@ -5,6 +5,7 @@ export interface PlaceInfo {
   name: string;
   address?: string;
   date?: string;
+  description?: string;
   links?: string[];
   lat?: number;
   lng?: number;
