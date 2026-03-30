@@ -18,6 +18,7 @@ Analyze the image and respond with a JSON object containing:
       "name": "장소 이름",
       "address": "주소 (없으면 생략)",
       "date": "일정/날짜 (없으면 생략)",
+      "description": "이 장소의 특징을 1-2문장으로 한국어로 설명. 메뉴, 분위기, 특이사항, 가격대 등 캡처에서 언급된 내용 중심. 언급 없으면 빈 문자열.",
       "links": ["해당 장소에 대한 검색/참고 URL"]
     }
   ],
