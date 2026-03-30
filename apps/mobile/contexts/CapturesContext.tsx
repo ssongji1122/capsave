@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import {
   CaptureItem,
@@ -53,8 +53,11 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { session } = useAuth();
+  const isRefreshing = useRef(false);
 
   const refresh = useCallback(async () => {
+    if (isRefreshing.current) return;
+    isRefreshing.current = true;
     try {
       setIsLoading(true);
 
@@ -76,6 +79,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to load captures:', error);
     } finally {
       setIsLoading(false);
+      isRefreshing.current = false;
     }
   }, [session]);
 

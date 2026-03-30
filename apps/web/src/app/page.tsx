@@ -87,11 +87,21 @@ function LandingContent() {
       </div>
 
       {/* Remaining slots */}
-      <p className="text-center text-xs text-text-tertiary mb-6">
-        {isGuestFull
-          ? '체험 한도에 도달했습니다'
-          : `무료 체험: ${remainingSlots}회 남음`}
-      </p>
+      <div className="text-center text-xs text-text-tertiary mb-6">
+        {isGuestFull ? (
+          <div className="flex items-center justify-center gap-2">
+            <span>체험 한도에 도달했습니다</span>
+            <Link
+              href="/login"
+              className="text-primary font-semibold hover:text-primary-light transition-colors"
+            >
+              로그인하기 →
+            </Link>
+          </div>
+        ) : (
+          `무료 체험: ${remainingSlots}회 남음`
+        )}
+      </div>
 
       {/* Guest captures list */}
       {guestCaptures.length > 0 && (

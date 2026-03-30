@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Constants from 'expo-constants';
 import { AnalysisResult, ImageAnalyzer, PlaceInfo } from './types';
@@ -25,15 +26,14 @@ export class ServerAnalyzer implements ImageAnalyzer {
 
     const token = await this.getToken();
 
-    // React Native FormData accepts {uri, name, type} objects
-    const formData = new FormData();
-    formData.append('file', {
-      uri: manipulated.uri,
-      name: 'image.jpg',
-      type: 'image/jpeg',
-    } as unknown as Blob);
+    // Server expects JSON with base64 image
+    const base64Image = await FileSystem.readAsStringAsync(manipulated.uri, {
+      encoding: 'base64',
+    });
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -41,7 +41,7 @@ export class ServerAnalyzer implements ImageAnalyzer {
     const response = await fetch(`${this.serverUrl}/api/analyze`, {
       method: 'POST',
       headers,
-      body: formData,
+      body: JSON.stringify({ image: base64Image }),
     });
 
     if (response.status === 401) {

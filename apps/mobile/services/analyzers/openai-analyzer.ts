@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Constants from 'expo-constants';
 import { AnalysisResult, ImageAnalyzer } from './types';
@@ -27,7 +27,7 @@ Analyze the image and respond with a JSON object containing:
   "tags": ["3-5개 한국어 태그"],
   "source": "instagram" | "threads" | "naver" | "google" | "youtube" | "other",
   "confidence": 0.0 to 1.0,
-  "sourceAccountId": "@account_id or null
+  "sourceAccountId": "@account_id or null"
 }
 
 Rules:
@@ -85,6 +85,7 @@ export class OpenAIAnalyzer implements ImageAnalyzer {
         ],
         max_tokens: 2048,
         temperature: 0.1,
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -101,7 +102,12 @@ export class OpenAIAnalyzer implements ImageAnalyzer {
     }
 
     const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const result = JSON.parse(cleaned);
+    let result: Record<string, unknown>;
+    try {
+      result = JSON.parse(cleaned);
+    } catch {
+      throw new Error(`분석 결과 파싱 실패: ${cleaned.slice(0, 100)}`);
+    }
 
     if (!result.category || !result.title) {
       throw new Error('필수 필드가 누락되었습니다.');

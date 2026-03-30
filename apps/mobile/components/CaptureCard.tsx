@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -23,6 +24,7 @@ interface CaptureCardProps {
 export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
+  const router = useRouter();
   const isPlace = item.category === 'place';
 
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
@@ -85,7 +87,11 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor }]}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.surface, borderColor }]}
+      onPress={() => router.push(`/capture/${item.id}`)}
+      activeOpacity={0.85}
+    >
       {/* Header */}
       <View style={styles.cardHeader}>
         <View style={[styles.categoryBadge, { backgroundColor: surfaceColor }]}>
@@ -184,7 +190,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
           ))}
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
