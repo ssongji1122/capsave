@@ -1,4 +1,4 @@
-// CapSave Design System Colors
+// Scrave Design System Colors
 export const Colors = {
   // Primary dark theme
   dark: {

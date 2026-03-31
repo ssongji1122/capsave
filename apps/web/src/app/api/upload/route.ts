@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@capsave/shared';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -10,22 +17,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
-    }
-
-    const client = createSupabaseClient(supabaseUrl, supabaseKey);
-
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
-    const fileName = `captures/${timestamp}_${random}.jpg`;
+    const fileName = `${user.id}/${timestamp}_${random}.jpg`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const { error: uploadError } = await client.storage
+    const { error: uploadError } = await supabase.storage
       .from('captures')
       .upload(fileName, buffer, {
         contentType: 'image/jpeg',
@@ -36,7 +34,7 @@ export async function POST(request: NextRequest) {
       throw uploadError;
     }
 
-    const { data: { publicUrl } } = client.storage
+    const { data: { publicUrl } } = supabase.storage
       .from('captures')
       .getPublicUrl(fileName);
 

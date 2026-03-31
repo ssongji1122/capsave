@@ -1,7 +1,7 @@
 import { Linking, Alert, Platform } from 'react-native';
 import { isUrlSafe } from './url-validator';
 
-export type MapProvider = 'naver' | 'google' | 'kakao';
+export type MapProvider = 'naver' | 'google';
 
 interface MapLink {
   provider: MapProvider;
@@ -23,9 +23,9 @@ export function getMapLinks(placeName: string, address?: string | null): MapLink
   return [
     {
       provider: 'naver',
-      label: '네이버 지도',
+      label: '네이버맵',
       emoji: '🟢',
-      appUrl: `nmap://search?query=${placeEncoded}&appname=com.capsave.app`,
+      appUrl: `nmap://search?query=${placeEncoded}&appname=com.scrave.app`,
       webUrl: `https://map.naver.com/v5/search/${encoded}`,
     },
     {
@@ -37,13 +37,6 @@ export function getMapLinks(placeName: string, address?: string | null): MapLink
         default: `geo:0,0?q=${encoded}`,
       }) || `geo:0,0?q=${encoded}`,
       webUrl: `https://www.google.com/maps/search/?api=1&query=${encoded}`,
-    },
-    {
-      provider: 'kakao',
-      label: '카카오맵',
-      emoji: '🟡',
-      appUrl: `kakaomap://search?q=${placeEncoded}`,
-      webUrl: `https://map.kakao.com/?q=${encoded}`,
     },
   ];
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/browser';
 
 const navItems = [
-  { href: '/', label: '홈', icon: '🏠', description: '전체 캡처' },
+  { href: '/dashboard', label: '홈', icon: '🏠', description: '전체 캡처' },
   { href: '/places', label: '장소', icon: '📍', description: '맛집·카페·여행지' },
   { href: '/texts', label: '텍스트', icon: '📝', description: 'AI·코드·레시피' },
   { href: '/map', label: '지도', icon: '🗺', description: '저장 장소 지도' },
@@ -12,13 +13,21 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-surface border-r border-border">
         <div className="p-6">
-          <h1 className="text-2xl font-extrabold text-primary">CapSave</h1>
+          <h1 className="text-2xl font-extrabold text-primary">Scrave</h1>
           <p className="text-sm text-text-secondary mt-1">AI 캡처 오거나이저</p>
         </div>
         <nav className="flex-1 px-3">
@@ -43,6 +52,25 @@ export function Sidebar() {
             );
           })}
         </nav>
+        <div className="p-3 border-t border-border space-y-1">
+          <Link
+            href="/settings"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+              pathname.startsWith('/settings')
+                ? 'bg-surface-elevated text-primary'
+                : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
+            }`}
+          >
+            <span className="text-lg">⚙️</span>
+            <span className="font-semibold text-sm">설정</span>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-3 rounded-xl text-text-tertiary hover:bg-surface-elevated hover:text-text-secondary text-sm font-medium text-left transition-colors"
+          >
+            로그아웃
+          </button>
+        </div>
       </aside>
 
       {/* Mobile bottom tab bar */}

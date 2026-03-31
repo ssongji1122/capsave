@@ -1,6 +1,6 @@
 'use client';
 
-import { CaptureItem } from '@capsave/shared';
+import { CaptureItem } from '@scrave/shared';
 import { CaptureCard } from './CaptureCard';
 
 interface CaptureListProps {

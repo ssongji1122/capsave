@@ -1,4 +1,4 @@
-// CapSave Spacing System — How We Feel Inspired
+// Scrave Spacing System — How We Feel Inspired
 // 4px base scale, warm amber shadows, organic radii
 
 export const Space = {

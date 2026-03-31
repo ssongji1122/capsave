@@ -2,15 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { AnalysisResult, PlaceInfo } from '@capsave/shared';
+import { AnalysisResult, PlaceInfo } from '@scrave/shared';
+import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
 
 interface AnalyzeModalProps {
   file: File;
   onSave: (result: AnalysisResult, imageUrl: string) => void;
   onCancel: () => void;
+  isGuest?: boolean;
+  queueInfo?: { current: number; total: number };
 }
 
-export function AnalyzeModal({ file, onSave, onCancel }: AnalyzeModalProps) {
+export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInfo }: AnalyzeModalProps) {
   const [status, setStatus] = useState<'analyzing' | 'done' | 'error'>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -28,17 +31,38 @@ export function AnalyzeModal({ file, onSave, onCancel }: AnalyzeModalProps) {
     try {
       setStatus('analyzing');
 
-      const uploadForm = new FormData();
-      uploadForm.append('file', file);
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-      if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-      const { url } = await uploadRes.json();
-      setImageUrl(url);
+      if (isGuest) {
+        // Guest: convert to base64 locally, skip upload
+        const base64 = await fileToBase64(file);
+        setImageUrl(base64);
+      } else {
+        // Authenticated: upload to Supabase Storage
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+        if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
+        const { url } = await uploadRes.json();
+        setImageUrl(url);
+      }
 
-      const analyzeForm = new FormData();
-      analyzeForm.append('file', file);
-      const analyzeRes = await fetch('/api/analyze', { method: 'POST', body: analyzeForm });
-      if (!analyzeRes.ok) throw new Error('AI 분석 실패');
+      // Resize + base64 on client, send as JSON
+      const resizedBlob = await resizeImageFile(file, 800, 0.6);
+      const resizedB64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(resizedBlob);
+      });
+
+      const analyzeRes = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: resizedB64 }),
+      });
+      if (!analyzeRes.ok) {
+        const errData = await analyzeRes.json().catch(() => null);
+        throw new Error(errData?.error || 'AI 분석 실패');
+      }
       const analysisResult = await analyzeRes.json();
 
       setResult(analysisResult);
@@ -52,9 +76,14 @@ export function AnalyzeModal({ file, onSave, onCancel }: AnalyzeModalProps) {
   const isPlace = result?.category === 'place';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="AI 분석 결과">
       <div className="bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
         <div className="relative w-full h-56">
+          {queueInfo && (
+            <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-semibold text-text-primary">
+              {queueInfo.current} / {queueInfo.total}
+            </div>
+          )}
           <Image src={preview} alt="Preview" fill className="object-cover rounded-t-3xl" />
         </div>
 
@@ -119,13 +148,13 @@ export function AnalyzeModal({ file, onSave, onCancel }: AnalyzeModalProps) {
 
               <div className="flex gap-3 mt-6">
                 <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-surface-elevated text-text-secondary font-medium hover:bg-border transition-colors">
-                  취소
+                  {queueInfo && queueInfo.total > 1 ? '건너뛰기' : '취소'}
                 </button>
                 <button
                   onClick={() => onSave(result, imageUrl)}
                   className="flex-1 py-3 rounded-xl bg-primary text-black font-bold hover:bg-primary-light transition-colors"
                 >
-                  저장하기
+                  {queueInfo && queueInfo.current < queueInfo.total ? '저장 → 다음' : '저장하기'}
                 </button>
               </div>
             </>

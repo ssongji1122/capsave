@@ -3,7 +3,6 @@ const ALLOWED_SCHEMES = [
   'http:',
   'nmap:',
   'comgooglemaps:',
-  'kakaomap:',
   'geo:',
 ];
 
