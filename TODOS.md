@@ -137,3 +137,129 @@
 **Effort:** S (human: ~1 hour / CC: ~10 min)
 
 **Depends on:** Nothing.
+
+---
+
+## Fix Supabase Storage RLS policies (P1 — Security)
+
+**What:** Migration 002 allows anonymous upload AND delete to the `captures` storage bucket. Any unauthenticated user can delete another user's images via the Supabase Storage API.
+
+**Why:** This is a real data loss vulnerability. The captures TABLE has proper user-scoped RLS (migration 003), but the storage bucket was never tightened.
+
+**Pros:** Prevents unauthorized image deletion/overwrite.
+
+**Cons:** Requires a new migration (006). Guest upload flow needs adjustment — guests currently can't upload to storage anyway (they use sessionStorage).
+
+**Context:** Add migration 006: drop the anon upload/delete policies, add user-scoped policies that check `auth.uid()` in the file path (`user_id/filename.jpg` pattern already exists in upload route).
+
+**Effort:** S (human: ~2 hours / CC: ~15 min)
+
+**Depends on:** Nothing.
+
+---
+
+## Fix in-memory guest rate limiter for Vercel (P2)
+
+**What:** The guest rate limiter in `/api/analyze` uses an in-memory `Map()`. On Vercel serverless, each request can hit a different cold-started instance. The Map resets on every cold start, effectively disabling rate limiting.
+
+**Why:** Guests can analyze unlimited images for free, burning Gemini API credits.
+
+**Pros:** Prevents API abuse without auth.
+
+**Cons:** Adds a DB query per guest request for rate checking.
+
+**Context:** Replace with Supabase-backed counter: create a `guest_rate_limits` table keyed by IP+date, increment on each request, reject when count > 5. Alternative: use Vercel KV if available.
+
+**Effort:** S (human: ~2 hours / CC: ~15 min)
+
+**Depends on:** Nothing.
+
+---
+
+## Add file size + content-type validation to /api/upload (P2)
+
+**What:** The upload route accepts any file size and hardcodes `contentType: 'image/jpeg'` regardless of actual file type. A PNG uploaded as "jpeg" will be stored with wrong metadata.
+
+**Why:** Vercel's 4.5MB body limit provides implicit protection, but the error is opaque. Explicit validation gives clear error messages and prevents content-type mismatch.
+
+**Pros:** Clear error messages, correct metadata, defense in depth.
+
+**Cons:** Minimal effort.
+
+**Context:** Check `file.size > 5 * 1024 * 1024` → reject with 413. Check `file.type` against allowlist (`image/jpeg`, `image/png`, `image/webp`) → use actual type for storage contentType.
+
+**Effort:** S (human: ~1 hour / CC: ~10 min)
+
+**Depends on:** Nothing.
+
+---
+
+## Add pagination to captures queries (P3)
+
+**What:** `getAllCaptures` and `getCapturesByCategory` in `packages/shared/src/supabase/queries.ts` load ALL captures with `select('*')`. No pagination, no limit.
+
+**Why:** At 1000+ captures, this query will be slow, memory-heavy on both server and client, and may timeout on Vercel's 10-second limit.
+
+**Pros:** Scalable data access pattern.
+
+**Cons:** Requires cursor-based pagination in UI components (FlatList on mobile already supports it, web needs infinite scroll or pagination controls).
+
+**Context:** `searchCaptures` already has `limit`/`offset` — extend this pattern to `getAllCaptures` and `getCapturesByCategory`. Default limit: 50.
+
+**Effort:** S (human: ~3 hours / CC: ~20 min)
+
+**Depends on:** Nothing.
+
+---
+
+## Mobile image upload to Supabase Storage (P1 — Cross-device)
+
+**What:** Mobile saves local `file://` URIs into the shared `image_url` column in Supabase. Images break on any device other than the original phone (web, second phone, after reinstall). Need to add Supabase Storage upload to the mobile capture flow.
+
+**Why:** The shared `image_url` column is designed for public Storage URLs, not local filesystem paths. Any cross-device or cross-platform scenario shows broken images. This is a real user-facing bug, not a polish issue.
+
+**Pros:** Images visible everywhere. True cross-device sync. Consistent with web upload flow.
+
+**Cons:** Requires mobile upload pipeline (resize, upload to Storage, get public URL). Adds network dependency to capture save. Need offline queue for no-connectivity captures.
+
+**Context:** Web already has `/api/upload` that stores to Supabase Storage. Mobile should either call the same endpoint or upload directly to Supabase Storage SDK. The `apps/mobile/app/capture/analyze.tsx:94` saves `manipulated.uri` (local file) directly to Supabase `image_url`. Fix: upload to Storage first, use returned URL.
+
+**Effort:** M (human: ~8 hours / CC: ~45 min)
+
+**Depends on:** Nothing.
+
+---
+
+## Switch to private storage bucket + signed URLs (P1 — Privacy)
+
+**What:** The `captures` storage bucket is public (world-readable). Anyone who knows or guesses an image URL can view any user's screenshots. Also, deleting a capture only removes the DB row — the storage object stays forever, creating orphaned images.
+
+**Why:** For a personal archive app that stores screenshots of social media, restaurant visits, and personal notes, public image URLs are a privacy leak. Orphaned storage objects grow storage costs indefinitely.
+
+**Pros:** User images are private. Storage costs controlled. GDPR-friendly deletion.
+
+**Cons:** Requires signed URL generation on every image load (adds ~50ms latency). Need to update all image display components to use signed URLs. Storage cleanup requires a trigger or delete hook.
+
+**Context:** Migration 002 creates a public bucket. Fix: (1) New migration to set bucket to private, (2) Create a `getSignedUrl()` helper (Supabase SDK supports this), (3) Add `storage.from('captures').remove()` call in `deleteCapture()` query, (4) Update web CaptureCard and mobile CaptureCard to use signed URLs.
+
+**Effort:** M (human: ~6 hours / CC: ~30 min)
+
+**Depends on:** Nothing.
+
+---
+
+## Batch analysis provenance mapping (P2)
+
+**What:** The batch analysis API returns an unordered `results` array. The UI maps results to images by array index, which breaks when AI merges multiple screenshots into one result (e.g., Threads carousel 1/17, 2/17). The first image gets used for the merged result, destroying provenance.
+
+**Why:** Wrong screenshot attached to wrong analysis result. Users see mismatched thumbnails and metadata.
+
+**Pros:** Correct image-to-analysis mapping. Trustworthy batch results.
+
+**Cons:** Requires prompt engineering to get Gemini to return image indices in its response. May need post-processing to validate mapping.
+
+**Context:** `apps/web/src/app/api/analyze-batch/route.ts:101` returns `results` array. `BatchAnalyzeModal.tsx:87` maps by index. Fix: add `imageIndices: number[]` to each result in the Gemini prompt, validate in `parseBatchAnalysisResult()`.
+
+**Effort:** S (human: ~4 hours / CC: ~20 min)
+
+**Depends on:** Nothing.
