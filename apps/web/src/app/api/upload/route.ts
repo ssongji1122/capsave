@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -17,16 +20,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    // File validation
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json({ error: '파일 크기가 5MB를 초과합니다.' }, { status: 413 });
+    }
+
+    const contentType = file.type;
+    if (!ALLOWED_TYPES.includes(contentType)) {
+      return NextResponse.json({ error: '지원하지 않는 파일 형식입니다. (jpeg, png, webp만 가능)' }, { status: 400 });
+    }
+
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
-    const fileName = `${user.id}/${timestamp}_${random}.jpg`;
+    const extension = contentType.split('/')[1];
+    const fileName = `${user.id}/${timestamp}_${random}.${extension}`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
       .from('captures')
       .upload(fileName, buffer, {
-        contentType: 'image/jpeg',
+        contentType,
         upsert: false,
       });
 

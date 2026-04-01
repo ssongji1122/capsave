@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/server';
 import { extractGeminiText } from '@/lib/gemini';
-import { createRateLimiter } from '@/lib/rate-limit';
-
-const guestRateLimiter = createRateLimiter(5, 24 * 60 * 60 * 1000); // 5 requests per day
+import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
 
 async function getAuthUser(request: NextRequest) {
   // 1. Try Bearer token auth (mobile clients)
@@ -29,11 +27,13 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser(request);
 
     if (!user) {
-      // Guest: apply rate limit
+      // Guest: apply rate limit (DB-based)
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-      if (!guestRateLimiter.isAllowed(ip)) {
+      const rateLimit = await checkGuestRateLimit(ip);
+      if (!rateLimit.allowed) {
         return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
       }
+      await incrementGuestRateLimit(ip);
     }
 
     const body = await request.json();
