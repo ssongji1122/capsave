@@ -31,21 +31,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
     try {
       setStatus('analyzing');
 
-      if (isGuest) {
-        // Guest: convert to base64 locally, skip upload
-        const base64 = await fileToBase64(file);
-        setImageUrl(base64);
-      } else {
-        // Authenticated: upload to Supabase Storage
-        const uploadForm = new FormData();
-        uploadForm.append('file', file);
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-        if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-        const { path } = await uploadRes.json();
-        setImageUrl(path);
-      }
-
-      // Resize + base64 on client, send as JSON
+      // Resize + base64 on client for AI analysis (needed regardless of guest/auth)
       const resizedBlob = await resizeImageFile(file, 800, 0.6);
       const resizedB64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -54,17 +40,49 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
         reader.readAsDataURL(resizedBlob);
       });
 
-      const analyzeRes = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: resizedB64 }),
-      });
-      if (!analyzeRes.ok) {
-        const errData = await analyzeRes.json().catch(() => null);
-        throw new Error(errData?.error || 'AI 분석 실패');
-      }
-      const analysisResult = await analyzeRes.json();
+      let uploadedPath: string;
+      let analysisResult: AnalysisResult;
 
+      if (isGuest) {
+        // Guest: convert to base64 locally, skip upload, then analyze
+        const base64 = await fileToBase64(file);
+        uploadedPath = base64;
+        const analyzeRes = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: resizedB64 }),
+        });
+        if (!analyzeRes.ok) {
+          const errData = await analyzeRes.json().catch(() => null);
+          throw new Error(errData?.error || 'AI 분석 실패');
+        }
+        analysisResult = await analyzeRes.json();
+      } else {
+        // Authenticated: upload and analyze in parallel
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+
+        const [uploadRes, analyzeRes] = await Promise.all([
+          fetch('/api/upload', { method: 'POST', body: uploadForm }),
+          fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: resizedB64 }),
+          }),
+        ]);
+
+        if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
+        if (!analyzeRes.ok) {
+          const errData = await analyzeRes.json().catch(() => null);
+          throw new Error(errData?.error || 'AI 분석 실패');
+        }
+
+        const { path } = await uploadRes.json();
+        uploadedPath = path;
+        analysisResult = await analyzeRes.json();
+      }
+
+      setImageUrl(uploadedPath);
       setResult(analysisResult);
       setStatus('done');
     } catch (err) {

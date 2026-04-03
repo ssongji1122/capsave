@@ -35,21 +35,24 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
       const uploadedUrls: string[] = [];
 
       if (isGuest) {
-        for (let i = 0; i < files.length; i++) {
-          setProgress(i + 1);
-          const base64 = await fileToBase64(files[i]);
-          uploadedUrls.push(base64);
-        }
+        const base64Results = await Promise.all(files.map(f => fileToBase64(f)));
+        base64Results.forEach(b64 => uploadedUrls.push(b64));
+        setProgress(files.length);
       } else {
-        for (let i = 0; i < files.length; i++) {
-          setProgress(i + 1);
-          const uploadForm = new FormData();
-          uploadForm.append('file', files[i]);
-          const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-          if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-          const { path } = await uploadRes.json();
-          uploadedUrls.push(path);
-        }
+        let completed = 0;
+        const uploadResults = await Promise.all(
+          files.map(async (f) => {
+            const uploadForm = new FormData();
+            uploadForm.append('file', f);
+            const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+            if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
+            const { path } = await uploadRes.json();
+            completed += 1;
+            setProgress(completed);
+            return path;
+          })
+        );
+        uploadedUrls.push(...uploadResults);
       }
       setImageUrls(uploadedUrls);
 
