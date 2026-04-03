@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } fr
 import { supabase } from '@/services/supabase';
 import { getAllCaptures, clearAllCaptures, CaptureItem } from '@/services/database';
 import { saveCapture as supaSave } from '@scrave/shared';
+import { useColorScheme } from '@/components/useColorScheme';
+import { Colors } from '@/constants/Colors';
 
 interface Props {
   visible: boolean;
@@ -15,6 +17,8 @@ interface Props {
 export function MigrationModal({ visible, userId, localCount, onComplete, onSkip }: Props) {
   const [migrating, setMigrating] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: localCount });
+  const colorScheme = useColorScheme() ?? 'dark';
+  const colors = Colors[colorScheme];
 
   const handleMigrate = async () => {
     setMigrating(true);
@@ -55,26 +59,26 @@ export function MigrationModal({ visible, userId, localCount, onComplete, onSkip
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>기존 캡처 발견</Text>
-          <Text style={styles.description}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.text }]}>기존 캡처 발견</Text>
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
             로컬에 저장된 {localCount}개 캡처를 계정에 옮길까요?
           </Text>
 
           {migrating ? (
             <View style={styles.progressRow}>
-              <ActivityIndicator color="#F4845F" />
-              <Text style={styles.progressText}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={[styles.progressText, { color: colors.textSecondary }]}>
                 {progress.done}/{progress.total} 이전 중...
               </Text>
             </View>
           ) : (
             <View style={styles.buttons}>
-              <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-                <Text style={styles.skipText}>나중에</Text>
+              <TouchableOpacity style={[styles.skipButton, { borderColor: colors.border }]} onPress={onSkip}>
+                <Text style={[styles.skipText, { color: colors.textSecondary }]}>나중에</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.migrateButton} onPress={handleMigrate}>
-                <Text style={styles.migrateText}>옮기기</Text>
+              <TouchableOpacity style={[styles.migrateButton, { backgroundColor: colors.primary }]} onPress={handleMigrate}>
+                <Text style={[styles.migrateText, { color: colors.background }]}>옮기기</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -95,22 +99,18 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#0D0D12',
     borderRadius: 24,
     padding: 28,
     borderWidth: 1,
-    borderColor: '#1F1F28',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   description: {
     fontSize: 14,
-    color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: '#9CA3AF',
   },
   buttons: {
     flexDirection: 'row',
@@ -136,23 +135,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1F1F28',
   },
   skipText: {
     fontSize: 15,
-    color: '#9CA3AF',
   },
   migrateButton: {
     flex: 1,
     height: 48,
     borderRadius: 14,
-    backgroundColor: '#F4845F',
     justifyContent: 'center',
     alignItems: 'center',
   },
   migrateText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#000000',
   },
 });

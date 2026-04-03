@@ -7,6 +7,7 @@ import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { Colors } from '@/constants/Colors';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CapturesProvider } from '@/contexts/CapturesContext';
 
@@ -28,7 +29,7 @@ const ScraveDarkTheme = {
     card: '#000000',
     text: '#FFFFFF',
     border: '#262626',
-    primary: '#FFB800',
+    primary: '#F4845F',
   },
 };
 
@@ -78,8 +79,8 @@ function RootLayoutNav() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#050508', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#F4845F" />
+      <View style={{ flex: 1, backgroundColor: Colors[colorScheme ?? 'dark'].background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors[colorScheme ?? 'dark'].primary} />
       </View>
     );
   }
