@@ -11,6 +11,7 @@ import {
   getNextGuestId,
   guestCaptureToItem,
 } from '@scrave/shared';
+import { showErrorToast } from '@/lib/notifications';
 
 const STORAGE_KEY = 'scrave_guest_captures';
 const MAX_GUEST_CAPTURES = 3;
@@ -80,6 +81,7 @@ export function GuestCapturesProvider({ children }: { children: React.ReactNode 
         sessionStorage.setItem(STORAGE_KEY, serializeGuestCaptures(updated));
       } catch {
         // sessionStorage full — still keep in-memory state
+        showErrorToast('저장 공간이 부족합니다. 일부 데이터가 저장되지 않을 수 있습니다.');
       }
       return updated;
     });

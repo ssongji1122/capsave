@@ -14,6 +14,7 @@ import {
   mapRowToCapture,
 } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
+import { showErrorToast } from '@/lib/notifications';
 
 interface CapturesContextValue {
   captures: CaptureItem[];
@@ -54,6 +55,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       setNextCursor(result.nextCursor);
     } catch (error) {
       console.error('Failed to load captures:', error);
+      showErrorToast('캡처를 불러오지 못했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +71,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       setNextCursor(result.nextCursor);
     } catch (error) {
       console.error('Failed to load more captures:', error);
+      showErrorToast('더 불러오기에 실패했습니다.');
     } finally {
       setIsLoadingMore(false);
     }
@@ -119,8 +122,13 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const handleDelete = useCallback(async (id: number) => {
-    await deleteCaptureQuery(client, id);
-    setCaptures((prev) => prev.filter((c) => c.id !== id));
+    try {
+      await deleteCaptureQuery(client, id);
+      setCaptures((prev) => prev.filter((c) => c.id !== id));
+    } catch (error) {
+      console.error('Failed to delete capture:', error);
+      showErrorToast('삭제에 실패했습니다. 다시 시도해주세요.');
+    }
   }, [client]);
 
   const handleSearch = useCallback(async (query: string) => {
@@ -134,14 +142,20 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
-    const newCapture = await saveCaptureQuery(client, result, imageUrl, userId ?? undefined);
-    // Attach ephemeral fields from analysis result (not persisted to DB)
-    const enriched: CaptureItem = {
-      ...newCapture,
-      ...(result.keyInsights && { keyInsights: result.keyInsights }),
-      ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
-    };
-    setCaptures((prev) => [enriched, ...prev]);
+    try {
+      const newCapture = await saveCaptureQuery(client, result, imageUrl, userId ?? undefined);
+      // Attach ephemeral fields from analysis result (not persisted to DB)
+      const enriched: CaptureItem = {
+        ...newCapture,
+        ...(result.keyInsights && { keyInsights: result.keyInsights }),
+        ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
+      };
+      setCaptures((prev) => [enriched, ...prev]);
+    } catch (error) {
+      console.error('Failed to save capture:', error);
+      showErrorToast('저장에 실패했습니다. 다시 시도해주세요.');
+      throw error;
+    }
   }, [client, userId]);
 
   return (
