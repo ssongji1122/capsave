@@ -15,10 +15,12 @@ const CONFIDENCE_THRESHOLD = 0.5;
 export default function HomePage() {
   const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
 
   const handleSearch = useCallback(async (query: string) => {
+    setSearchQuery(query);
     if (query) {
       const results = await searchCaptures(query);
       setDisplayCaptures(results);
@@ -130,6 +132,7 @@ export default function HomePage() {
         hasMore={hasMore}
         isLoadingMore={isLoadingMore}
         loadMore={loadMore}
+        searchQuery={searchQuery}
       />
 
       {/* Single file analyze modal */}

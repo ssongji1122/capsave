@@ -13,6 +13,7 @@ interface CaptureListProps {
   hasMore?: boolean;
   isLoadingMore?: boolean;
   loadMore?: () => void;
+  searchQuery?: string;
 }
 
 export function CaptureList({
@@ -25,6 +26,7 @@ export function CaptureList({
   hasMore,
   isLoadingMore,
   loadMore,
+  searchQuery,
 }: CaptureListProps) {
   if (isLoading) {
     return (
@@ -37,6 +39,22 @@ export function CaptureList({
   }
 
   if (captures.length === 0) {
+    if (searchQuery && searchQuery.trim().length > 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 px-8">
+          <div className="w-24 h-24 rounded-full bg-surface-elevated flex items-center justify-center mb-5">
+            <span className="text-4xl">🔍</span>
+          </div>
+          <h3 className="text-xl font-bold text-text-primary">
+            &ldquo;{searchQuery}&rdquo; 결과 없음
+          </h3>
+          <p className="text-text-secondary text-center mt-2 leading-6">
+            다른 키워드로 검색해보세요
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-24 px-8">
         <div className="w-24 h-24 rounded-full bg-surface-elevated flex items-center justify-center mb-5">
