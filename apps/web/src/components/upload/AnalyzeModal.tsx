@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
 import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface AnalyzeModalProps {
   file: File;
@@ -14,6 +15,7 @@ interface AnalyzeModalProps {
 }
 
 export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInfo }: AnalyzeModalProps) {
+  const containerRef = useModalFocusTrap(true, onCancel);
   const [status, setStatus] = useState<'analyzing' | 'done' | 'error'>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -94,7 +96,13 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
   const isPlace = result?.category === 'place';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="AI 분석 결과">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI 분석 결과"
+    >
       <div className="bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
         <div className="relative w-full h-56">
           {queueInfo && (

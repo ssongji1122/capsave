@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
 import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface BatchAnalyzeModalProps {
   files: File[];
@@ -13,6 +14,7 @@ interface BatchAnalyzeModalProps {
 }
 
 export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: BatchAnalyzeModalProps) {
+  const containerRef = useModalFocusTrap(true, onCancel);
   const [status, setStatus] = useState<'uploading' | 'analyzing' | 'done' | 'error'>('uploading');
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -101,7 +103,13 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
   const isMerged = results.length === 1 && files.length > 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="통합 분석 결과">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="통합 분석 결과"
+    >
       <div className="bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
         {/* Image strip — show all uploaded images */}
         <div className="relative w-full h-44 flex overflow-x-auto" style={{ scrollbarWidth: 'none' }}>

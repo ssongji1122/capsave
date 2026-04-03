@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { getMapLinks, getReviewLinks } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import { MapPlace } from './MapView';
 
 interface PlacePopupProps {
@@ -11,6 +12,7 @@ interface PlacePopupProps {
 }
 
 export function PlacePopup({ place, onClose }: PlacePopupProps) {
+  const containerRef = useModalFocusTrap(!!place, onClose);
   const { preferences } = useUserPreferences();
   const links = getMapLinks(place.name, place.address);
   const reviewLinks = getReviewLinks(place.name, place.address);
@@ -19,6 +21,7 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
 
   return (
     <div
+      ref={containerRef}
       role="dialog"
       aria-label={`${place.name} 장소 정보`}
       className="absolute top-16 left-1/2 -translate-x-1/2 z-20 w-64 bg-surface-elevated border border-border rounded-2xl p-4 shadow-2xl shadow-black/50"
