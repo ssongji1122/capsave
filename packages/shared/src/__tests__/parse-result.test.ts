@@ -238,3 +238,53 @@ describe('tryParseJSON — truncated JSON recovery', () => {
     expect(result.tags).toEqual(['a']);
   });
 });
+
+describe('parseBatchAnalysisResult with sourceIndices', () => {
+  it('parses merged result with sourceIndices', () => {
+    const merged = JSON.stringify({
+      category: 'text',
+      title: '합쳐진 글',
+      summary: '스레드 게시글',
+      places: [],
+      extractedText: '전체 내용',
+      links: [],
+      tags: ['스레드'],
+      source: 'threads',
+      confidence: 0.9,
+      sourceAccountId: null,
+      sourceIndices: [0, 1, 2],
+    });
+    const results = parseBatchAnalysisResult(merged);
+    expect(results).toHaveLength(1);
+    expect(results[0].sourceIndices).toEqual([0, 1, 2]);
+  });
+
+  it('parses array with sourceIndices per item', () => {
+    const arr = JSON.stringify([
+      {
+        category: 'place', title: '카페', summary: '카페 정보',
+        places: [{ name: '블루보틀' }], extractedText: '', links: [], tags: [],
+        source: 'instagram', confidence: 0.8, sourceAccountId: null, sourceIndices: [0],
+      },
+      {
+        category: 'text', title: '기사', summary: '뉴스 기사',
+        places: [], extractedText: '기사 내용', links: [], tags: [],
+        source: 'other', confidence: 0.7, sourceAccountId: null, sourceIndices: [1],
+      },
+    ]);
+    const results = parseBatchAnalysisResult(arr);
+    expect(results).toHaveLength(2);
+    expect(results[0].sourceIndices).toEqual([0]);
+    expect(results[1].sourceIndices).toEqual([1]);
+  });
+
+  it('returns undefined sourceIndices when field is absent (backward compat)', () => {
+    const legacy = JSON.stringify({
+      category: 'text', title: '레거시', summary: '',
+      places: [], extractedText: '', links: [], tags: [],
+      source: 'other', confidence: 0.5, sourceAccountId: null,
+    });
+    const results = parseBatchAnalysisResult(legacy);
+    expect(results[0].sourceIndices).toBeUndefined();
+  });
+});

@@ -44,6 +44,10 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
     sourceAccountId: typeof result.sourceAccountId === 'string' ? result.sourceAccountId : null,
     ...(Array.isArray(result.keyInsights) && { keyInsights: result.keyInsights as string[] }),
     ...(Array.isArray(result.relatedSearchTerms) && { relatedSearchTerms: result.relatedSearchTerms as string[] }),
+    ...(Array.isArray(result.sourceIndices) && {
+      sourceIndices: (result.sourceIndices as unknown[])
+        .filter((v): v is number => typeof v === 'number')
+    }),
   };
 }
 

@@ -23,6 +23,7 @@ export interface AnalysisResult {
   sourceAccountId: string | null;
   keyInsights?: string[];
   relatedSearchTerms?: string[];
+  sourceIndices?: number[];  // 배치 분석: 이 결과가 어떤 이미지 인덱스들에서 왔는지
 }
 
 export interface CaptureItem {

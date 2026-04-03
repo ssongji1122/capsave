@@ -49,18 +49,22 @@ SAME content examples: sequential screenshots of one Threads post (1/17, 2/17...
 DIFFERENT content examples: a restaurant screenshot + an article screenshot, unrelated posts from different accounts, a recipe + a travel spot.
 
 ## If ALL images are from the SAME content:
-Return a SINGLE JSON object (same format as single-image analysis).
-- Combine all text into one coherent extractedText (remove duplicated text from overlapping screenshots)
-- Create ONE unified title and summary covering the entire content
-- If it's a thread with page indicators (1/17, 2/17...), note the total in summary
-- Merge places and links (deduplicate)
-- confidence reflects how well you understood the COMBINED content
+Return a SINGLE JSON object (same format as single-image analysis) with an added field:
+- "sourceIndices": [0, 1, 2, ...] — array of all input image indices (0-based) that were merged
+
+Combine all text into one coherent extractedText (remove duplicated text from overlapping screenshots)
+Create ONE unified title and summary covering the entire content.
+If it's a thread with page indicators (1/17, 2/17...), note the total in summary.
+Merge places and links (deduplicate).
+confidence reflects how well you understood the COMBINED content.
 
 ## If images are from DIFFERENT content:
-Return a JSON array of objects, each in the same format as single-image analysis.
+Return a JSON array of objects, each in the same format as single-image analysis, each with:
+- "sourceIndices": [n] — array containing the single input image index (0-based) this result came from
+
 Each object represents one distinct piece of content.
 
 ## If SOME images are related and others are not:
-Group the related ones into one merged object, and keep the unrelated ones as separate objects. Return a JSON array.
+Group the related ones into one merged object (sourceIndices: [0, 2] etc.), keep unrelated ones as separate objects (sourceIndices: [1] etc.). Return a JSON array.
 
-IMPORTANT: For a single merged result, return a plain JSON object {}. For multiple results, return a JSON array []. The response format indicates whether merging happened.`;
+IMPORTANT: For a single merged result, return a plain JSON object {}. For multiple results, return a JSON array []. The response format indicates whether merging happened. ALWAYS include "sourceIndices" in every result object.`;
