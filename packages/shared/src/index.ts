@@ -7,6 +7,7 @@ export type {
   CaptureItem,
   CaptureRow,
   ImageAnalyzer,
+  PaginatedResult,
 } from './types/capture';
 
 // Design tokens

@@ -13,7 +13,7 @@ import { CaptureItem, AnalysisResult } from '@scrave/shared';
 const CONFIDENCE_THRESHOLD = 0.5;
 
 export default function HomePage() {
-  const { captures, isLoading, deleteCapture, searchCaptures, saveCapture } = useCaptures();
+  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
@@ -127,6 +127,9 @@ export default function HomePage() {
         emptyIcon="📸"
         emptyTitle="캡처를 시작해보세요"
         emptySubtitle={'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        loadMore={loadMore}
       />
 
       {/* Single file analyze modal */}

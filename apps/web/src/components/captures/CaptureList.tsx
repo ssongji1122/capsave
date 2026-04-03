@@ -10,6 +10,9 @@ interface CaptureListProps {
   emptyIcon: string;
   emptyTitle: string;
   emptySubtitle: string;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  loadMore?: () => void;
 }
 
 export function CaptureList({
@@ -19,6 +22,9 @@ export function CaptureList({
   emptyIcon,
   emptyTitle,
   emptySubtitle,
+  hasMore,
+  isLoadingMore,
+  loadMore,
 }: CaptureListProps) {
   if (isLoading) {
     return (
@@ -43,10 +49,23 @@ export function CaptureList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
-      {captures.map((item) => (
-        <CaptureCard key={item.id} item={item} onDelete={onDelete} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+        {captures.map((item) => (
+          <CaptureCard key={item.id} item={item} onDelete={onDelete} />
+        ))}
+      </div>
+      {hasMore && (
+        <div className="flex justify-center mt-6 mb-4">
+          <button
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="px-6 py-2.5 rounded-xl bg-surface-elevated border border-border text-sm font-medium text-text-secondary hover:text-text-primary hover:border-border-light transition-colors disabled:opacity-50"
+          >
+            {isLoadingMore ? '불러오는 중...' : '더 보기'}
+          </button>
+        </div>
+      )}
+    </>
   );
 }

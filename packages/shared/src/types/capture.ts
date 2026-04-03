@@ -69,3 +69,9 @@ export interface CaptureRow {
 export interface ImageAnalyzer {
   analyze(imageBase64: string): Promise<AnalysisResult>;
 }
+
+export interface PaginatedResult {
+  items: CaptureItem[];
+  nextCursor: string | null;  // 마지막 아이템의 created_at ISO string. null이면 마지막 페이지
+  hasMore: boolean;
+}

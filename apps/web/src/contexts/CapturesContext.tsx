@@ -18,6 +18,9 @@ import { createClient } from '@/lib/supabase/browser';
 interface CapturesContextValue {
   captures: CaptureItem[];
   isLoading: boolean;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
   deleteCapture: (id: number) => Promise<void>;
   searchCaptures: (query: string) => Promise<CaptureItem[]>;
@@ -30,6 +33,9 @@ const CapturesContext = createContext<CapturesContextValue | null>(null);
 export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [client] = useState(() => createClient());
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -42,14 +48,31 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setIsLoading(true);
-      const items = await getAllCaptures(client);
-      setCaptures(items);
+      const result = await getAllCaptures(client);
+      setCaptures(result.items);
+      setHasMore(result.hasMore);
+      setNextCursor(result.nextCursor);
     } catch (error) {
       console.error('Failed to load captures:', error);
     } finally {
       setIsLoading(false);
     }
   }, [client]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoadingMore || !nextCursor) return;
+    try {
+      setIsLoadingMore(true);
+      const result = await getAllCaptures(client, { cursor: nextCursor });
+      setCaptures((prev) => [...prev, ...result.items]);
+      setHasMore(result.hasMore);
+      setNextCursor(result.nextCursor);
+    } catch (error) {
+      console.error('Failed to load more captures:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [client, hasMore, isLoadingMore, nextCursor]);
 
   useEffect(() => {
     refresh();
@@ -106,7 +129,8 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const handleGetByCategory = useCallback(async (category: CaptureCategory) => {
-    return getCapturesByCategoryQuery(client, category);
+    const result = await getCapturesByCategoryQuery(client, category);
+    return result.items;
   }, [client]);
 
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
@@ -125,6 +149,9 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       value={{
         captures,
         isLoading,
+        hasMore,
+        isLoadingMore,
+        loadMore,
         refresh,
         deleteCapture: handleDelete,
         searchCaptures: handleSearch,
