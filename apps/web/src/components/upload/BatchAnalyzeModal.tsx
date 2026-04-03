@@ -47,8 +47,8 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
           uploadForm.append('file', files[i]);
           const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
           if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-          const { url } = await uploadRes.json();
-          uploadedUrls.push(url);
+          const { path } = await uploadRes.json();
+          uploadedUrls.push(path);
         }
       }
       setImageUrls(uploadedUrls);

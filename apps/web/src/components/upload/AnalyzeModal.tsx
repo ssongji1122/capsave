@@ -41,8 +41,8 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
         uploadForm.append('file', file);
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
         if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-        const { url } = await uploadRes.json();
-        setImageUrl(url);
+        const { path } = await uploadRes.json();
+        setImageUrl(path);
       }
 
       // Resize + base64 on client, send as JSON

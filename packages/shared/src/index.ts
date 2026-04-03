@@ -32,6 +32,7 @@ export {
 export type { GuestCapture } from './utils/guest-captures';
 export { base64ToBlob, buildMigrationPayload } from './utils/guest-migration';
 export type { MigrationPayload } from './utils/guest-migration';
+export { extractStoragePath } from './utils/storage';
 
 // AI
 export { AI_MODEL, AI_MODEL_ENDPOINT } from './ai/config';

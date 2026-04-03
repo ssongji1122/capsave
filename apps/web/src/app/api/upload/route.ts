@@ -48,11 +48,7 @@ export async function POST(request: NextRequest) {
       throw uploadError;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('captures')
-      .getPublicUrl(fileName);
-
-    return NextResponse.json({ url: publicUrl });
+    return NextResponse.json({ path: fileName });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(

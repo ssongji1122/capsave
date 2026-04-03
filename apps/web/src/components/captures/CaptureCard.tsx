@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { CaptureItem, PlaceInfo, getReviewLinks } from '@scrave/shared';
+import { CaptureItem, PlaceInfo, getReviewLinks, extractStoragePath } from '@scrave/shared';
 import { isDataUri } from '@/lib/image-utils';
 
 interface CaptureCardProps {
@@ -73,19 +72,14 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
         <div className="relative w-full h-44 bg-surface-elevated">
           {isDataUri(item.imageUrl) ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.imageUrl}
-              alt={altText}
-              className="object-cover w-full h-full"
-            />
+            <img src={item.imageUrl} alt={altText} className="w-full h-full object-cover" />
           ) : (
-            <Image
-              src={item.imageUrl}
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/image?path=${encodeURIComponent(extractStoragePath(item.imageUrl))}`}
               alt={altText}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              loading="eager"
+              className="w-full h-full object-cover"
+              loading="lazy"
             />
           )}
           <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
