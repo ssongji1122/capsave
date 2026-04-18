@@ -1,8 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+  }
+  return _supabase;
+}
 
 interface RateLimitResult {
   allowed: boolean;
@@ -20,7 +27,7 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
   const today = new Date().toISOString().split('T')[0];
   const resetAt = new Date(today + 'T23:59:59.999Z');
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('guest_rate_limits')
     .select('count')
     .eq('ip_key', key)
@@ -45,7 +52,7 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
 export async function incrementGuestRateLimit(ip: string): Promise<void> {
   const key = await getTodayKey(ip);
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('guest_rate_limits')
     .select('count')
     .eq('ip_key', key)
@@ -57,12 +64,12 @@ export async function incrementGuestRateLimit(ip: string): Promise<void> {
   }
 
   if (data) {
-    await supabase
+    await getSupabase()
       .from('guest_rate_limits')
       .update({ count: data.count + 1 })
       .eq('ip_key', key);
   } else {
-    await supabase
+    await getSupabase()
       .from('guest_rate_limits')
       .insert({ ip_key: key, count: 1 });
   }
