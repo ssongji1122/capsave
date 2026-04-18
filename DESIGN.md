@@ -1,4 +1,4 @@
-# Design System — CapSave
+# Design System — Scrave
 
 ## Product Context
 - **What this is:** 스크린샷을 AI로 분석하여 장소/텍스트를 자동 분류하고 저장하는 개인 아카이브 앱

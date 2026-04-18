@@ -1,14 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sharp from 'sharp';
-import { SYSTEM_PROMPT, parseAnalysisResult } from '@capsave/shared';
+import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@scrave/shared';
+import { createClient } from '@/lib/supabase/server';
+import { extractGeminiText } from '@/lib/gemini';
+import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
+
+async function getAuthUser(request: NextRequest) {
+  // 1. Try Bearer token auth (mobile clients)
+  const token = extractBearerToken(request.headers.get('authorization'));
+  if (token) {
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await supabase.auth.getUser(token);
+    return user;
+  }
+
+  // 2. Try cookie-based auth (web clients)
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const user = await getAuthUser(request);
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!user) {
+      // Guest: apply rate limit (DB-based)
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+      const rateLimit = await checkGuestRateLimit(ip);
+      if (!rateLimit.allowed) {
+        return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
+      }
+      await incrementGuestRateLimit(ip);
+    }
+
+    const body = await request.json();
+    const base64Image: string = body.image;
+
+    if (!base64Image) {
+      return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -16,18 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    // Resize image to max 1024px width
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const resized = await sharp(buffer)
-      .resize(1024, undefined, { withoutEnlargement: true })
-      .jpeg({ quality: 70 })
-      .toBuffer();
-
-    const base64Image = resized.toString('base64');
-
-    // Call Gemini Vision API (2.5-flash with thinking disabled for structured output)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `${AI_MODEL_ENDPOINT}?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,7 +72,7 @@ export async function POST(request: NextRequest) {
           ],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 4096,
             thinkingConfig: {
               thinkingBudget: 0,
             },
@@ -69,11 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-
-    // Extract text part (skip thinking parts)
-    const parts = data.candidates?.[0]?.content?.parts ?? [];
-    const textPart = parts.find((p: { text?: string; thought?: boolean }) => p.text && !p.thought);
-    const content = textPart?.text;
+    const content = extractGeminiText(data.candidates);
 
     if (!content) {
       console.error('No text content in response:', JSON.stringify(data.candidates?.[0]?.content));

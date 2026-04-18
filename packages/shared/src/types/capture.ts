@@ -19,6 +19,11 @@ export interface AnalysisResult {
   links: string[];
   tags: string[];
   source: SourceApp;
+  confidence: number;
+  sourceAccountId: string | null;
+  keyInsights?: string[];
+  relatedSearchTerms?: string[];
+  sourceIndices?: number[];  // 배치 분석: 이 결과가 어떤 이미지 인덱스들에서 왔는지
 }
 
 export interface CaptureItem {
@@ -33,6 +38,13 @@ export interface CaptureItem {
   source: string;
   imageUrl: string;
   createdAt: string;
+  userId: string | null;
+  confidence: number | null;
+  reclassifiedAt: string | null;
+  deletedAt: string | null;
+  sourceAccountId: string | null;
+  keyInsights?: string[];
+  relatedSearchTerms?: string[];
 }
 
 export interface CaptureRow {
@@ -47,8 +59,19 @@ export interface CaptureRow {
   source: string;
   image_url: string;
   created_at: string;
+  user_id: string | null;
+  confidence: number | null;
+  reclassified_at: string | null;
+  deleted_at: string | null;
+  source_account_id: string | null;
 }
 
 export interface ImageAnalyzer {
   analyze(imageBase64: string): Promise<AnalysisResult>;
+}
+
+export interface PaginatedResult {
+  items: CaptureItem[];
+  nextCursor: string | null;  // 마지막 아이템의 created_at ISO string. null이면 마지막 페이지
+  hasMore: boolean;
 }

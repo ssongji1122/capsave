@@ -51,3 +51,6 @@ packages/*/dist/
 
 # Superpowers brainstorm sessions
 .superpowers/
+supabase/.temp/
+.gstack/
+.vercel

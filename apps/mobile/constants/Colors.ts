@@ -1,4 +1,4 @@
-// CapSave Design System Colors
+// Scrave Design System Colors
 export const Colors = {
   // Primary dark theme
   dark: {
@@ -13,9 +13,9 @@ export const Colors = {
     textTertiary: '#666666',
 
     // How We Feel Inspired Accents
-    primary: '#FFB800', // Golden Amber
-    primaryLight: '#FFD666',
-    primaryDark: '#B38100',
+    primary: '#F4845F', // Warm Coral
+    primaryLight: '#F69E80',
+    primaryDark: '#D4623D',
 
     // Track colors (Categorization)
     placeAccent: '#4ADE80', // Mint/Green (Calm/Growth)
@@ -38,10 +38,10 @@ export const Colors = {
     // Tab bar
     tabBar: '#000000',
     tabIconDefault: '#666666',
-    tabIconSelected: '#FFB800',
+    tabIconSelected: '#F4845F',
 
     // Gradient
-    gradientStart: '#FFB800',
+    gradientStart: '#F4845F',
     gradientEnd: '#F87171',
   },
 

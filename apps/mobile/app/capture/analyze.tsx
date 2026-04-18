@@ -15,10 +15,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { analyzeImage, AnalysisResult } from '@/services/ai-analyzer';
-import { saveCapture } from '@/services/database';
+import { analyzeImage, AnalysisResult, PlaceInfo } from '@/services/ai-analyzer';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { supabase } from '@/services/supabase';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
 
@@ -27,7 +27,7 @@ export default function AnalyzeScreen() {
   const colors = Colors[colorScheme];
   const router = useRouter();
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
-  const { refresh } = useCaptures();
+  const { refresh, saveCapture } = useCaptures();
 
   const [status, setStatus] = useState<AnalyzeStatus>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -71,7 +71,11 @@ export default function AnalyzeScreen() {
     isAnalyzing.current = true;
     setStatus('analyzing');
     try {
-      const analysisResult = await analyzeImage(imageUri!);
+      const getToken = async () => {
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+      };
+      const analysisResult = await analyzeImage(imageUri!, getToken);
       setResult(analysisResult);
       setStatus('done');
     } catch (error) {
@@ -178,7 +182,7 @@ export default function AnalyzeScreen() {
               />
               <View style={styles.categoryInfo}>
                 <Text style={[styles.categoryLabel, { color: accentColor }]}>
-                  {isPlace ? '📍 장소 정보' : '📝 텍스트 정보'}
+                  {isPlace ? `장소 ${result.places.length}개` : '텍스트 정보'}
                 </Text>
                 {result.source !== 'other' && (
                   <Text style={[styles.sourceLabel, { color: colors.textTertiary }]}>
@@ -196,26 +200,32 @@ export default function AnalyzeScreen() {
               </Text>
             )}
 
-            {/* Place Info */}
-            {isPlace && result.placeName && (
-              <View style={[styles.placeCard, { backgroundColor: surfaceColor, borderColor }]}>
-                <Text style={[styles.placeLabel, { color: colors.textSecondary }]}>장소명</Text>
-                <Text style={[styles.placeValue, { color: colors.text }]}>{result.placeName}</Text>
-                {result.address && (
-                  <>
-                    <Text style={[styles.placeLabel, { color: colors.textSecondary, marginTop: 10 }]}>
-                      주소
-                    </Text>
-                    <Text style={[styles.placeValue, { color: colors.text }]}>{result.address}</Text>
-                  </>
+            {/* Places */}
+            {isPlace && result.places.length > 0 && result.places.map((place: PlaceInfo, idx: number) => (
+              <View key={idx} style={[styles.placeCard, { backgroundColor: surfaceColor, borderColor }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <View style={[styles.placeIndex, { backgroundColor: accentColor }]}>
+                    <Text style={styles.placeIndexText}>{idx + 1}</Text>
+                  </View>
+                  <Text style={[styles.placeValue, { color: colors.text, flex: 1 }]}>{place.name}</Text>
+                </View>
+                {place.address && (
+                  <Text style={[styles.placeLabel, { color: colors.textSecondary, marginLeft: 32 }]}>
+                    {place.address}
+                  </Text>
+                )}
+                {place.date && (
+                  <Text style={[styles.placeLabel, { color: colors.textTertiary, marginLeft: 32, marginTop: 2 }]}>
+                    {place.date}
+                  </Text>
                 )}
                 {/* Map Buttons */}
-                <View style={styles.mapButtons}>
-                  {getMapLinks(result.placeName, result.address).map((link) => (
+                <View style={[styles.mapButtons, { marginLeft: 32 }]}>
+                  {getMapLinks(place.name, place.address).map((link) => (
                     <TouchableOpacity
                       key={link.provider}
                       style={[styles.mapBtn, { borderColor }]}
-                      onPress={() => openMap(link.provider, result.placeName!, result.address)}
+                      onPress={() => openMap(link.provider, place.name, place.address)}
                     >
                       <Text style={styles.mapEmoji}>{link.emoji}</Text>
                       <Text style={[styles.mapLabel, { color: colors.text }]}>{link.label}</Text>
@@ -223,7 +233,7 @@ export default function AnalyzeScreen() {
                   ))}
                 </View>
               </View>
-            )}
+            ))}
 
             {/* Extracted Text */}
             {result.extractedText && (
@@ -435,10 +445,21 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
+  placeIndex: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  placeIndexText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#050508',
+  },
   placeLabel: {
     fontSize: 12,
     fontWeight: '600',
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   placeValue: {

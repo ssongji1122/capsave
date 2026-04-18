@@ -125,7 +125,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>CapSave</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Scrave</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             AI 캡처 오거나이저
           </Text>

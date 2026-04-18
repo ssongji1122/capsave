@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateGeocodingInput, buildGeocodingQuery, parseGoogleGeocodeResponse } from '@/lib/geocoding';
 
 export async function POST(request: NextRequest) {
   try {
     const { name, address } = await request.json();
 
-    if (!name || typeof name !== 'string') {
-      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    const validation = validateGeocodingInput(name, address);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    if (name.length > 200 || (address && address.length > 300)) {
-      return NextResponse.json({ error: 'input too long' }, { status: 400 });
-    }
-
-    const query = address ? `${name} ${address}` : name;
+    const query = buildGeocodingQuery(name, address);
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
@@ -23,9 +21,9 @@ export async function POST(request: NextRequest) {
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.status === 'OK' && data.results.length > 0) {
-      const { lat, lng } = data.results[0].geometry.location;
-      return NextResponse.json({ lat, lng, formattedAddress: data.results[0].formatted_address });
+    const result = parseGoogleGeocodeResponse(data);
+    if (result) {
+      return NextResponse.json(result);
     }
 
     return NextResponse.json({ lat: null, lng: null, formattedAddress: null });
