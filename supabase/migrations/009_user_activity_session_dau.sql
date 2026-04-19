@@ -41,7 +41,26 @@ END $$;
 
 GRANT EXECUTE ON FUNCTION touch_user_seen(UUID) TO authenticated, anon, service_role;
 
--- 3. Replace count_dau() to read from user_activity instead of captures
+-- 3. Read helper for the cron route (returns distinct_users + notified flag for today)
+CREATE OR REPLACE FUNCTION get_dau_today()
+RETURNS TABLE(distinct_users INT, notified BOOLEAN)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, analytics
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    COALESCE(d.distinct_users, 0)::INT,
+    (d.notified_at IS NOT NULL)
+  FROM analytics.dau d
+  WHERE d.date = CURRENT_DATE
+  LIMIT 1;
+END $$;
+
+GRANT EXECUTE ON FUNCTION get_dau_today() TO authenticated, service_role;
+
+-- 4. Replace count_dau() to read from user_activity instead of captures
 CREATE OR REPLACE FUNCTION count_dau()
 RETURNS VOID
 LANGUAGE plpgsql

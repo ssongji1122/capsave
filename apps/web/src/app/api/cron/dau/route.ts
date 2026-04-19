@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { extractBearerToken, getDayBoundaries, countDistinctUsers } from '@scrave/shared';
+import { extractBearerToken } from '@scrave/shared';
 import { generateDauNotificationHtml } from '@/lib/notifications';
-
-const DAU_THRESHOLD = 10;
+import { DAU_THRESHOLD, shouldNotify } from '@/lib/dau-counter';
 
 /**
  * DAU counting endpoint for environments without pg_cron.
- * Call via Vercel Cron or external scheduler.
- * Requires CRON_SECRET env var for authentication.
+ * Call via Vercel Cron or external scheduler. Requires CRON_SECRET env var.
+ *
+ * Reads session DAU from user_activity (not captures) — count_dau() now counts
+ * distinct users who hit any authenticated API today, populated by touch_user_seen.
  */
 export async function GET(request: NextRequest) {
   const token = extractBearerToken(request.headers.get('authorization'));
@@ -23,48 +24,43 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { start, end } = getDayBoundaries();
-
-  const { data: captures } = await supabase
-    .from('captures')
-    .select('user_id')
-    .gte('created_at', start)
-    .lt('created_at', end)
-    .not('user_id', 'is', null);
-
-  const distinctUsers = countDistinctUsers(captures ?? []);
-
-  // Upsert DAU via SQL function (analytics schema not accessible via JS client)
+  // 1. Refresh today's analytics.dau row from user_activity
   await supabase.rpc('count_dau' as never);
 
-  // Check milestone and notify
-  if (distinctUsers >= DAU_THRESHOLD) {
-    const { data: dauRow } = await supabase.rpc('check_dau_notified' as never);
-    const alreadyNotified = dauRow as unknown as boolean;
+  // 2. Read it back (distinct_users + notified flag)
+  const { data: dauRow } = await supabase.rpc('get_dau_today' as never);
+  const row = (Array.isArray(dauRow) ? dauRow[0] : dauRow) as
+    | { distinct_users: number; notified: boolean }
+    | null
+    | undefined;
 
-    if (!alreadyNotified) {
-      const resendKey = process.env.RESEND_API_KEY;
-      const ownerEmail = process.env.OWNER_EMAIL;
+  const distinctUsers = row?.distinct_users ?? 0;
+  const alreadyNotified = row?.notified ?? false;
 
-      if (resendKey && ownerEmail) {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'Scrave <noreply@scrave.app>',
-            to: [ownerEmail],
-            subject: `Scrave Phase 1 Validated — DAU ${distinctUsers} reached!`,
-            html: generateDauNotificationHtml(distinctUsers, start),
-          }),
-        });
+  const today = new Date().toISOString().split('T')[0];
 
-        await supabase.rpc('mark_dau_notified' as never);
-      }
+  if (shouldNotify(distinctUsers, DAU_THRESHOLD, alreadyNotified)) {
+    const resendKey = process.env.RESEND_API_KEY;
+    const ownerEmail = process.env.OWNER_EMAIL;
+
+    if (resendKey && ownerEmail) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'Scrave <noreply@scrave.app>',
+          to: [ownerEmail],
+          subject: `Scrave Phase 1 Validated — DAU ${distinctUsers} reached!`,
+          html: generateDauNotificationHtml(distinctUsers, today),
+        }),
+      });
+
+      await supabase.rpc('mark_dau_notified' as never);
     }
   }
 
-  return NextResponse.json({ date: start, dau: distinctUsers });
+  return NextResponse.json({ date: today, dau: distinctUsers });
 }
