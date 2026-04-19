@@ -17,11 +17,15 @@ export class ServerAnalyzer implements ImageAnalyzer {
   }
 
   async analyze(imageUri: string): Promise<AnalysisResult> {
-    // Resize image to stay under 1MB server limit (target <900KB)
+    // OCR-quality floor: max 2048px wide, JPEG quality 0.85.
+    // Only downscale if needed; aggressive compression destroys text legibility.
+    const probe = await ImageManipulator.manipulateAsync(imageUri, [], { base64: false });
+    const needsResize = probe.width > 2048;
+
     const manipulated = await ImageManipulator.manipulateAsync(
       imageUri,
-      [{ resize: { width: 1024 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      needsResize ? [{ resize: { width: 2048 } }] : [],
+      { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
     );
 
     const token = await this.getToken();
