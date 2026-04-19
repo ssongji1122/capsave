@@ -1,30 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, createSupabaseClient, extractBearerToken } from '@scrave/shared';
-import { createClient } from '@/lib/supabase/server';
+import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT } from '@scrave/shared';
 import { extractGeminiText } from '@/lib/gemini';
 import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
-
-async function getAuthUser(request: NextRequest) {
-  // 1. Try Bearer token auth (mobile clients)
-  const token = extractBearerToken(request.headers.get('authorization'));
-  if (token) {
-    const supabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data: { user } } = await supabase.auth.getUser(token);
-    return user;
-  }
-
-  // 2. Try cookie-based auth (web clients)
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
+import { getAuthUserAndTouch } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
+    const user = await getAuthUserAndTouch(request);
 
     if (!user) {
       // Guest: apply rate limit (DB-based)

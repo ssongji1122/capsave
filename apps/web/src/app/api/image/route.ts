@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { extractStoragePath } from '@scrave/shared';
+import { getAuthUserAndTouch } from '@/lib/api-auth';
 
 const SIGNED_URL_EXPIRY = 3600; // 1 hour
 
@@ -11,12 +12,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing path parameter' }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUserAndTouch(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = await createClient();
 
     const storagePath = extractStoragePath(pathParam);
 
