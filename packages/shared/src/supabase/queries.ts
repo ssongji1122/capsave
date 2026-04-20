@@ -11,6 +11,7 @@ export async function getAllCaptures(
   let query = client
     .from('captures')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit + 1); // 1개 더 조회해서 hasMore 판단
 
@@ -44,6 +45,7 @@ export async function getCapturesByCategory(
     .from('captures')
     .select('*')
     .eq('category', category)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit + 1);
 
@@ -78,6 +80,7 @@ export async function searchCaptures(
   const baseQuery = client
     .from('captures')
     .select('*', { count: 'exact' })
+    .is('deleted_at', null)
     .or(
       `title.ilike.${pattern},summary.ilike.${pattern},extracted_text.ilike.${pattern}`
     )
