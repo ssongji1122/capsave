@@ -39,6 +39,7 @@ Rules:
 - For "sourceAccountId": If visible in the screenshot, extract the social media account ID or username (e.g., "@username", "user_handle"). Return null if not visible.
 - For dates: Standardize all dates to YYYY-MM-DD format when possible. If only partial date is visible (e.g., "3월 15일"), infer the year from context or use the current year. Relative dates like "오늘", "내일", "이번 주말" should be preserved as-is.
 - Non-Korean content: If the screenshot is in English or another language, still output title, summary, and tags in Korean. Preserve original place names alongside Korean transliteration when applicable (e.g., "Shake Shack 쉐이크쉑").
+- Do NOT extract, store, or include in any field: phone numbers, personal names (unless they are business or place names), private home addresses, financial account numbers, passwords, or other personal identifiers. If such content is visible in the screenshot, omit it from all output fields.
 - Respond ONLY with valid JSON. No markdown, no code fences, no extra text.
 - ALL text output MUST be in Korean.`;
 
