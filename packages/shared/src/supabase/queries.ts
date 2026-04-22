@@ -201,3 +201,18 @@ export async function softDeleteCapture(
 
   if (error) throw error;
 }
+
+/**
+ * Fire-and-forget upsert into user_activity.
+ * Errors are caught and logged; never throws so callers can use without await blocking.
+ */
+export async function touchUserSeen(
+  client: SupabaseClient,
+  userId: string
+): Promise<void> {
+  if (!userId) return;
+  const { error } = await client.rpc('touch_user_seen' as never, { _user_id: userId } as never);
+  if (error) {
+    console.error('[touchUserSeen]', error.message);
+  }
+}

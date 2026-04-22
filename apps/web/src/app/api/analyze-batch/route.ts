@@ -4,30 +4,13 @@ import {
   BATCH_ANALYSIS_INSTRUCTION,
   parseBatchAnalysisResult,
   AI_MODEL_ENDPOINT,
-  createSupabaseClient,
-  extractBearerToken,
 } from '@scrave/shared';
-import { createClient } from '@/lib/supabase/server';
 import { extractGeminiText } from '@/lib/gemini';
-
-async function getAuthUser(request: NextRequest) {
-  const token = extractBearerToken(request.headers.get('authorization'));
-  if (token) {
-    const supabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data: { user } } = await supabase.auth.getUser(token);
-    return user;
-  }
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
+import { getAuthUserAndTouch } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
+    const user = await getAuthUserAndTouch(request);
     // Guests can use batch analysis too
 
     const apiKey = process.env.GEMINI_API_KEY;

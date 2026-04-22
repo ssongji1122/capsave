@@ -62,7 +62,7 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
       setStatus('analyzing');
       setProgress(0);
       const resizedBlobs = await Promise.all(
-        files.map((file) => resizeImageFile(file, 800, 0.6))
+        files.map((file) => resizeImageFile(file))
       );
       // Convert blobs to base64 for JSON transport (avoids FormData size limits)
       const base64Images = await Promise.all(

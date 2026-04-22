@@ -52,5 +52,6 @@ export {
   updateCapturePlaces,
   reclassifyCapture,
   softDeleteCapture,
+  touchUserSeen,
 } from './supabase/queries';
 export { mapRowToCapture, mapCaptureToRow } from './supabase/mappers';

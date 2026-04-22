@@ -33,20 +33,19 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
     try {
       setStatus('analyzing');
 
-      // Resize + base64 on client for AI analysis (needed regardless of guest/auth)
-      const resizedBlob = await resizeImageFile(file, 800, 0.6);
-      const resizedB64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(resizedBlob);
-      });
-
       let uploadedPath: string;
       let analysisResult: AnalysisResult;
 
       if (isGuest) {
-        // Guest: convert to base64 locally, skip upload, then analyze
+        // Guest: client-side resize + base64, no upload (no Storage perms)
+        const resizedBlob = await resizeImageFile(file);
+        const resizedB64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(resizedBlob);
+        });
+
         const base64 = await fileToBase64(file);
         uploadedPath = base64;
         const analyzeRes = await fetch('/api/analyze', {
@@ -60,28 +59,19 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
         }
         analysisResult = await analyzeRes.json();
       } else {
-        // Authenticated: upload and analyze in parallel
-        const uploadForm = new FormData();
-        uploadForm.append('file', file);
+        // Authenticated: single round-trip /api/capture (upload + analyze)
+        const captureForm = new FormData();
+        captureForm.append('file', file);
 
-        const [uploadRes, analyzeRes] = await Promise.all([
-          fetch('/api/upload', { method: 'POST', body: uploadForm }),
-          fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: resizedB64 }),
-          }),
-        ]);
-
-        if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-        if (!analyzeRes.ok) {
-          const errData = await analyzeRes.json().catch(() => null);
-          throw new Error(errData?.error || 'AI 분석 실패');
+        const captureRes = await fetch('/api/capture', { method: 'POST', body: captureForm });
+        if (!captureRes.ok) {
+          const errData = await captureRes.json().catch(() => null);
+          throw new Error(errData?.error || '캡처 처리 실패');
         }
 
-        const { path } = await uploadRes.json();
-        uploadedPath = path;
-        analysisResult = await analyzeRes.json();
+        const { result, storagePath } = await captureRes.json();
+        uploadedPath = storagePath;
+        analysisResult = result;
       }
 
       setImageUrl(uploadedPath);

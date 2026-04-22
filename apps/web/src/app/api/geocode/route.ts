@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateGeocodingInput, buildGeocodingQuery, parseGoogleGeocodeResponse } from '@/lib/geocoding';
+import { getAuthUserAndTouch } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    void getAuthUserAndTouch(request); // fire-and-forget DAU tracking
     const { name, address } = await request.json();
 
     const validation = validateGeocodingInput(name, address);
