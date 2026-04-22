@@ -2,6 +2,22 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory, PlaceInfo, PaginatedResult } from '../types/capture';
 import { mapRowToCapture } from './mappers';
 
+export const MAX_FREE_CAPTURES = 10;
+
+export async function countUserCaptures(
+  client: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const { count, error } = await client
+    .from('captures')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function getAllCaptures(
   client: SupabaseClient,
   options?: { cursor?: string; limit?: number }

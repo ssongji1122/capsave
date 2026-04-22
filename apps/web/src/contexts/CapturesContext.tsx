@@ -12,11 +12,12 @@ import {
   saveCapture as saveCaptureQuery,
   deleteCapture as deleteCaptureQuery,
   mapRowToCapture,
+  MAX_FREE_CAPTURES,
 } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 import { showErrorToast } from '@/lib/notifications';
 
-export const MAX_FREE_CAPTURES = 10;
+export { MAX_FREE_CAPTURES };
 
 interface CapturesContextValue {
   captures: CaptureItem[];
