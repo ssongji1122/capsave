@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { MapPin, Map } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 
@@ -100,8 +101,15 @@ function useKakaoMaps() {
 
 export function MapView() {
   const { captures } = useCaptures();
+  const { guestCaptures } = useGuestCaptures();
   const searchParams = useSearchParams();
   const captureFilter = searchParams.get('capture');
+
+  // Merge auth captures with guest captures (auth takes priority, guest fills in for unauthenticated users)
+  const allCaptures = useMemo(
+    () => [...captures, ...guestCaptures],
+    [captures, guestCaptures]
+  );
 
   const kakaoReady = useKakaoMaps();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -115,8 +123,8 @@ export function MapView() {
 
   // Memoize place captures
   const placeCaptures = useMemo(
-    () => captures.filter((c) => c.category === 'place' && c.places.length > 0),
-    [captures]
+    () => allCaptures.filter((c) => c.category === 'place' && c.places.length > 0),
+    [allCaptures]
   );
   const captureIds = placeCaptures.map((c) => c.id).sort().join(',');
   const hasGeocoded = useRef(false);

@@ -162,12 +162,12 @@ function LandingContent() {
         <div className="mx-4 mb-8 p-6 rounded-2xl bg-surface border border-border text-center">
           <Map size={28} className="text-place-accent mx-auto mb-2" />
           <p className="text-text-primary font-semibold">지도에서 장소를 한눈에</p>
-          <p className="text-text-tertiary text-sm mt-1">가입하면 저장한 장소를 지도에서 볼 수 있어요</p>
+          <p className="text-text-tertiary text-sm mt-1">저장한 장소를 지도에서 확인해보세요</p>
           <Link
-            href="/login"
+            href="/map"
             className="inline-block mt-4 px-6 py-2.5 rounded-xl bg-primary text-black font-semibold text-sm hover:bg-primary-light transition-colors"
           >
-            무료로 시작하기
+            지도 보기
           </Link>
         </div>
       )}

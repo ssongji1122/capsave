@@ -16,11 +16,15 @@ import {
 import { createClient } from '@/lib/supabase/browser';
 import { showErrorToast } from '@/lib/notifications';
 
+export const MAX_FREE_CAPTURES = 10;
+
 interface CapturesContextValue {
   captures: CaptureItem[];
   isLoading: boolean;
   hasMore: boolean;
   isLoadingMore: boolean;
+  isFreeLimitReached: boolean;
+  freeRemaining: number;
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
   deleteCapture: (id: number) => Promise<void>;
@@ -142,6 +146,10 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
+    if (captures.length >= MAX_FREE_CAPTURES) {
+      showErrorToast(`무료 플랜은 최대 ${MAX_FREE_CAPTURES}개까지 저장할 수 있습니다.`);
+      throw new Error('FREE_LIMIT_REACHED');
+    }
     try {
       const newCapture = await saveCaptureQuery(client, result, imageUrl, userId ?? undefined);
       // Attach ephemeral fields from analysis result (not persisted to DB)
@@ -156,7 +164,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       showErrorToast('저장에 실패했습니다. 다시 시도해주세요.');
       throw error;
     }
-  }, [client, userId]);
+  }, [client, userId, captures.length]);
 
   return (
     <CapturesContext.Provider
@@ -165,6 +173,8 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         hasMore,
         isLoadingMore,
+        isFreeLimitReached: captures.length >= MAX_FREE_CAPTURES,
+        freeRemaining: Math.max(0, MAX_FREE_CAPTURES - captures.length),
         loadMore,
         refresh,
         deleteCapture: handleDelete,

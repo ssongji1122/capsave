@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useCaptures } from '@/contexts/CapturesContext';
+import { useCaptures, MAX_FREE_CAPTURES } from '@/contexts/CapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
 import { UncertainQueue } from '@/components/captures/UncertainQueue';
 import { SearchBar } from '@/components/captures/SearchBar';
@@ -15,7 +15,7 @@ import { Camera } from 'lucide-react';
 const CONFIDENCE_THRESHOLD = 0.5;
 
 export default function HomePage() {
-  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture } = useCaptures();
+  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture, isFreeLimitReached, freeRemaining } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -101,8 +101,27 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Free plan limit bar */}
+      <div className="mx-4 mb-3">
+        <div className="flex items-center justify-between text-xs text-text-tertiary mb-1.5">
+          <span>무료 플랜</span>
+          <span className={isFreeLimitReached ? 'text-error font-semibold' : ''}>
+            {captures.length} / {MAX_FREE_CAPTURES}
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${isFreeLimitReached ? 'bg-error' : 'bg-primary'}`}
+            style={{ width: `${Math.min(100, (captures.length / MAX_FREE_CAPTURES) * 100)}%` }}
+          />
+        </div>
+        {isFreeLimitReached && (
+          <p className="text-xs text-error mt-1">한도에 도달했습니다. 더 저장하려면 플랜을 업그레이드하세요.</p>
+        )}
+      </div>
+
       {/* Upload */}
-      <div className="px-4 mb-4">
+      <div className={`px-4 mb-4 ${isFreeLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
         <UploadZone
           onImageSelected={handleSingleFile}
           onMultipleSelected={handleMultipleFiles}
