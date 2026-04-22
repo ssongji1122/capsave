@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+import { buildStoragePath } from './upload-flow';
 
 const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -34,11 +35,8 @@ export async function uploadImageToStorage(
   localUri: string,
   userId: string
 ): Promise<string> {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  const path = `${userId}/${timestamp}_${random}.jpg`;
+  const path = buildStoragePath(userId);
 
-  // Read file as blob for upload
   const response = await fetch(localUri);
   const blob = await response.blob();
 

@@ -9,6 +9,7 @@ import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
 import { CaptureItem, AnalysisResult } from '@scrave/shared';
+import { pairResultsWithImages } from '@/lib/batch-save-mapper';
 
 const CONFIDENCE_THRESHOLD = 0.5;
 
@@ -45,11 +46,9 @@ export default function HomePage() {
   };
 
   const handleBatchSave = async (results: AnalysisResult[], imageUrls: string[]) => {
-    // Save each result. For merged results (1 result from N images), use first image URL.
-    // For separate results, pair each with corresponding image URL.
-    for (let i = 0; i < results.length; i++) {
-      const imageUrl = imageUrls[Math.min(i, imageUrls.length - 1)];
-      await saveCapture(results[i], imageUrl);
+    const pairs = pairResultsWithImages(results, imageUrls);
+    for (const { result, imageUrl } of pairs) {
+      await saveCapture(result, imageUrl);
     }
     setBatchFiles(null);
   };

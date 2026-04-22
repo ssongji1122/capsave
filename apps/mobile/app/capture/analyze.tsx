@@ -18,9 +18,10 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { analyzeImage, AnalysisResult, PlaceInfo } from '@/services/ai-analyzer';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { supabase } from '@/services/supabase';
+import { supabase, uploadImageToStorage } from '@/services/supabase';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
 
 export default function AnalyzeScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
@@ -33,6 +34,9 @@ export default function AnalyzeScreen() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [storagePath, setStoragePath] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState('');
 
   const isAnalyzing = useRef(false);
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
@@ -66,6 +70,34 @@ export default function AnalyzeScreen() {
     }
   }, [imageUri]);
 
+  // Auto-upload after successful analysis
+  useEffect(() => {
+    if (status !== 'done' || storagePath || uploadStatus !== 'idle') return;
+    void runUpload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  const runUpload = async () => {
+    if (!imageUri) return;
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (!userId) {
+      setUploadStatus('error');
+      setUploadError('로그인이 필요합니다.');
+      return;
+    }
+    setUploadStatus('uploading');
+    setUploadError('');
+    try {
+      const path = await uploadImageToStorage(imageUri, userId);
+      setStoragePath(path);
+      setUploadStatus('done');
+    } catch (e) {
+      setUploadStatus('error');
+      setUploadError(e instanceof Error ? e.message : '이미지 업로드 실패');
+    }
+  };
+
   const runAnalysis = async () => {
     if (isAnalyzing.current) return;
     isAnalyzing.current = true;
@@ -87,11 +119,11 @@ export default function AnalyzeScreen() {
   };
 
   const handleSave = async () => {
-    if (!result || !imageUri) return;
+    if (!result || !storagePath) return;
 
     setIsSaving(true);
     try {
-      await saveCapture(result, imageUri);
+      await saveCapture(result, storagePath);
       await refresh();
       router.back();
     } catch (error) {
@@ -283,21 +315,40 @@ export default function AnalyzeScreen() {
               </View>
             )}
 
-            {/* Save Button */}
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: colors.primary }]}
-              onPress={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={22} color="#FFF" />
-                  <Text style={styles.saveText}>저장하기</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {/* Upload status / Save Button */}
+            {uploadStatus === 'uploading' && (
+              <View style={[styles.uploadIndicator, { borderColor }]}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.uploadText, { color: colors.textSecondary }]}>이미지 업로드 중...</Text>
+              </View>
+            )}
+
+            {uploadStatus === 'error' && (
+              <View style={[styles.uploadIndicator, { borderColor: colors.error }]}>
+                <Text style={[styles.uploadText, { color: colors.error }]}>{uploadError}</Text>
+                <TouchableOpacity onPress={runUpload} style={[styles.retryButton, { backgroundColor: colors.primary }]}>
+                  <Ionicons name="refresh" size={16} color="#FFF" />
+                  <Text style={styles.retryText}>다시 업로드</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {uploadStatus === 'done' && (
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={22} color="#FFF" />
+                    <Text style={styles.saveText}>저장하기</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </Animated.View>
         )}
 
@@ -558,5 +609,18 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 17,
     fontWeight: '700',
+  },
+  uploadIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  uploadText: {
+    fontSize: 14,
+    flex: 1,
   },
 });

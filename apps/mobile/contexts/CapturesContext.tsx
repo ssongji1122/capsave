@@ -10,7 +10,7 @@ import {
 } from '@/services/database';
 import { CaptureCategory, AnalysisResult } from '@/services/ai-analyzer';
 import { useAuth } from './AuthContext';
-import { supabase, uploadImageToStorage } from '@/services/supabase';
+import { supabase } from '@/services/supabase';
 import {
   getAllCaptures as supaGetAll,
   saveCapture as supaSave,
@@ -111,21 +111,13 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Before saving to DB, upload image to Storage if it's a local file
-      let storagePathOrUri = imageUrl;
-
-      if (imageUrl && (imageUrl.startsWith('file://') || imageUrl.startsWith('/'))) {
-        try {
-          storagePathOrUri = await uploadImageToStorage(imageUrl, session.user.id);
-        } catch (uploadError) {
-          console.error('[CapturesContext] Storage upload failed:', uploadError);
-          // Continue with local URI as fallback — image will work on device but not web
-        }
+      if (!imageUrl || imageUrl.startsWith('file://') || imageUrl.startsWith('/')) {
+        throw new Error('saveCapture requires an uploaded storage path, not a local file URI.');
       }
 
-      const saved = await supaSave(supabase, analysis, storagePathOrUri, session.user.id);
+      const saved = await supaSave(supabase, analysis, imageUrl, session.user.id);
       const mobileItem = toMobileCapture(saved);
-      await dbSaveCapture(analysis, storagePathOrUri);
+      await dbSaveCapture(analysis, imageUrl);
       setCaptures((prev) => [mobileItem, ...prev]);
     } catch (error) {
       Alert.alert('저장 실패', '인터넷 연결을 확인해주세요.');
