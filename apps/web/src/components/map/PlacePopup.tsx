@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Camera } from 'lucide-react';
 import { getMapLinks, getReviewLinks } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
@@ -44,7 +45,7 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
         <p className="text-xs text-text-tertiary mt-0.5">{place.date}</p>
       )}
       <p className="text-[10px] text-text-tertiary mt-2 pt-2 border-t border-border">
-        📸 {place.captureTitle}
+        <Camera size={10} className="inline mr-0.5" />{place.captureTitle}
       </p>
 
       {/* Preferred nav app — full width primary button */}

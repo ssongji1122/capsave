@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { MapPin, Map } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { BottomSheet } from './BottomSheet';
@@ -272,7 +273,7 @@ export function MapView() {
     return (
       <div className="flex items-center justify-center h-full" role="status" aria-label="로딩 중">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-bounce">📍</div>
+          <MapPin size={32} className="text-place-accent animate-bounce mx-auto mb-4" />
           <p className="text-text-secondary">장소 좌표를 불러오는 중...</p>
         </div>
       </div>
@@ -283,7 +284,7 @@ export function MapView() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-4xl mb-4">🗺</div>
+          <Map size={32} className="text-place-accent mx-auto mb-4" />
           <p className="text-text-primary font-semibold">저장된 장소가 없습니다</p>
           <p className="text-text-tertiary text-sm mt-1">장소 캡처를 추가하면 지도에 표시됩니다</p>
         </div>
@@ -298,7 +299,7 @@ export function MapView() {
       {/* Top bar: Place count */}
       <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center">
         <div className="px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
-          📍 {filteredPlaces.length}개 장소
+          <MapPin size={12} className="inline mr-1" />{filteredPlaces.length}개 장소
         </div>
       </div>
 

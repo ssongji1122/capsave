@@ -223,22 +223,18 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                 <p className="text-[10px] font-semibold text-text-tertiary mb-1.5" style={{ fontFamily: 'var(--font-label)' }}>관련 내용보기</p>
                 {item.relatedSearchTerms && item.relatedSearchTerms.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {item.relatedSearchTerms.map((term, i) => {
-                      const colors = ['🟢', '🔵', '🔴'];
-                      const color = colors[i % colors.length];
-                      return (
-                        <a
-                          key={i}
-                          href={`https://search.naver.com/search.naver?query=${encodeURIComponent(term)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1.5 rounded-lg bg-surface border border-border text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
-                        >
-                          {color} {term}
-                        </a>
-                      );
-                    })}
+                    {item.relatedSearchTerms.map((term, i) => (
+                      <a
+                        key={i}
+                        href={`https://search.naver.com/search.naver?query=${encodeURIComponent(term)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-2.5 py-1.5 rounded-lg bg-surface border border-border text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
+                      >
+                        {term}
+                      </a>
+                    ))}
                   </div>
                 ) : (
                   <div className="flex gap-1.5">
@@ -249,7 +245,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 py-1.5 rounded-lg bg-surface border border-border text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      🟢 네이버
+                      네이버
                     </a>
                     <a
                       href={`https://www.google.com/search?q=${encodeURIComponent(item.title)}`}
@@ -258,7 +254,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 py-1.5 rounded-lg bg-surface border border-border text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      🔵 Google
+                      Google
                     </a>
                     <a
                       href={`https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}`}
@@ -267,7 +263,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 py-1.5 rounded-lg bg-surface border border-border text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      🔴 YouTube
+                      YouTube
                     </a>
                   </div>
                 )}

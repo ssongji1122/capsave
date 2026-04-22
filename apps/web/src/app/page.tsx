@@ -8,6 +8,7 @@ import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
 import { CaptureList } from '@/components/captures/CaptureList';
+import { MapPin, FileText, Camera, Map } from 'lucide-react';
 
 function LandingContent() {
   const { guestCaptures, remainingSlots, isGuestFull, addCapture, deleteCapture } = useGuestCaptures();
@@ -143,7 +144,13 @@ function LandingContent() {
             captures={filteredCaptures}
             isLoading={false}
             onDelete={deleteCapture}
-            emptyIcon={categoryFilter === 'place' ? '📍' : categoryFilter === 'text' ? '📝' : '📸'}
+            emptyIcon={
+              categoryFilter === 'place'
+                ? <MapPin size={40} className="text-place-accent" />
+                : categoryFilter === 'text'
+                ? <FileText size={40} className="text-text-accent" />
+                : <Camera size={40} className="text-primary" />
+            }
             emptyTitle={categoryFilter === 'place' ? '저장된 장소가 없습니다' : categoryFilter === 'text' ? '저장된 텍스트가 없습니다' : ''}
             emptySubtitle={categoryFilter !== 'all' ? '스크린샷을 업로드하면 자동 분류됩니다' : ''}
           />
@@ -153,7 +160,7 @@ function LandingContent() {
       {/* Map teaser */}
       {guestCaptures.some((c) => c.category === 'place') && (
         <div className="mx-4 mb-8 p-6 rounded-2xl bg-surface border border-border text-center">
-          <div className="text-3xl mb-2">🗺</div>
+          <Map size={28} className="text-place-accent mx-auto mb-2" />
           <p className="text-text-primary font-semibold">지도에서 장소를 한눈에</p>
           <p className="text-text-tertiary text-sm mt-1">가입하면 저장한 장소를 지도에서 볼 수 있어요</p>
           <Link
@@ -169,7 +176,7 @@ function LandingContent() {
       {guestCaptures.length === 0 && (
         <div className="px-4 pb-8 text-center">
           <div className="p-8 rounded-2xl bg-surface border border-border">
-            <div className="text-5xl mb-4">📸</div>
+            <Camera size={40} className="text-primary mx-auto mb-4" />
             <p className="text-text-primary font-semibold">캡처를 시작해보세요</p>
             <p className="text-text-tertiary text-sm mt-1 whitespace-pre-line">
               {'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}

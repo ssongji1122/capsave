@@ -10,6 +10,7 @@ import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
 import { CaptureItem, AnalysisResult } from '@scrave/shared';
 import { pairResultsWithImages } from '@/lib/batch-save-mapper';
+import { Camera } from 'lucide-react';
 
 const CONFIDENCE_THRESHOLD = 0.5;
 
@@ -125,7 +126,7 @@ export default function HomePage() {
         captures={confident}
         isLoading={isLoading}
         onDelete={deleteCapture}
-        emptyIcon="📸"
+        emptyIcon={<Camera size={40} className="text-primary" />}
         emptyTitle="캡처를 시작해보세요"
         emptySubtitle={'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}
         hasMore={hasMore}
