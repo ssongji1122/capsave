@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isUrlSafe, sanitizeUrl } from '../utils/url-validator';
+import { isUrlSafe, sanitizeUrl, MOBILE_DEEP_LINK_SCHEMES } from '../utils/url-validator';
 
 describe('isUrlSafe', () => {
   it('allows https URLs', () => {
@@ -50,6 +50,41 @@ describe('isUrlSafe', () => {
 
   it('blocks strings without scheme', () => {
     expect(isUrlSafe('not-a-url')).toBe(false);
+  });
+
+  describe('with extraSchemes', () => {
+    it('blocks deep-link schemes by default (no extras)', () => {
+      expect(isUrlSafe('nmap://search?q=test')).toBe(false);
+      expect(isUrlSafe('tmap://search?name=foo')).toBe(false);
+    });
+
+    it('allows nmap when MOBILE_DEEP_LINK_SCHEMES is passed', () => {
+      expect(isUrlSafe('nmap://search?q=test', MOBILE_DEEP_LINK_SCHEMES)).toBe(true);
+    });
+
+    it('allows tmap when MOBILE_DEEP_LINK_SCHEMES is passed', () => {
+      expect(isUrlSafe('tmap://search?name=foo', MOBILE_DEEP_LINK_SCHEMES)).toBe(true);
+    });
+
+    it('allows kakaomap, comgooglemaps, geo when extras are passed', () => {
+      expect(isUrlSafe('kakaomap://search?q=x', MOBILE_DEEP_LINK_SCHEMES)).toBe(true);
+      expect(isUrlSafe('comgooglemaps://?q=x', MOBILE_DEEP_LINK_SCHEMES)).toBe(true);
+      expect(isUrlSafe('geo:0,0?q=x', MOBILE_DEEP_LINK_SCHEMES)).toBe(true);
+    });
+
+    it('still blocks javascript even when extras are passed (extras add, never override)', () => {
+      expect(isUrlSafe('javascript:alert(1)', MOBILE_DEEP_LINK_SCHEMES)).toBe(false);
+    });
+
+    it('exports the 5 expected mobile deep-link schemes', () => {
+      expect(MOBILE_DEEP_LINK_SCHEMES).toEqual([
+        'nmap:',
+        'kakaomap:',
+        'comgooglemaps:',
+        'geo:',
+        'tmap:',
+      ]);
+    });
   });
 });
 

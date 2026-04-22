@@ -19,6 +19,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       NSPhotoLibraryUsageDescription:
         '스크린샷을 선택하여 AI가 분석할 수 있도록 사진 접근 권한이 필요합니다.',
+      LSApplicationQueriesSchemes: [
+        'nmap',
+        'kakaomap',
+        'comgooglemaps',
+        'tmap',
+      ],
     },
     bundleIdentifier: 'com.anonymous.scrave',
   },

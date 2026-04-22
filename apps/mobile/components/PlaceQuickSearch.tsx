@@ -12,7 +12,7 @@ import {
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { openMap, getMapLinks } from '@/services/map-linker';
-import { isUrlSafe } from '@/services/url-validator';
+import { isUrlSafe } from '@scrave/shared';
 
 interface PlaceQuickSearchProps {
   placeName: string;

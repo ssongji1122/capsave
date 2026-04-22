@@ -52,6 +52,27 @@ export function getMapLinks(placeName: string, address?: string | null): MapLink
   ];
 }
 
+export interface MobileMapLink extends MapLink {
+  appUrl: string;
+  iosAppUrl?: string; // platform-specific override (Google Maps on iOS uses comgooglemaps://)
+}
+
+export function getMobileMapLinks(placeName: string, address?: string | null): MobileMapLink[] {
+  const query = address ? `${placeName} ${address}` : placeName;
+  const encoded = encodeQuery(query);
+  const placeEncoded = encodeQuery(placeName);
+  const baseLinks = getMapLinks(placeName, address);
+
+  const appUrlByProvider: Record<MapProvider, { appUrl: string; iosAppUrl?: string }> = {
+    tmap:   { appUrl: `tmap://search?name=${placeEncoded}` },
+    naver:  { appUrl: `nmap://search?query=${placeEncoded}&appname=com.scrave.app` },
+    kakao:  { appUrl: `kakaomap://search?q=${placeEncoded}` },
+    google: { appUrl: `geo:0,0?q=${encoded}`, iosAppUrl: `comgooglemaps://?q=${encoded}` },
+  };
+
+  return baseLinks.map((link) => ({ ...link, ...appUrlByProvider[link.provider] }));
+}
+
 export function getReviewLinks(placeName: string, address?: string | null): ReviewLink[] {
   const query = address ? `${placeName} ${address}` : placeName;
   const encoded = encodeQuery(query);

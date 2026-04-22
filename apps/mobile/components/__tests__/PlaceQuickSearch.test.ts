@@ -1,4 +1,4 @@
-import { isUrlSafe } from '../../services/url-validator';
+import { isUrlSafe } from '@scrave/shared';
 
 describe('PlaceQuickSearch URL patterns', () => {
   describe('search URL construction', () => {
