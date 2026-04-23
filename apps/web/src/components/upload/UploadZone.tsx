@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 const MAX_BATCH_FILES = 10;
 
@@ -49,6 +49,20 @@ export function UploadZone({ onImageSelected, onMultipleSelected, multiple = fal
     [processFiles]
   );
 
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const imageItems = items.filter((item) => item.type.startsWith('image/'));
+    if (imageItems.length === 0) return;
+    e.preventDefault();
+    const files = imageItems.map((item) => item.getAsFile()).filter((f): f is File => f !== null);
+    processFiles(files);
+  }, [processFiles]);
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handlePaste]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -75,10 +89,11 @@ export function UploadZone({ onImageSelected, onMultipleSelected, multiple = fal
       `}
     >
       <div className="text-4xl mb-3">📸</div>
-      <p className="text-text-primary font-semibold">이미지를 드래그하거나 클릭하세요</p>
+      <p className="text-text-primary font-semibold">드래그, 클릭 또는 붙여넣기</p>
       <p className="text-text-tertiary text-sm mt-1">
         스크린샷을 업로드하면 AI가 자동 분석합니다{multiple && ` (최대 ${MAX_BATCH_FILES}장)`}
       </p>
+      <p className="text-text-tertiary text-xs mt-1 opacity-60">⌘V 로 클립보드 이미지 바로 붙여넣기</p>
       {limitWarning && (
         <p className="text-warning text-sm mt-2 font-medium">{limitWarning}</p>
       )}

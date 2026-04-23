@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Search } from 'lucide-react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -15,8 +16,8 @@ export function SearchBar({ onSearch }: SearchBarProps) {
   }, [query, onSearch]);
 
   return (
-    <div className="flex items-center gap-2 mx-4 mb-4 px-4 py-2.5 rounded-xl bg-surface border border-border">
-      <span className="text-text-tertiary">🔍</span>
+    <div className="flex items-center gap-2 mx-4 mb-4 px-4 py-2.5 rounded-xl bg-surface border border-border focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
+      <Search size={14} className="text-text-tertiary flex-shrink-0" />
       <input
         type="search"
         aria-label="캡처 검색"

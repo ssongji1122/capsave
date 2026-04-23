@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT } from '@scrave/shared';
+import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, countUserCaptures, MAX_FREE_CAPTURES } from '@scrave/shared';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+
+async function checkFreeTierLimit(userId: string): Promise<boolean> {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return false; // fail open if key not configured
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    { auth: { persistSession: false } }
+  );
+  const count = await countUserCaptures(admin, userId);
+  return count >= MAX_FREE_CAPTURES;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +30,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
       }
       await incrementGuestRateLimit(ip);
+    } else {
+      // Authenticated: enforce free tier capture limit server-side
+      const atLimit = await checkFreeTierLimit(user.id);
+      if (atLimit) {
+        return NextResponse.json(
+          { error: `무료 플랜 저장 한도(${MAX_FREE_CAPTURES}개)에 도달했습니다` },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await request.json();

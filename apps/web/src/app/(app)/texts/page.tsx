@@ -5,6 +5,7 @@ import { useCaptures } from '@/contexts/CapturesContext';
 import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
 import { CaptureItem } from '@scrave/shared';
+import { FileText } from 'lucide-react';
 
 export default function TextsPage() {
   const { getCapturesByCategory, captures: allCaptures, isLoading, deleteCapture } = useCaptures();
@@ -28,7 +29,7 @@ export default function TextsPage() {
     <div className="pb-20 lg:pb-8">
       <div className="px-5 pt-8 pb-3 lg:pt-10">
         <h1 className="text-2xl font-extrabold">
-          <span className="text-text-accent">📝</span> 텍스트
+          <FileText size={22} className="inline text-text-accent mb-0.5" /> 텍스트
         </h1>
         <p className="text-text-secondary text-sm mt-1">AI 정보, 코드, 레시피, 기사</p>
       </div>
@@ -36,7 +37,7 @@ export default function TextsPage() {
         captures={captures}
         isLoading={isLoading}
         onDelete={onDelete}
-        emptyIcon="📝"
+        emptyIcon={<FileText size={40} className="text-text-accent" />}
         emptyTitle="저장된 텍스트가 없습니다"
         emptySubtitle={'AI 정보, 코드, 레시피, 기사 스크린샷을\n캡처하면 자동으로 여기에 정리됩니다'}
       />

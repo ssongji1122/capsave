@@ -20,8 +20,8 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/api/cron/dau')).toBe(true);
   });
 
-  it('returns false for /dashboard', () => {
-    expect(isPublicRoute('/dashboard')).toBe(false);
+  it('returns true for /dashboard (guest-accessible)', () => {
+    expect(isPublicRoute('/dashboard')).toBe(true);
   });
 
   it('returns true for /places (guest-accessible)', () => {
@@ -60,8 +60,8 @@ describe('shouldRedirectToDashboard', () => {
 });
 
 describe('shouldRedirectToLogin', () => {
-  it('returns true when unauthenticated user visits /dashboard', () => {
-    expect(shouldRedirectToLogin('/dashboard', false)).toBe(true);
+  it('returns false when unauthenticated user visits /dashboard (guest-accessible)', () => {
+    expect(shouldRedirectToLogin('/dashboard', false)).toBe(false);
   });
 
   it('returns true when unauthenticated user visits /settings', () => {

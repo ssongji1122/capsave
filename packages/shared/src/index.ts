@@ -43,6 +43,7 @@ export { parseAnalysisResult, parseBatchAnalysisResult } from './ai/parse-result
 // Supabase
 export { createSupabaseClient } from './supabase/client';
 export {
+  MAX_FREE_CAPTURES,
   getAllCaptures,
   getCapturesByCategory,
   searchCaptures,
@@ -53,5 +54,6 @@ export {
   reclassifyCapture,
   softDeleteCapture,
   touchUserSeen,
+  countUserCaptures,
 } from './supabase/queries';
 export { mapRowToCapture, mapCaptureToRow } from './supabase/mappers';

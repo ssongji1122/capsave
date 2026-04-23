@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { CaptureItem } from '@scrave/shared';
 import { CaptureCard } from './CaptureCard';
 
@@ -7,7 +8,7 @@ interface CaptureListProps {
   captures: CaptureItem[];
   isLoading: boolean;
   onDelete: (id: number) => void;
-  emptyIcon: string;
+  emptyIcon: ReactNode;
   emptyTitle: string;
   emptySubtitle: string;
   hasMore?: boolean;
@@ -58,7 +59,7 @@ export function CaptureList({
     return (
       <div className="flex flex-col items-center justify-center py-24 px-8">
         <div className="w-24 h-24 rounded-full bg-surface-elevated flex items-center justify-center mb-5">
-          <span className="text-4xl">{emptyIcon}</span>
+          {emptyIcon}
         </div>
         <h3 className="text-xl font-bold text-text-primary">{emptyTitle}</h3>
         <p className="text-text-secondary text-center mt-2 leading-6 whitespace-pre-line">{emptySubtitle}</p>

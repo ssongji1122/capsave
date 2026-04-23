@@ -4,9 +4,25 @@ import {
   BATCH_ANALYSIS_INSTRUCTION,
   parseBatchAnalysisResult,
   AI_MODEL_ENDPOINT,
+  countUserCaptures,
+  MAX_FREE_CAPTURES,
 } from '@scrave/shared';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+
+async function getRemainingCapacity(userId: string): Promise<number> {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return MAX_FREE_CAPTURES; // fail open if key not configured
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    { auth: { persistSession: false } }
+  );
+  const count = await countUserCaptures(admin, userId);
+  return Math.max(0, MAX_FREE_CAPTURES - count);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +43,23 @@ export async function POST(request: NextRequest) {
 
     if (images.length > 10) {
       return NextResponse.json({ error: '한번에 최대 10장까지 업로드 가능합니다' }, { status: 400 });
+    }
+
+    if (user) {
+      // Authenticated: enforce free tier limit — reject if no capacity for any image
+      const remaining = await getRemainingCapacity(user.id);
+      if (remaining === 0) {
+        return NextResponse.json(
+          { error: `무료 플랜 저장 한도(${MAX_FREE_CAPTURES}개)에 도달했습니다` },
+          { status: 403 }
+        );
+      }
+      if (images.length > remaining) {
+        return NextResponse.json(
+          { error: `저장 가능한 캡처가 ${remaining}개 남았습니다 (요청: ${images.length}개)` },
+          { status: 403 }
+        );
+      }
     }
 
     // Images are already resized + base64-encoded on the client

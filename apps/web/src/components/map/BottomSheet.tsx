@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import { Camera } from 'lucide-react';
 import { MapPlace } from './MapView';
 
 interface BottomSheetProps {
@@ -65,7 +66,7 @@ export function BottomSheet({ places, onPlaceSelect, selectedPlace }: BottomShee
                 {place.address || ''}
               </p>
               <p className="text-[10px] text-text-tertiary mt-0.5 truncate">
-                📸 {place.captureTitle}
+                <Camera size={10} className="inline mr-0.5" />{place.captureTitle}
               </p>
             </button>
           );

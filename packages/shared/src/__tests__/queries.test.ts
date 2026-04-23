@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getAllCaptures, getCapturesByCategory, searchCaptures } from '../supabase/queries';
+import { getAllCaptures, getCapturesByCategory, searchCaptures, countUserCaptures, MAX_FREE_CAPTURES } from '../supabase/queries';
 
 /** Minimal chainable Supabase query builder mock that records all method calls. */
 function makeMockBuilder(finalResult: { data?: unknown[]; count?: number; error?: unknown } = {}) {
@@ -19,12 +19,9 @@ function makeMockBuilder(finalResult: { data?: unknown[]; count?: number; error?
     };
   }
 
-  // Terminal methods return a Promise of the result
-  builder.then = undefined; // not a thenable itself
+  builder.then = undefined;
   Object.defineProperty(builder, Symbol.toStringTag, { value: 'MockBuilder' });
 
-  // Make it awaitable as a plain value by adding a custom await mechanism
-  // We simulate the Supabase pattern where the builder is also a Promise:
   const promise = Promise.resolve(result);
   (builder as { then: unknown }).then = promise.then.bind(promise);
   (builder as { catch: unknown }).catch = promise.catch.bind(promise);
@@ -40,12 +37,25 @@ function makeMockClient(builderResult?: { data?: unknown[]; count?: number; erro
   return { client, calls };
 }
 
+function makeCountClient(resolveWith: { count: number | null; error: unknown }) {
+  const qb = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
+    then: (resolve: (v: unknown) => void) => {
+      resolve(resolveWith);
+      return Promise.resolve(resolveWith);
+    },
+  };
+  return { from: vi.fn().mockReturnValue(qb), _qb: qb };
+}
+
 // ---------------------------------------------------------------------------
 
 describe('getAllCaptures', () => {
   it('filters out soft-deleted rows (deleted_at IS NULL)', async () => {
     const { client, calls } = makeMockClient();
-    await getAllCaptures(client as never).catch(() => {}); // ignore result, just track calls
+    await getAllCaptures(client as never).catch(() => {});
     const isCall = calls.find((c) => c.startsWith('is('));
     expect(isCall, 'getAllCaptures must call .is("deleted_at", null)').toBeTruthy();
     expect(isCall).toContain('"deleted_at"');
@@ -72,5 +82,32 @@ describe('searchCaptures', () => {
     expect(isCall, 'searchCaptures must call .is("deleted_at", null)').toBeTruthy();
     expect(isCall).toContain('"deleted_at"');
     expect(isCall).toContain('null');
+  });
+});
+
+describe('MAX_FREE_CAPTURES', () => {
+  it('is 10', () => {
+    expect(MAX_FREE_CAPTURES).toBe(10);
+  });
+});
+
+describe('countUserCaptures', () => {
+  it('returns the count of non-deleted captures for the user', async () => {
+    const { _qb: qb, ...client } = makeCountClient({ count: 7, error: null });
+    const result = await countUserCaptures(client as never, 'user-abc');
+    expect(result).toBe(7);
+    expect(qb.eq).toHaveBeenCalledWith('user_id', 'user-abc');
+    expect(qb.is).toHaveBeenCalledWith('deleted_at', null);
+  });
+
+  it('returns 0 when count is null', async () => {
+    const { ...client } = makeCountClient({ count: null, error: null });
+    const result = await countUserCaptures(client as never, 'user-xyz');
+    expect(result).toBe(0);
+  });
+
+  it('throws when supabase returns an error', async () => {
+    const { ...client } = makeCountClient({ count: null, error: new Error('db error') });
+    await expect(countUserCaptures(client as never, 'user-err')).rejects.toThrow();
   });
 });
