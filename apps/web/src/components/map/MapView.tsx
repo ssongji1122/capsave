@@ -1,10 +1,9 @@
+/// <reference types="google.maps" />
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { MapPin, Map } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 
@@ -20,141 +19,106 @@ export interface MapPlace {
   placeIndex: number;
 }
 
+type MapProvider = 'naver' | 'google';
+
+// --- SDK loaders ---
+
 declare global {
   interface Window {
-    kakao: {
+    google: typeof google;
+    naver: {
       maps: {
-        load: (callback: () => void) => void;
-        LatLng: new (lat: number, lng: number) => KakaoLatLng;
-        LatLngBounds: new () => KakaoLatLngBounds;
-        Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMap;
-        Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
-        CustomOverlay: new (options: {
-          position: KakaoLatLng;
-          content: string;
-          yAnchor?: number;
-          xAnchor?: number;
-          map?: KakaoMap;
-        }) => KakaoCustomOverlay;
-        event: {
-          addListener: (target: unknown, type: string, handler: () => void) => void;
-        };
+        Map: new (el: HTMLElement, opts: object) => NaverMap;
+        Marker: new (opts: object) => NaverMarker;
+        LatLng: new (lat: number, lng: number) => NaverLatLng;
+        LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverBounds;
+        Event: { addListener: (target: object, type: string, handler: () => void) => void };
       };
     };
   }
 }
+interface NaverLatLng { lat(): number; lng(): number; }
+interface NaverBounds { extend(latlng: NaverLatLng): void; }
+interface NaverMap { fitBounds(b: NaverBounds, opts?: object): void; panTo(latlng: NaverLatLng): void; }
+interface NaverMarker { setMap(map: NaverMap | null): void; }
 
-interface KakaoLatLng {
-  getLat(): number;
-  getLng(): number;
-}
-interface KakaoLatLngBounds {
-  extend(latlng: KakaoLatLng): void;
-}
-interface KakaoMap {
-  setBounds(bounds: KakaoLatLngBounds, paddingTop?: number, paddingRight?: number, paddingBottom?: number, paddingLeft?: number): void;
-  setCenter(latlng: KakaoLatLng): void;
-  setLevel(level: number): void;
-  panTo(latlng: KakaoLatLng): void;
-}
-interface KakaoMarker {
-  setMap(map: KakaoMap | null): void;
-}
-interface KakaoCustomOverlay {
-  setMap(map: KakaoMap | null): void;
-}
-
-const KAKAO_SDK_URL = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`;
-
-function useKakaoMaps() {
+function useNaverMaps() {
   const [loaded, setLoaded] = useState(false);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    // Already loaded
-    if (window.kakao?.maps) {
-      window.kakao.maps.load(() => setLoaded(true));
-      return;
-    }
-
-    // Check if script tag already exists
-    const existing = document.querySelector(`script[src*="dapi.kakao.com"]`);
-    if (existing) {
-      existing.addEventListener('load', () => {
-        window.kakao.maps.load(() => setLoaded(true));
-      });
-      return;
-    }
-
+    if (window.naver?.maps) { setLoaded(true); return; }
+    const existing = document.querySelector('script[src*="openapi.map.naver.com"]');
+    if (existing) { existing.addEventListener('load', () => setLoaded(true)); return; }
     const script = document.createElement('script');
-    script.src = KAKAO_SDK_URL;
+    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}`;
     script.async = true;
-    script.onload = () => {
-      window.kakao.maps.load(() => setLoaded(true));
-    };
+    script.onload = () => setLoaded(true);
     document.head.appendChild(script);
   }, []);
-
   return loaded;
 }
 
+function useGoogleMaps() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.google?.maps) { setLoaded(true); return; }
+    const existing = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existing) { existing.addEventListener('load', () => setLoaded(true)); return; }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
+    script.async = true;
+    script.onload = () => setLoaded(true);
+    document.head.appendChild(script);
+  }, []);
+  return loaded;
+}
+
+// --- Main component ---
+
 export function MapView() {
   const { captures } = useCaptures();
-  const { guestCaptures } = useGuestCaptures();
   const searchParams = useSearchParams();
   const captureFilter = searchParams.get('capture');
 
-  // Merge auth captures with guest captures (auth takes priority, guest fills in for unauthenticated users)
-  const allCaptures = useMemo(
-    () => [...captures, ...guestCaptures],
-    [captures, guestCaptures]
-  );
+  const [provider, setProvider] = useState<MapProvider>('naver');
 
-  const kakaoReady = useKakaoMaps();
+  const naverReady = useNaverMaps();
+  const googleReady = useGoogleMaps();
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<KakaoMap | null>(null);
-  const markersRef = useRef<KakaoMarker[]>([]);
-  const overlaysRef = useRef<KakaoCustomOverlay[]>([]);
+  const naverMapRef = useRef<NaverMap | null>(null);
+  const naverMarkersRef = useRef<NaverMarker[]>([]);
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const googleMarkersRef = useRef<google.maps.Marker[]>([]);
 
   const [places, setPlaces] = useState<MapPlace[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<MapPlace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Memoize place captures
   const placeCaptures = useMemo(
-    () => allCaptures.filter((c) => c.category === 'place' && c.places.length > 0),
-    [allCaptures]
+    () => captures.filter((c) => c.category === 'place' && c.places.length > 0),
+    [captures]
   );
   const captureIds = placeCaptures.map((c) => c.id).sort().join(',');
   const hasGeocoded = useRef(false);
 
-  // Geocode all places
   useEffect(() => {
-    if (placeCaptures.length === 0) {
-      setIsLoading(false);
-      return;
-    }
+    if (placeCaptures.length === 0) { setIsLoading(false); return; }
     if (hasGeocoded.current) return;
     hasGeocoded.current = true;
 
     const run = async () => {
       setIsLoading(true);
-
-      type PlaceEntry = { place: typeof placeCaptures[0]['places'][0]; capture: typeof placeCaptures[0]; index: number };
+      type Entry = { place: typeof placeCaptures[0]['places'][0]; capture: typeof placeCaptures[0]; index: number };
       const withCoords: MapPlace[] = [];
-      const toGeocode: PlaceEntry[] = [];
+      const toGeocode: Entry[] = [];
 
       for (const capture of placeCaptures) {
         for (let i = 0; i < capture.places.length; i++) {
           const place = capture.places[i];
           if (place.lat && place.lng) {
-            withCoords.push({
-              name: place.name, address: place.address, date: place.date,
-              lat: place.lat, lng: place.lng,
-              captureId: capture.id, captureTitle: capture.title,
-              captureImageUrl: capture.imageUrl, placeIndex: i,
-            });
+            withCoords.push({ name: place.name, address: place.address, date: place.date, lat: place.lat, lng: place.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: i });
           } else {
             toGeocode.push({ place, capture, index: i });
           }
@@ -163,11 +127,7 @@ export function MapView() {
 
       const results = await Promise.allSettled(
         toGeocode.map(({ place }) =>
-          fetch('/api/geocode', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: place.name, address: place.address }),
-          }).then((res) => res.json())
+          fetch('/api/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: place.name, address: place.address }) }).then((r) => r.json())
         )
       );
 
@@ -175,113 +135,99 @@ export function MapView() {
         .map((result, i) => {
           if (result.status !== 'fulfilled' || !result.value.lat || !result.value.lng) return null;
           const { place, capture, index } = toGeocode[i];
-          return {
-            name: place.name,
-            address: place.address || result.value.formattedAddress,
-            date: place.date,
-            lat: result.value.lat,
-            lng: result.value.lng,
-            captureId: capture.id,
-            captureTitle: capture.title,
-            captureImageUrl: capture.imageUrl,
-            placeIndex: index,
-          } as MapPlace;
+          return { name: place.name, address: place.address || result.value.formattedAddress, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index } as MapPlace;
         })
         .filter((p): p is MapPlace => p !== null);
 
       setPlaces([...withCoords, ...geocoded]);
       setIsLoading(false);
     };
-
     run();
   }, [captureIds]);
 
-  // Filter by capture if query param present
   const filteredPlaces = captureFilter
     ? places.filter((p) => p.captureId === Number(captureFilter))
     : places;
 
-  // Initialize Kakao Map
+  // --- Naver Map init ---
   useEffect(() => {
-    if (!kakaoReady || !mapContainerRef.current || filteredPlaces.length === 0) return;
+    if (provider !== 'naver' || !naverReady || !mapContainerRef.current || filteredPlaces.length === 0) return;
 
-    const { kakao } = window;
+    const { naver } = window;
+    const center = new naver.maps.LatLng(37.5665, 126.978);
+    const map = new naver.maps.Map(mapContainerRef.current, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
+    naverMapRef.current = map;
 
-    // Default center: Seoul
-    const defaultCenter = new kakao.maps.LatLng(37.5665, 126.978);
-    const map = new kakao.maps.Map(mapContainerRef.current, {
-      center: defaultCenter,
-      level: 5,
-    });
-    mapRef.current = map;
+    const lats = filteredPlaces.map((p) => p.lat);
+    const lngs = filteredPlaces.map((p) => p.lng);
+    const sw = new naver.maps.LatLng(Math.min(...lats), Math.min(...lngs));
+    const ne = new naver.maps.LatLng(Math.max(...lats), Math.max(...lngs));
+    map.fitBounds(new naver.maps.LatLngBounds(sw, ne), { top: 60, right: 40, bottom: 180, left: 40 });
 
-    // Fit bounds to all places
-    const bounds = new kakao.maps.LatLngBounds();
-    filteredPlaces.forEach((p) => {
-      bounds.extend(new kakao.maps.LatLng(p.lat, p.lng));
-    });
-    map.setBounds(bounds, 60, 40, 180, 40);
-
-    // Create markers with numbered labels
-    const newMarkers: KakaoMarker[] = [];
-    const newOverlays: KakaoCustomOverlay[] = [];
-
+    const newMarkers: NaverMarker[] = [];
     filteredPlaces.forEach((place, idx) => {
-      const position = new kakao.maps.LatLng(place.lat, place.lng);
-
-      // Custom numbered marker overlay
-      const content = `
-        <div style="
-          width: 32px; height: 32px; border-radius: 50%;
-          background: #34D399; color: #050508;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 12px; font-weight: 700;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          cursor: pointer; border: 2px solid #050508;
-        " data-place-idx="${idx}">${idx + 1}</div>
-      `;
-
-      const overlay = new kakao.maps.CustomOverlay({
-        position,
-        content,
-        yAnchor: 1,
-        xAnchor: 0.5,
-        map,
-      });
-
-      // Invisible marker for click events
-      const marker = new kakao.maps.Marker({ position, map });
-      kakao.maps.event.addListener(marker, 'click', () => {
-        setSelectedPlace(place);
-      });
-
+      const content = `<div style="width:32px;height:32px;border-radius:50%;background:#34D399;color:#050508;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.4);border:2px solid #050508;cursor:pointer;">${idx + 1}</div>`;
+      const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new (window as any).naver.maps.Point(16, 16) } });
+      naver.maps.Event.addListener(marker, 'click', () => setSelectedPlace(place));
       newMarkers.push(marker);
-      newOverlays.push(overlay);
     });
+    naverMarkersRef.current = newMarkers;
 
-    markersRef.current = newMarkers;
-    overlaysRef.current = newOverlays;
+    return () => { newMarkers.forEach((m) => m.setMap(null)); };
+  }, [provider, naverReady, filteredPlaces]);
 
-    return () => {
-      newMarkers.forEach((m) => m.setMap(null));
-      newOverlays.forEach((o) => o.setMap(null));
-    };
-  }, [kakaoReady, filteredPlaces]);
+  // --- Google Map init ---
+  useEffect(() => {
+    if (provider !== 'google' || !googleReady || !mapContainerRef.current || filteredPlaces.length === 0) return;
 
-  // Pan to selected place
+    const map = new google.maps.Map(mapContainerRef.current, {
+      center: { lat: 37.5665, lng: 126.978 }, zoom: 12,
+      disableDefaultUI: true, zoomControl: true,
+      styles: [
+        { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+        { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a2e' }] },
+        { elementType: 'labels.text.fill', stylers: [{ color: '#8a8a95' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2a3e' }] },
+        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e0e1a' }] },
+        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      ],
+    });
+    googleMapRef.current = map;
+
+    const bounds = new google.maps.LatLngBounds();
+    filteredPlaces.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+    map.fitBounds(bounds, { top: 60, right: 40, bottom: 180, left: 40 });
+
+    const newMarkers: google.maps.Marker[] = [];
+    filteredPlaces.forEach((place, idx) => {
+      const marker = new google.maps.Marker({
+        map, position: { lat: place.lat, lng: place.lng },
+        label: { text: String(idx + 1), color: '#050508', fontSize: '12px', fontWeight: '700' },
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: '#34D399', fillOpacity: 1, strokeColor: '#050508', strokeWeight: 2 },
+      });
+      marker.addListener('click', () => setSelectedPlace(place));
+      newMarkers.push(marker);
+    });
+    googleMarkersRef.current = newMarkers;
+
+    return () => { newMarkers.forEach((m) => m.setMap(null)); };
+  }, [provider, googleReady, filteredPlaces]);
+
   const handlePlaceSelect = useCallback((place: MapPlace) => {
     setSelectedPlace(place);
-    if (mapRef.current && window.kakao) {
-      const pos = new window.kakao.maps.LatLng(place.lat, place.lng);
-      mapRef.current.panTo(pos);
+    if (provider === 'naver' && naverMapRef.current && window.naver) {
+      naverMapRef.current.panTo(new window.naver.maps.LatLng(place.lat, place.lng));
     }
-  }, []);
+    if (provider === 'google' && googleMapRef.current) {
+      googleMapRef.current.panTo({ lat: place.lat, lng: place.lng });
+    }
+  }, [provider]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full" role="status" aria-label="로딩 중">
         <div className="text-center">
-          <MapPin size={32} className="text-place-accent animate-bounce mx-auto mb-4" />
+          <div className="text-4xl mb-4 animate-bounce">📍</div>
           <p className="text-text-secondary">장소 좌표를 불러오는 중...</p>
         </div>
       </div>
@@ -292,7 +238,7 @@ export function MapView() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Map size={32} className="text-place-accent mx-auto mb-4" />
+          <div className="text-4xl mb-4">🗺</div>
           <p className="text-text-primary font-semibold">저장된 장소가 없습니다</p>
           <p className="text-text-tertiary text-sm mt-1">장소 캡처를 추가하면 지도에 표시됩니다</p>
         </div>
@@ -300,47 +246,39 @@ export function MapView() {
     );
   }
 
-  const hasKakaoKey = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
-
   return (
     <div className="relative h-full">
-      {/* Top bar: Place count */}
+      {/* Top bar */}
       <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center">
         <div className="px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
-          <MapPin size={12} className="inline mr-1" />{filteredPlaces.length}개 장소
+          📍 {filteredPlaces.length}개 장소
+        </div>
+
+        {/* Provider toggle */}
+        <div className="flex gap-1 p-1 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10">
+          <button
+            onClick={() => setProvider('naver')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
+          >
+            🟢 네이버
+          </button>
+          <button
+            onClick={() => setProvider('google')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'google' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
+          >
+            🔵 구글
+          </button>
         </div>
       </div>
 
-      {/* Map container */}
-      <div className="h-full w-full bg-surface">
-        {!hasKakaoKey ? (
-          <div className="flex items-center justify-center h-full text-text-tertiary text-sm">
-            <div className="text-center">
-              <p className="mb-2">카카오맵 API 키가 설정되지 않았습니다</p>
-              <p className="text-xs text-text-tertiary">
-                .env.local에 NEXT_PUBLIC_KAKAO_JS_KEY를 추가하세요
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div ref={mapContainerRef} className="h-full w-full" />
-        )}
-      </div>
+      {/* Map container — single div, re-used by each SDK */}
+      <div ref={mapContainerRef} className="h-full w-full" />
 
-      {/* Place popup */}
       {selectedPlace && (
-        <PlacePopup
-          place={selectedPlace}
-          onClose={() => setSelectedPlace(null)}
-        />
+        <PlacePopup place={selectedPlace} onClose={() => setSelectedPlace(null)} />
       )}
 
-      {/* Bottom sheet */}
-      <BottomSheet
-        places={filteredPlaces}
-        onPlaceSelect={handlePlaceSelect}
-        selectedPlace={selectedPlace}
-      />
+      <BottomSheet places={filteredPlaces} onPlaceSelect={handlePlaceSelect} selectedPlace={selectedPlace} />
     </div>
   );
 }

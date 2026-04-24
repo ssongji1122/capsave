@@ -16,6 +16,7 @@
     "build:shared": "turbo build --filter=@scrave/shared"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
     "turbo": "^2.5.0"
   }
 }
