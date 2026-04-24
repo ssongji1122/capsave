@@ -226,7 +226,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                     {item.relatedSearchTerms.map((term, i) => (
                       <a
                         key={i}
-                        href={`https://search.naver.com/search.naver?query=${encodeURIComponent(term)}`}
+                        href={`https://www.perplexity.ai/search?q=${encodeURIComponent(term)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -237,34 +237,27 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex gap-1.5">
-                    <a
-                      href={`https://search.naver.com/search.naver?query=${encodeURIComponent(item.title)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 py-1.5 rounded-lg bg-surface border border-border text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
-                    >
-                      네이버
-                    </a>
-                    <a
-                      href={`https://www.google.com/search?q=${encodeURIComponent(item.title)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 py-1.5 rounded-lg bg-surface border border-border text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
-                    >
-                      Google
-                    </a>
-                    <a
-                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 py-1.5 rounded-lg bg-surface border border-border text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
-                    >
-                      YouTube
-                    </a>
+                  <div className="flex gap-4">
+                    {[
+                      { emoji: '⚡', label: 'Perplexity', href: `https://www.perplexity.ai/search?q=${encodeURIComponent(item.title)}` },
+                      { emoji: '🔵', label: 'Google', href: `https://www.google.com/search?q=${encodeURIComponent(item.title)}` },
+                      { emoji: '▶', label: 'YouTube', href: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}` },
+                      { emoji: '📝', label: '블로그', href: `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(item.title)}` },
+                    ].map(({ emoji, label, href }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex flex-col items-center gap-1 group"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center text-lg group-hover:border-border-light transition-colors">
+                          {emoji}
+                        </div>
+                        <span className="text-[9px] text-text-tertiary group-hover:text-text-secondary transition-colors">{label}</span>
+                      </a>
+                    ))}
                   </div>
                 )}
               </div>

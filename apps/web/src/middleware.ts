@@ -1,69 +1,34 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { shouldRedirectToDashboard, shouldRedirectToLogin } from '@scrave/shared';
+
+// Edge-compatible route guard (no external deps)
+const PROTECTED = ['/dashboard', '/settings', '/places', '/texts', '/map'];
 
 export async function middleware(request: NextRequest) {
-  // Skip middleware for API routes to prevent body stream consumption
-  if (request.nextUrl.pathname.startsWith('/api')) {
-    return NextResponse.next();
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  // If env vars not configured, pass through without auth check
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.next();
-  }
-
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const pathname = request.nextUrl.pathname;
-  const hasUser = !!user;
 
-  if (shouldRedirectToDashboard(pathname, hasUser)) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+  // API routes: pass through
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
   }
 
-  if (shouldRedirectToLogin(pathname, hasUser)) {
+  // Check auth via cookie presence (Supabase sets sb-*-auth-token)
+  const hasCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.includes('auth-token') || c.name.startsWith('sb-'));
+
+  const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
+
+  if (isProtected && !hasCookie) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Match all routes except static files and Next.js internals
-    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
