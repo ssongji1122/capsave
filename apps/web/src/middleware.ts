@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Edge-compatible route guard (no external deps)
-const PROTECTED = ['/dashboard', '/settings', '/places', '/texts', '/map'];
+const PROTECTED: string[] = [];
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
