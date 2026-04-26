@@ -15,7 +15,7 @@ import { Camera } from 'lucide-react';
 const CONFIDENCE_THRESHOLD = 0.5;
 
 export default function HomePage() {
-  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture, isFreeLimitReached, freeRemaining } = useCaptures();
+  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -160,6 +160,7 @@ export default function HomePage() {
           file={selectedFile}
           onSave={handleSave}
           onCancel={() => setSelectedFile(null)}
+          isGuest={!isAuthenticated}
         />
       )}
 
@@ -169,6 +170,7 @@ export default function HomePage() {
           files={batchFiles}
           onSave={handleBatchSave}
           onCancel={() => setBatchFiles(null)}
+          isGuest={!isAuthenticated}
         />
       )}
     </div>

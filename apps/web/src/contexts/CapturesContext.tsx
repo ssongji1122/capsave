@@ -26,6 +26,7 @@ interface CapturesContextValue {
   isLoadingMore: boolean;
   isFreeLimitReached: boolean;
   freeRemaining: number;
+  isAuthenticated: boolean;
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
   deleteCapture: (id: number) => Promise<void>;
@@ -46,9 +47,16 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    client.auth.getUser().then(({ data: { user } }) => {
-      setUserId(user?.id ?? null);
-    });
+    const initAuth = async () => {
+      const { data: { user } } = await client.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      } else {
+        const { data } = await client.auth.signInAnonymously();
+        setUserId(data.user?.id ?? null);
+      }
+    };
+    initAuth();
   }, [client]);
 
   const refresh = useCallback(async () => {
@@ -176,6 +184,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         isLoadingMore,
         isFreeLimitReached: captures.length >= MAX_FREE_CAPTURES,
         freeRemaining: Math.max(0, MAX_FREE_CAPTURES - captures.length),
+        isAuthenticated: userId !== null,
         loadMore,
         refresh,
         deleteCapture: handleDelete,

@@ -33,14 +33,20 @@ declare global {
         LatLng: new (lat: number, lng: number) => NaverLatLng;
         LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverBounds;
         Event: { addListener: (target: object, type: string, handler: () => void) => void };
+        Service: {
+          Status: { OK: string };
+          geocode: (opts: { query: string }, cb: (status: string, response: NaverGeocodeResponse) => void) => void;
+        };
       };
     };
   }
 }
+
 interface NaverLatLng { lat(): number; lng(): number; }
 interface NaverBounds { extend(latlng: NaverLatLng): void; }
 interface NaverMap { fitBounds(b: NaverBounds, opts?: object): void; panTo(latlng: NaverLatLng): void; }
 interface NaverMarker { setMap(map: NaverMap | null): void; }
+interface NaverGeocodeResponse { v2?: { addresses?: { x: string; y: string; roadAddress?: string }[] } }
 
 function useNaverMaps() {
   const [loaded, setLoaded] = useState(false);
@@ -50,7 +56,7 @@ function useNaverMaps() {
     const existing = document.querySelector('script[src*="openapi.map.naver.com"]');
     if (existing) { existing.addEventListener('load', () => setLoaded(true)); return; }
     const script = document.createElement('script');
-    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}`;
+    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
     script.async = true;
     script.onload = () => setLoaded(true);
     document.head.appendChild(script);
@@ -74,10 +80,24 @@ function useGoogleMaps() {
   return loaded;
 }
 
+// Naver client-side geocoding (uses the Maps JS SDK geocoder submodule)
+function naverGeocode(query: string): Promise<{ lat: number; lng: number; address?: string } | null> {
+  return new Promise((resolve) => {
+    const svc = window.naver?.maps?.Service;
+    if (!svc) { resolve(null); return; }
+    svc.geocode({ query }, (status, response) => {
+      if (status !== svc.Status.OK) { resolve(null); return; }
+      const addr = response?.v2?.addresses?.[0];
+      if (!addr) { resolve(null); return; }
+      resolve({ lat: parseFloat(addr.y), lng: parseFloat(addr.x), address: addr.roadAddress });
+    });
+  });
+}
+
 // --- Main component ---
 
 export function MapView() {
-  const { captures } = useCaptures();
+  const { captures, isLoading: contextLoading, isAuthenticated } = useCaptures();
   const searchParams = useSearchParams();
   const captureFilter = searchParams.get('capture');
 
@@ -95,21 +115,23 @@ export function MapView() {
   const [places, setPlaces] = useState<MapPlace[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<MapPlace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [geocodeError, setGeocodeError] = useState(false);
 
   const placeCaptures = useMemo(
     () => captures.filter((c) => c.category === 'place' && c.places.length > 0),
     [captures]
   );
   const captureIds = placeCaptures.map((c) => c.id).sort().join(',');
-  const hasGeocoded = useRef(false);
 
   useEffect(() => {
+    if (contextLoading) return;
     if (placeCaptures.length === 0) { setIsLoading(false); return; }
-    if (hasGeocoded.current) return;
-    hasGeocoded.current = true;
 
+    let cancelled = false;
     const run = async () => {
       setIsLoading(true);
+      setGeocodeError(false);
+
       type Entry = { place: typeof placeCaptures[0]['places'][0]; capture: typeof placeCaptures[0]; index: number };
       const withCoords: MapPlace[] = [];
       const toGeocode: Entry[] = [];
@@ -125,25 +147,53 @@ export function MapView() {
         }
       }
 
-      const results = await Promise.allSettled(
+      // Phase 1: Google Geocoding (server-side)
+      const googleResults = await Promise.allSettled(
         toGeocode.map(({ place }) =>
           fetch('/api/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: place.name, address: place.address }) }).then((r) => r.json())
         )
       );
 
-      const geocoded: MapPlace[] = results
-        .map((result, i) => {
-          if (result.status !== 'fulfilled' || !result.value.lat || !result.value.lng) return null;
-          const { place, capture, index } = toGeocode[i];
-          return { name: place.name, address: place.address || result.value.formattedAddress, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index } as MapPlace;
-        })
-        .filter((p): p is MapPlace => p !== null);
+      if (cancelled) return;
 
-      setPlaces([...withCoords, ...geocoded]);
+      const geocoded: MapPlace[] = [];
+      const failedEntries: Entry[] = [];
+
+      googleResults.forEach((result, i) => {
+        if (result.status === 'fulfilled' && result.value.lat && result.value.lng) {
+          const { place, capture, index } = toGeocode[i];
+          geocoded.push({ name: place.name, address: place.address || result.value.formattedAddress, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
+        } else {
+          failedEntries.push(toGeocode[i]);
+        }
+      });
+
+      // Phase 2: Naver Geocoding fallback (client-side) for places Google couldn't resolve
+      if (failedEntries.length > 0 && window.naver?.maps?.Service) {
+        const naverResults = await Promise.allSettled(
+          failedEntries.map(({ place }) =>
+            naverGeocode(`${place.name}${place.address ? ' ' + place.address : ''}`)
+          )
+        );
+
+        if (cancelled) return;
+
+        naverResults.forEach((result, i) => {
+          if (result.status === 'fulfilled' && result.value) {
+            const { place, capture, index } = failedEntries[i];
+            geocoded.push({ name: place.name, address: place.address || result.value.address, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
+          }
+        });
+      }
+
+      const allPlaces = [...withCoords, ...geocoded];
+      if (allPlaces.length === 0 && toGeocode.length > 0) setGeocodeError(true);
+      setPlaces(allPlaces);
       setIsLoading(false);
     };
     run();
-  }, [captureIds]);
+    return () => { cancelled = true; };
+  }, [captureIds, contextLoading]);
 
   const filteredPlaces = captureFilter
     ? places.filter((p) => p.captureId === Number(captureFilter))
@@ -223,12 +273,40 @@ export function MapView() {
     }
   }, [provider]);
 
-  if (isLoading) {
+  if (contextLoading || isLoading) {
     return (
       <div className="flex items-center justify-center h-full" role="status" aria-label="로딩 중">
         <div className="text-center">
           <div className="text-4xl mb-4 animate-bounce">📍</div>
           <p className="text-text-secondary">장소 좌표를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Uncomment to require login for map access (anonymous auth currently handles guests)
+  // if (!isAuthenticated) {
+  //   return (
+  //     <div className="flex items-center justify-center h-full">
+  //       <div className="text-center">
+  //         <div className="text-4xl mb-4">🔐</div>
+  //         <p className="text-text-primary font-semibold">로그인이 필요합니다</p>
+  //         <p className="text-text-tertiary text-sm mt-1 mb-4">지도 기능을 사용하려면 로그인하세요</p>
+  //         <a href="/login" className="px-4 py-2 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary-light transition-colors">
+  //           로그인하기
+  //         </a>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  if (geocodeError) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-text-primary font-semibold">좌표 변환에 실패했습니다</p>
+          <p className="text-text-tertiary text-sm mt-1">Google Geocoding API 또는 Naver 지도 API를 확인해주세요</p>
         </div>
       </div>
     );
