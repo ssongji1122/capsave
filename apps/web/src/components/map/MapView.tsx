@@ -106,7 +106,8 @@ export function MapView() {
   const naverReady = useNaverMaps();
   const googleReady = useGoogleMaps();
 
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const naverContainerRef = useRef<HTMLDivElement>(null);
+  const googleContainerRef = useRef<HTMLDivElement>(null);
   const naverMapRef = useRef<NaverMap | null>(null);
   const naverMarkersRef = useRef<NaverMarker[]>([]);
   const googleMapRef = useRef<google.maps.Map | null>(null);
@@ -201,11 +202,11 @@ export function MapView() {
 
   // --- Naver Map init ---
   useEffect(() => {
-    if (provider !== 'naver' || !naverReady || !mapContainerRef.current || filteredPlaces.length === 0) return;
+    if (provider !== 'naver' || !naverReady || !naverContainerRef.current || filteredPlaces.length === 0) return;
 
     const { naver } = window;
     const center = new naver.maps.LatLng(37.5665, 126.978);
-    const map = new naver.maps.Map(mapContainerRef.current, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
+    const map = new naver.maps.Map(naverContainerRef.current!, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
     naverMapRef.current = map;
 
     const lats = filteredPlaces.map((p) => p.lat);
@@ -228,9 +229,9 @@ export function MapView() {
 
   // --- Google Map init ---
   useEffect(() => {
-    if (provider !== 'google' || !googleReady || !mapContainerRef.current || filteredPlaces.length === 0) return;
+    if (provider !== 'google' || !googleReady || !googleContainerRef.current || filteredPlaces.length === 0) return;
 
-    const map = new google.maps.Map(mapContainerRef.current, {
+    const map = new google.maps.Map(googleContainerRef.current, {
       center: { lat: 37.5665, lng: 126.978 }, zoom: 12,
       disableDefaultUI: true, zoomControl: true,
       styles: [
@@ -349,8 +350,9 @@ export function MapView() {
         </div>
       </div>
 
-      {/* Map container — single div, re-used by each SDK */}
-      <div ref={mapContainerRef} className="h-full w-full" />
+      {/* Separate containers per SDK — never share a DOM node between map SDKs */}
+      <div ref={naverContainerRef} className={`h-full w-full${provider === 'naver' ? '' : ' hidden'}`} />
+      <div ref={googleContainerRef} className={`h-full w-full${provider === 'google' ? '' : ' hidden'}`} />
 
       {selectedPlace && (
         <PlacePopup place={selectedPlace} onClose={() => setSelectedPlace(null)} />
