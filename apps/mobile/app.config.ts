@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         'tmap',
       ],
     },
-    bundleIdentifier: 'com.anonymous.scrave',
+    bundleIdentifier: 'com.scrave.app',
   },
   android: {
     adaptiveIcon: {
