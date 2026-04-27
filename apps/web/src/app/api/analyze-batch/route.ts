@@ -10,6 +10,7 @@ import {
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
 
 async function getRemainingCapacity(userId: string): Promise<number> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -27,7 +28,15 @@ async function getRemainingCapacity(userId: string): Promise<number> {
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUserAndTouch(request);
-    // Guests can use batch analysis too
+
+    if (!user) {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+      const rateLimit = await checkGuestRateLimit(ip);
+      if (!rateLimit.allowed) {
+        return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
+      }
+      await incrementGuestRateLimit(ip);
+    }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {

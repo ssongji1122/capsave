@@ -15,7 +15,7 @@ import { Camera } from 'lucide-react';
 const CONFIDENCE_THRESHOLD = 0.5;
 
 export default function HomePage() {
-  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated } = useCaptures();
+  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated, isAuthReady } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -121,7 +121,7 @@ export default function HomePage() {
       </div>
 
       {/* Upload */}
-      <div className={`px-4 mb-4 ${isFreeLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`px-4 mb-4 ${isFreeLimitReached || !isAuthReady ? 'opacity-50 pointer-events-none' : ''}`}>
         <UploadZone
           onImageSelected={handleSingleFile}
           onMultipleSelected={handleMultipleFiles}
