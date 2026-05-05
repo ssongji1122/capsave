@@ -34,8 +34,7 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
     .single();
 
   if (error && error.code !== 'PGRST116') {
-    console.error('Rate limit check error:', error);
-    return { allowed: true, remaining: 5, resetAt };
+    throw error;
   }
 
   const currentCount = data?.count ?? 0;
@@ -59,8 +58,7 @@ export async function incrementGuestRateLimit(ip: string): Promise<void> {
     .single();
 
   if (error && error.code !== 'PGRST116') {
-    console.error('Rate limit check error:', error);
-    return;
+    throw error;
   }
 
   if (data) {
