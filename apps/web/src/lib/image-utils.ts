@@ -1,3 +1,5 @@
+import { ANALYZE_MAX_WIDTH, ANALYZE_JPEG_QUALITY } from '@/lib/constants';
+
 export function isDataUri(url: string): boolean {
   return url.startsWith('data:');
 }
@@ -16,7 +18,7 @@ export function fileToBase64(file: File): Promise<string> {
  * Defaults follow the W2 OCR-quality floor: max 2048px width, JPEG quality 0.85.
  * Only downscales when input width > maxWidth (no upscaling, no needless re-encode).
  */
-export function resizeImageFile(file: File, maxWidth = 2048, quality = 0.85): Promise<Blob> {
+export function resizeImageFile(file: File, maxWidth = ANALYZE_MAX_WIDTH, quality = ANALYZE_JPEG_QUALITY): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {

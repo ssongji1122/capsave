@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
-
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_SIZE } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,12 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     // File validation
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_UPLOAD_SIZE) {
       return NextResponse.json({ error: '파일 크기가 5MB를 초과합니다.' }, { status: 413 });
     }
 
     const contentType = file.type;
-    if (!ALLOWED_TYPES.includes(contentType)) {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(contentType as typeof ALLOWED_UPLOAD_MIME_TYPES[number])) {
       return NextResponse.json({ error: '지원하지 않는 파일 형식입니다. (jpeg, png, webp만 가능)' }, { status: 400 });
     }
 

@@ -7,6 +7,7 @@ import {
   countUserCaptures,
   MAX_FREE_CAPTURES,
 } from '@scrave/shared';
+import { MAX_BATCH_FILES } from '@/lib/constants';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
@@ -50,8 +51,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No images provided' }, { status: 400 });
     }
 
-    if (images.length > 10) {
-      return NextResponse.json({ error: '한번에 최대 10장까지 업로드 가능합니다' }, { status: 400 });
+    if (images.length > MAX_BATCH_FILES) {
+      return NextResponse.json({ error: `한번에 최대 ${MAX_BATCH_FILES}장까지 업로드 가능합니다` }, { status: 400 });
     }
 
     if (user) {

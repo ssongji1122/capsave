@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-
-const MAX_BATCH_FILES = 10;
+import { MAX_BATCH_FILES } from '@/lib/constants';
 
 interface UploadZoneProps {
   onImageSelected: (file: File) => void;

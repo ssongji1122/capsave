@@ -4,11 +4,12 @@ import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT } from '@scrave/s
 import { createClient } from '@/lib/supabase/server';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
-
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ANALYZE_MAX_WIDTH = 2048;
-const ANALYZE_QUALITY = 85; // JPEG quality 0.85 floor (council recommendation)
+import {
+  ALLOWED_UPLOAD_MIME_TYPES,
+  MAX_UPLOAD_SIZE,
+  ANALYZE_MAX_WIDTH,
+  ANALYZE_JPEG_QUALITY_SHARP,
+} from '@/lib/constants';
 
 /**
  * Single capture endpoint for authenticated users:
@@ -37,10 +38,10 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_UPLOAD_SIZE) {
       return NextResponse.json({ error: '파일 크기가 5MB를 초과합니다.' }, { status: 413 });
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type as typeof ALLOWED_UPLOAD_MIME_TYPES[number])) {
       return NextResponse.json(
         { error: '지원하지 않는 파일 형식입니다. (jpeg, png, webp만 가능)' },
         { status: 400 }
@@ -55,9 +56,9 @@ export async function POST(request: NextRequest) {
     const analyzeBuffer = needsResize
       ? await sharp(originalBuffer)
           .resize({ width: ANALYZE_MAX_WIDTH })
-          .jpeg({ quality: ANALYZE_QUALITY })
+          .jpeg({ quality: ANALYZE_JPEG_QUALITY_SHARP })
           .toBuffer()
-      : await sharp(originalBuffer).jpeg({ quality: ANALYZE_QUALITY }).toBuffer();
+      : await sharp(originalBuffer).jpeg({ quality: ANALYZE_JPEG_QUALITY_SHARP }).toBuffer();
 
     const base64Image = analyzeBuffer.toString('base64');
 
