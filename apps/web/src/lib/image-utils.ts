@@ -26,7 +26,11 @@ export function resizeImageFile(file: File, maxWidth = 2048, quality = 0.85): Pr
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
       ctx.drawImage(img, 0, 0, w, h);
       canvas.toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
