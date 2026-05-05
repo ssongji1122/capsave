@@ -18,6 +18,7 @@ interface RateLimitResult {
 }
 
 async function getTodayKey(ip: string): Promise<string> {
+  if (!ip || typeof ip !== 'string') throw new Error('Invalid IP');
   const today = new Date().toISOString().split('T')[0];
   return `${ip}:${today}`;
 }
