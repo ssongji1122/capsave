@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
 
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&language=ko`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`Geocoding API returned ${res.status}`);
     const data = await res.json();
 
     const result = parseGoogleGeocodeResponse(data);
