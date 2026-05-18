@@ -35,7 +35,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
-    permissions: ['android.permission.RECORD_AUDIO'],
+    permissions: [],
   },
   web: {
     bundler: 'metro',
