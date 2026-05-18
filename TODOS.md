@@ -34,7 +34,7 @@
 | ID | 영역 | 작업 | 추정 |
 |----|------|------|------|
 | **F1** | C1 Analyze | Gemini confidence 캘리브레이션 검증. 20+ 스크린샷 (선명/흐림/장소/텍스트) 수동 라벨링 → confidence 분포 측정 → 0.5 임계값 적정성 판단. 부적정 시 임계값 또는 second heuristic 도입 | 3h |
-| **F2** | U2 Free wall | 100개 도달 시 UX. (1) 오래된 캡처 일괄 보관/삭제 도우미 (2) 가입 후 일수별 잔여 알림 (3) 추후 결제 hook | 4h |
+| ~~F2~~ | ~~U2 Free wall~~ | ✅ MVP 완료 — 잔여 ≤20 일 때 "오래된 N개 정리" 버튼이 capacity bar 아래 노출. window.confirm + 일괄 deleteCapture. 멀티셀렉트 UI는 dogfood 데이터 후 결정 | — |
 | ~~F3~~ | ~~C4 Mobile Settings~~ | ✅ 완료 — 모바일 `UserPreferencesContext` + `sortByPreferredProvider` helper로 ActionSheet 정렬. Mobile-side 편집 UI는 P3에 위임 | — |
 | ~~F4~~ | ~~S6 Batch 2-trip~~ | **P3 강등** — Vercel body limit 4.5MB × 10이미지 50MB 초과. 병렬 `/api/upload` (4.5MB 이하 각각) + 단일 `/api/analyze-batch` 패턴이 이미 효율적. 실 ROI 미미 | — |
 | ~~F5~~ | ~~U8 Offline 충돌~~ | **재검증 후 미해결 이슈 없음** — `deleteCapture`는 Supabase 성공 시에만 SQLite 삭제. 오프라인이면 supaDelete throw → return → SQLite/state 미변경. Zombie 없음 | — |
