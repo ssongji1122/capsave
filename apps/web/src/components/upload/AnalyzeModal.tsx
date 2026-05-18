@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
 import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
+import { Bot, CircleX, MapPin, FileText } from 'lucide-react';
 
 interface AnalyzeModalProps {
   file: File;
@@ -106,7 +107,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
         <div className="p-6">
           {status === 'analyzing' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4 animate-bounce">🤖</div>
+              <Bot className="mx-auto mb-4 text-ai-accent animate-pulse" size={40} aria-hidden />
               <p className="text-text-primary font-semibold">AI가 분석 중...</p>
               <p className="text-text-tertiary text-sm mt-1">잠시만 기다려주세요</p>
             </div>
@@ -114,7 +115,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
 
           {status === 'error' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4">❌</div>
+              <CircleX className="mx-auto mb-4 text-error" size={40} aria-hidden />
               <p className="text-error font-semibold">분석 실패</p>
               <p className="text-text-tertiary text-sm mt-1">{error}</p>
               <div className="flex gap-3 mt-6 justify-center">
@@ -130,10 +131,20 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
 
           {status === 'done' && result && (
             <>
-              <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold mb-3 ${
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-3 ${
                 isPlace ? 'bg-place-surface text-place-accent' : 'bg-text-surface text-text-accent'
               }`}>
-                {isPlace ? `📍 장소 (${result.places.length}개)` : '📝 텍스트'}
+                {isPlace ? (
+                  <>
+                    <MapPin size={12} aria-hidden />
+                    <span>장소 ({result.places.length}개)</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={12} aria-hidden />
+                    <span>텍스트</span>
+                  </>
+                )}
               </div>
 
               <h2 className="text-xl font-bold text-text-primary">{result.title}</h2>

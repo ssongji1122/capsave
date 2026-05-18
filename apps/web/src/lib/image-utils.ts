@@ -13,10 +13,15 @@ export function fileToBase64(file: File): Promise<string> {
 
 /**
  * 클라이언트에서 이미지를 리사이즈하여 Blob으로 반환.
- * Defaults follow the W2 OCR-quality floor: max 2048px width, JPEG quality 0.85.
+ * Defaults follow the OCR-quality floor: max 2048px width, JPEG quality 0.92.
+ *
+ * Quality 0.92 (was 0.85) preserves OCR-critical edges on text-heavy screenshots
+ * — menus, receipts, Threads posts — at a marginal size cost. The previous 0.85
+ * floor was visibly degrading thin text strokes after re-encoding.
+ *
  * Only downscales when input width > maxWidth (no upscaling, no needless re-encode).
  */
-export function resizeImageFile(file: File, maxWidth = 2048, quality = 0.85): Promise<Blob> {
+export function resizeImageFile(file: File, maxWidth = 2048, quality = 0.92): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {

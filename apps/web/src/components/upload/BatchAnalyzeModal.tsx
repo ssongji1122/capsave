@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
 import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
+import { Bot, CircleX, Camera, Upload, Link2, ListChecks, MapPin, FileText, ChevronDown } from 'lucide-react';
 
 interface BatchAnalyzeModalProps {
   files: File[];
@@ -123,8 +124,9 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
               />
             </div>
           ))}
-          <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-semibold text-text-primary">
-            📸 {files.length}장
+          <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-semibold text-text-primary">
+            <Camera size={12} aria-hidden />
+            <span>{files.length}장</span>
           </div>
         </div>
 
@@ -132,9 +134,11 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
           {/* Loading states */}
           {(status === 'uploading' || status === 'analyzing') && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4 animate-bounce">
-                {status === 'uploading' ? '📤' : '🤖'}
-              </div>
+              {status === 'uploading' ? (
+                <Upload className="mx-auto mb-4 text-primary animate-pulse" size={40} aria-hidden />
+              ) : (
+                <Bot className="mx-auto mb-4 text-ai-accent animate-pulse" size={40} aria-hidden />
+              )}
               <p className="text-text-primary font-semibold">
                 {status === 'uploading'
                   ? `이미지 업로드 중... (${progress}/${files.length}장)`
@@ -167,7 +171,7 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
           {/* Error */}
           {status === 'error' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4">❌</div>
+              <CircleX className="mx-auto mb-4 text-error" size={40} aria-hidden />
               <p className="text-error font-semibold">분석 실패</p>
               <p className="text-text-tertiary text-sm mt-1">{error}</p>
               <div className="flex gap-3 mt-6 justify-center">
@@ -187,7 +191,7 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
               {/* Merge indicator */}
               {isMerged && (
                 <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-ai-surface">
-                  <span className="text-sm">🔗</span>
+                  <Link2 size={14} className="text-ai-accent" aria-hidden />
                   <span className="text-xs font-medium text-ai-accent">
                     {files.length}장이 하나의 콘텐츠로 합쳐졌습니다
                   </span>
@@ -195,7 +199,7 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
               )}
               {!isMerged && results.length > 1 && (
                 <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-surface-elevated">
-                  <span className="text-sm">📋</span>
+                  <ListChecks size={14} className="text-text-secondary" aria-hidden />
                   <span className="text-xs font-medium text-text-secondary">
                     {results.length}개의 다른 콘텐츠로 분리되었습니다
                   </span>
@@ -216,10 +220,10 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
                   >
                     {/* Header — always visible */}
                     <div className="flex items-center gap-3">
-                      <div className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full ${
                         isPlace ? 'bg-place-surface text-place-accent' : 'bg-text-surface text-text-accent'
                       }`}>
-                        {isPlace ? '📍' : '📝'}
+                        {isPlace ? <MapPin size={14} aria-hidden /> : <FileText size={14} aria-hidden />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-bold text-text-primary truncate">{result.title}</h3>
@@ -227,9 +231,11 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
                           <p className="text-xs text-text-tertiary truncate mt-0.5">{result.summary}</p>
                         )}
                       </div>
-                      <span className={`text-text-tertiary text-xs transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                        ▼
-                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-text-tertiary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        aria-hidden
+                      />
                     </div>
 
                     {/* Details — expanded */}

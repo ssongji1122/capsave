@@ -8,7 +8,7 @@ import { getAuthUserAndTouch } from '@/lib/api-auth';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ANALYZE_MAX_WIDTH = 2048;
-const ANALYZE_QUALITY = 85; // JPEG quality 0.85 floor (council recommendation)
+const ANALYZE_QUALITY = 92; // JPEG quality 0.92 — preserves text-heavy screenshots for OCR
 
 /**
  * Single capture endpoint for authenticated users:

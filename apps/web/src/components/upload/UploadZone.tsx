@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { Camera } from 'lucide-react';
 
 const MAX_BATCH_FILES = 10;
 
@@ -88,7 +89,7 @@ export function UploadZone({ onImageSelected, onMultipleSelected, multiple = fal
         }
       `}
     >
-      <div className="text-4xl mb-3">📸</div>
+      <Camera className="mx-auto mb-3 text-text-secondary" size={32} aria-hidden />
       <p className="text-text-primary font-semibold">드래그, 클릭 또는 붙여넣기</p>
       <p className="text-text-tertiary text-sm mt-1">
         스크린샷을 업로드하면 AI가 자동 분석합니다{multiple && ` (최대 ${MAX_BATCH_FILES}장)`}

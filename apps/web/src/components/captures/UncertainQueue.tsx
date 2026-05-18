@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CaptureItem, CaptureCategory, reclassifyCapture } from '@scrave/shared';
+import { AlertTriangle, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/browser';
 import { CaptureCard } from './CaptureCard';
 
@@ -31,16 +32,18 @@ export function UncertainQueue({ captures, onDelete }: UncertainQueueProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 w-full px-4 py-3 rounded-2xl bg-warning/10 border border-warning/20 text-left transition-colors hover:bg-warning/15"
       >
-        <span className="text-warning text-sm">⚠️</span>
+        <AlertTriangle size={14} className="text-warning" aria-hidden />
         <span className="text-sm font-semibold text-warning">
           확인 필요
         </span>
         <span className="text-xs text-warning/70 font-medium ml-1">
           {captures.length}개
         </span>
-        <span className={`ml-auto text-warning/50 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-          ▼
-        </span>
+        <ChevronDown
+          size={14}
+          className={`ml-auto text-warning/50 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          aria-hidden
+        />
       </button>
 
       {isOpen && (

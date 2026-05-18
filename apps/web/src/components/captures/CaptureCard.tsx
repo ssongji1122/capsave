@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CaptureItem, PlaceInfo, getReviewLinks, extractStoragePath } from '@scrave/shared';
 import { isDataUri } from '@/lib/image-utils';
+import { X, ChevronDown } from 'lucide-react';
 
 interface CaptureCardProps {
   item: CaptureItem;
@@ -98,7 +99,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
             aria-label={`${item.title} 삭제`}
             className="absolute top-2 right-2 w-11 h-11 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-text-tertiary hover:text-error transition-colors"
           >
-            ✕
+            <X size={16} aria-hidden />
           </button>
         </div>
       )}
@@ -107,9 +108,11 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
       <div className="p-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
-          <span className={`text-text-tertiary text-xs transition-transform ml-2 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
+          <ChevronDown
+            size={16}
+            className={`text-text-tertiary transition-transform ml-2 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
         </div>
 
         {/* Collapsed: summary preview */}

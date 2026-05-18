@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Camera } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import { getMapLinks, getReviewLinks } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
@@ -31,9 +31,9 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
       <button
         onClick={onClose}
         aria-label="팝업 닫기"
-        className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-sm"
+        className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary"
       >
-        ✕
+        <X size={14} aria-hidden />
       </button>
 
       {/* Place info */}

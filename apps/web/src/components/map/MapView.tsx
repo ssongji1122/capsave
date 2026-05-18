@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { MapPin } from 'lucide-react';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
@@ -278,7 +279,7 @@ export function MapView() {
     return (
       <div className="flex items-center justify-center h-full" role="status" aria-label="로딩 중">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-bounce">📍</div>
+          <MapPin className="mx-auto mb-4 text-place-accent animate-pulse" size={36} aria-hidden />
           <p className="text-text-secondary">장소 좌표를 불러오는 중...</p>
         </div>
       </div>
@@ -329,8 +330,9 @@ export function MapView() {
     <div className="relative h-full">
       {/* Top bar */}
       <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center">
-        <div className="px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
-          📍 {filteredPlaces.length}개 장소
+        <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
+          <MapPin size={12} aria-hidden />
+          <span>{filteredPlaces.length}개 장소</span>
         </div>
 
         {/* Provider toggle */}
