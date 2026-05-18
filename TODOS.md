@@ -35,7 +35,7 @@
 |----|------|------|------|
 | **F1** | C1 Analyze | Gemini confidence 캘리브레이션 검증. 20+ 스크린샷 (선명/흐림/장소/텍스트) 수동 라벨링 → confidence 분포 측정 → 0.5 임계값 적정성 판단. 부적정 시 임계값 또는 second heuristic 도입 | 3h |
 | **F2** | U2 Free wall | 100개 도달 시 UX. (1) 오래된 캡처 일괄 보관/삭제 도우미 (2) 가입 후 일수별 잔여 알림 (3) 추후 결제 hook | 4h |
-| **F3** | C4 Mobile Settings | 모바일도 `user_preferences.preferred_nav_app` 읽어서 `getMobileMapLinks` 정렬에 반영. 현재 ActionSheet 고정 순서. iOS/Android에서 사용자 기본 지도 앱 일치 | 1.5h |
+| ~~F3~~ | ~~C4 Mobile Settings~~ | ✅ 완료 — 모바일 `UserPreferencesContext` + `sortByPreferredProvider` helper로 ActionSheet 정렬. Mobile-side 편집 UI는 P3에 위임 | — |
 | **F4** | S6 Batch 2-trip | 배치도 `/api/capture` 패턴으로 단일 호출화 (`/api/capture-batch`). storage upload + analyze-batch 1회 round-trip. 현재 N+1 → 1+1 | 3h |
 | **F5** | U8 Offline 충돌 | 모바일 SQLite 캐시 vs Supabase 충돌 정책 정의. 현재 dedupe by imageUrl만 — capture가 mobile에서 delete됐는데 서버에 살아있는 경우 어떻게? Last-write-wins 또는 server-wins 룰 명시 | 2h |
 | **F6** | Image cache TTL | mobile `useSignedImage` 캐시는 module-level Map. 앱 재시작 시 손실. AsyncStorage 또는 expo-image 자체 cache 활용 검토 | 1.5h |
