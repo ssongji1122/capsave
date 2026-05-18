@@ -75,19 +75,48 @@ describe('getCapturesByCategory', () => {
 });
 
 describe('searchCaptures', () => {
-  it('filters out soft-deleted rows (deleted_at IS NULL)', async () => {
-    const { client, calls } = makeMockClient({ count: 0 });
-    await searchCaptures(client as never, 'test').catch(() => {});
-    const isCall = calls.find((c) => c.startsWith('is('));
-    expect(isCall, 'searchCaptures must call .is("deleted_at", null)').toBeTruthy();
-    expect(isCall).toContain('"deleted_at"');
-    expect(isCall).toContain('null');
+  function makeRpcClient(resolveWith: { data: unknown[] | null; error: unknown }) {
+    const rpc = vi.fn().mockResolvedValue(resolveWith);
+    return { client: { rpc } as unknown, rpc };
+  }
+
+  it('returns an empty result without calling the RPC when query is whitespace', async () => {
+    const { client, rpc } = makeRpcClient({ data: [], error: null });
+    const result = await searchCaptures(client as never, '   ');
+    expect(rpc).not.toHaveBeenCalled();
+    expect(result).toEqual({ items: [], total: 0 });
+  });
+
+  it('invokes the search_user_captures RPC with trimmed query and default paging', async () => {
+    const { client, rpc } = makeRpcClient({ data: [], error: null });
+    await searchCaptures(client as never, '  강남  ');
+    expect(rpc).toHaveBeenCalledWith('search_user_captures', {
+      search_query: '강남',
+      search_limit: 20,
+      search_offset: 0,
+    });
+  });
+
+  it('passes custom limit and offset through to the RPC', async () => {
+    const { client, rpc } = makeRpcClient({ data: [], error: null });
+    await searchCaptures(client as never, 'a', { limit: 5, offset: 10 });
+    expect(rpc).toHaveBeenCalledWith('search_user_captures', {
+      search_query: 'a',
+      search_limit: 5,
+      search_offset: 10,
+    });
+  });
+
+  it('throws when the RPC returns an error', async () => {
+    const err = new Error('rpc failed');
+    const { client } = makeRpcClient({ data: null, error: err });
+    await expect(searchCaptures(client as never, 'x')).rejects.toThrow('rpc failed');
   });
 });
 
 describe('MAX_FREE_CAPTURES', () => {
-  it('is 10', () => {
-    expect(MAX_FREE_CAPTURES).toBe(10);
+  it('is 100', () => {
+    expect(MAX_FREE_CAPTURES).toBe(100);
   });
 });
 
