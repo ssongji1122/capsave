@@ -19,6 +19,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
+import { useSignedImage } from '@/hooks/useSignedImage';
 
 export default function CaptureDetailScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
@@ -33,6 +34,7 @@ export default function CaptureDetailScreen() {
   const [copied, setCopied] = useState(false);
 
   const isPlace = item?.category === 'place';
+  const resolvedImageUri = useSignedImage(item?.imageUri);
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
   const surfaceColor = isPlace ? colors.placeSurface : colors.textSurface;
   const borderColor = isPlace ? colors.placeBorder : colors.textBorder;
@@ -142,10 +144,10 @@ export default function CaptureDetailScreen() {
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Image */}
-        {item.imageUri ? (
+        {resolvedImageUri ? (
           <View style={styles.imageContainer}>
             <Image
-              source={{ uri: item.imageUri }}
+              source={{ uri: resolvedImageUri }}
               style={styles.image}
               contentFit="cover"
               transition={200}

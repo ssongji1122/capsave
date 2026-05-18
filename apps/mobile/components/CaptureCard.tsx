@@ -15,6 +15,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
+import { useSignedImage } from '@/hooks/useSignedImage';
 
 interface CaptureCardProps {
   item: CaptureItem;
@@ -28,6 +29,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   const isPlace = item.category === 'place';
 
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
+  const resolvedImageUri = useSignedImage(item.imageUri);
   const surfaceColor = isPlace ? colors.placeSurface : colors.textSurface;
   const borderColor = isPlace ? colors.placeBorder : colors.textBorder;
 
@@ -115,9 +117,9 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
       </View>
 
       {/* Image Preview */}
-      {item.imageUri && (
+      {resolvedImageUri && (
         <Image
-          source={{ uri: item.imageUri }}
+          source={{ uri: resolvedImageUri }}
           style={styles.cardImage}
           contentFit="cover"
           transition={200}
