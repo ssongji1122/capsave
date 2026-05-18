@@ -36,9 +36,9 @@
 | **F1** | C1 Analyze | Gemini confidence 캘리브레이션 검증. 20+ 스크린샷 (선명/흐림/장소/텍스트) 수동 라벨링 → confidence 분포 측정 → 0.5 임계값 적정성 판단. 부적정 시 임계값 또는 second heuristic 도입 | 3h |
 | **F2** | U2 Free wall | 100개 도달 시 UX. (1) 오래된 캡처 일괄 보관/삭제 도우미 (2) 가입 후 일수별 잔여 알림 (3) 추후 결제 hook | 4h |
 | ~~F3~~ | ~~C4 Mobile Settings~~ | ✅ 완료 — 모바일 `UserPreferencesContext` + `sortByPreferredProvider` helper로 ActionSheet 정렬. Mobile-side 편집 UI는 P3에 위임 | — |
-| **F4** | S6 Batch 2-trip | 배치도 `/api/capture` 패턴으로 단일 호출화 (`/api/capture-batch`). storage upload + analyze-batch 1회 round-trip. 현재 N+1 → 1+1 | 3h |
-| **F5** | U8 Offline 충돌 | 모바일 SQLite 캐시 vs Supabase 충돌 정책 정의. 현재 dedupe by imageUrl만 — capture가 mobile에서 delete됐는데 서버에 살아있는 경우 어떻게? Last-write-wins 또는 server-wins 룰 명시 | 2h |
-| **F6** | Image cache TTL | mobile `useSignedImage` 캐시는 module-level Map. 앱 재시작 시 손실. AsyncStorage 또는 expo-image 자체 cache 활용 검토 | 1.5h |
+| ~~F4~~ | ~~S6 Batch 2-trip~~ | **P3 강등** — Vercel body limit 4.5MB × 10이미지 50MB 초과. 병렬 `/api/upload` (4.5MB 이하 각각) + 단일 `/api/analyze-batch` 패턴이 이미 효율적. 실 ROI 미미 | — |
+| ~~F5~~ | ~~U8 Offline 충돌~~ | **재검증 후 미해결 이슈 없음** — `deleteCapture`는 Supabase 성공 시에만 SQLite 삭제. 오프라인이면 supaDelete throw → return → SQLite/state 미변경. Zombie 없음 | — |
+| **F6** | Image cache TTL | mobile `useSignedImage` 캐시는 module-level Map. 앱 재시작 시 손실. dogfood (10 users × ~30 captures = 300ms cold start) 수용 가능 → P2 유지 | 1.5h |
 
 ### P2 — 품질 / 보안 / 효율
 
@@ -46,16 +46,16 @@
 |----|------|------|------|
 | **G1** | S3 Secret | Resend API key를 `app_config` → Supabase Vault. PL/pgSQL 함수 시그니처 수정 | 1.5h |
 | **G2** | S5 Storage cleanup | 캡처 soft-delete 시 storage object 즉시 삭제 (`deleteCapture` hook). 추가: weekly cron이 `image_url`에 매칭 안되는 storage 오브젝트 일괄 정리 | 2.5h |
-| **G3** | C1 Image quality | 메뉴/영수증/SNS 텍스트 OCR 정확도. resize 시 width > 2048만 줄이고 quality 0.85 floor 유지. 작은 이미지(<2MB)는 PNG 손실 없음 경로 | 1.5h |
+| ~~G3~~ | ~~C1 Image quality~~ | ✅ 완료 — client + server JPEG quality 0.85 → 0.92. PNG 경로는 mimeType 컨트랙트 확장 비용으로 보류 | — |
 | **G4** | S11 Map geocoding | 100+ 장소 직렬 호출 → DB에 `lat`/`lng` 캐시 컬럼 추가 → 한 번 geocode 후 재사용. 또는 `Promise.all` 묶기 | 3h |
-| **G5** | Design 이모지 | 사이드바/모달/UploadZone의 이모지를 lucide-react SVG로. CaptureCard는 이미 정리됨 | 2h |
+| ~~G5~~ | ~~Design 이모지~~ | ✅ 완료 — AnalyzeModal/BatchAnalyzeModal/UploadZone/MapView/SearchBar/CaptureCard/UncertainQueue/PlacePopup 8 사이트 모두 lucide-react로 교체 + aria 처리 | — |
 | **G6** | E2E tests | Playwright로 핵심 플로우 3개: (1) OAuth 로그인 (2) 단일 캡처 저장→archive 표시 (3) 배치 17장 merge→1 카드 | 4h |
 
 ### P3 — 정착 후
 
 | ID | 영역 | 작업 |
 |----|------|------|
-| H1 | Design a11y | `focus-visible:ring` Tailwind plugin 추가 |
+| ~~H1~~ | ~~Design a11y~~ | ✅ 이미 완료 — [globals.css:67-76](apps/web/src/app/globals.css:67) 전역 `:focus-visible` 2px outline. WCAG 2.1 AA 만족 |
 | H2 | C5 Export | 캡처 CSV/JSON 내보내기 — 개인 아카이브 이동성 |
 | H3 | C6 Notification | 일별/주별 회고 알림 (모바일 push), DAU 이메일 외 |
 | H4 | C8 Reclassify UI | shared에 `reclassifyCapture` 있으나 UI 미노출 — 오분류 정정 |
