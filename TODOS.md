@@ -1,265 +1,106 @@
-# TODOS
-
-## Mobile map-linker migration to shared package
-
-**What:** Migrate `apps/mobile/services/map-linker.ts` to import from `@scrave/shared` instead of local copy.
-
-**Why:** Two separate map-linker implementations exist. Tmap has been added to the shared package, but mobile won't get it until this migration happens. One source of truth across mobile + web.
-
-**Pros:** Single implementation, future map providers added once, no drift.
-
-**Cons:** The shared `url-validator` currently only allows `https:` and `http:` — it must be updated to allowlist deep-link schemes (`nmap://`, `kakaomap://`, `comgooglemaps://`, `geo:`, `tmap://`) before migrating, or mobile silently falls through to web URLs instead of opening map apps.
-
-**Context:** The local mobile map-linker uses `React Native Linking` for app deep links + web URL fallback. The shared map-linker is web-only. The migration requires extracting the `Linking` dependency as a platform adapter or keeping `openMap()` mobile-only while sharing just the URL builders.
-
-**Depends on:** Tmap added to shared map-linker (done) + shared url-validator updated to allow mobile deep-link schemes (blocked on this task).
-
----
-
-## Deduplicate upload + analyze in AnalyzeModal
-
-**What:** `AnalyzeModal.tsx` sends the raw file twice — once to `/api/upload` (stores original) and once to `/api/analyze` (resizes + analyzes). No size cap, no content-type validation on the upload route.
-
-**Why:** A 10MB phone screenshot is transferred and stored twice. At scale this inflates Supabase Storage costs significantly (originals never cleaned up).
-
-**Pros of fixing:** Lower storage costs, enforced size limits (reject >10MB at upload), single file transfer per capture.
-
-**Cons:** Medium refactor — upload route needs to return analyzed result + store resized thumbnail in one call, or analyze route needs to handle storage.
-
-**Context:** Current flow: `UploadZone → file selected → AnalyzeModal opens → POST /api/upload (store) + POST /api/analyze (analyze separately)`. Simplest fix: merge into single `/api/upload` route that resizes, analyzes (calls Gemini), stores thumbnail, returns AnalysisResult. Delete the separate `/api/analyze` route.
-
-**Depends on:** Nothing.
-
----
-
-## Validate confidence calibration before shipping uncertain queue (P1)
-
-**What:** Before shipping the "Review needed" uncertain queue UI, validate that Gemini 2.5-flash's prompted confidence score (0.0–1.0) is actually correlated with analysis quality. Test 20+ screenshots spanning clear place photos, blurry images, non-place content, and ambiguous text. Verify that low-confidence scores correspond to captures that genuinely need review.
-
-**Why:** Gemini doesn't natively return a calibrated confidence signal — it's responding to a prompt asking for a float. If the scores are uncalibrated, the 0.5 threshold could be meaningless (e.g., Gemini always returns 0.8+, or returns random values in range). Shipping the uncertain queue with a broken signal means users see a "Review needed" section full of perfectly good captures, or never see it at all.
-
-**Pros:** Builds trust in the AI contract. Uncovers calibration issues before users see them.
-
-**Cons:** ~2-3 hours of manual testing. Requires test data spanning different screenshot types.
-
-**Context:** The SYSTEM_PROMPT update (feat/monorepo-web) asks AI to return `confidence` as 0.0–1.0. `parse-result.ts` clamps the value. But clamping doesn't calibrate. May need to adjust the threshold (0.5 → 0.3 or 0.7) based on actual distribution, or add a second heuristic (e.g., confidence × field completeness).
-
-**Effort:** S (human: ~3 hours / CC: ~20 min analysis + threshold tuning)
-
-**Depends on:** SYSTEM_PROMPT confidence update (this branch) must be deployed first.
-
----
-
-## Image compression quality floor for AI analysis (P2)
-
-**What:** Define and enforce a minimum image quality floor before uploading screenshots to `/api/analyze`. Current plan: compress to <900KB. Risk: aggressive compression on text-heavy screenshots (menus, receipts, Threads posts) corrupts OCR-critical pixels before Gemini sees them.
-
-**Why:** A blurry restaurant menu = wrong place name extracted. At minimum JPEG quality 85% should be enforced. For screenshots under 2MB, prefer lossless PNG. The size limit should be secondary to quality preservation.
-
-**Pros:** Better OCR accuracy on the most important capture type (food/place screenshots with text).
-
-**Cons:** Larger average upload size. Some screenshots over 1MB may need PNG→JPEG with quality floor instead of aggressive compression.
-
-**Context:** Mobile compress-before-upload is in feat/monorepo-web as a latency mitigation for the server route. Quality floor needs to be specified as a compression algorithm decision, not just a size target. Suggested: use `expo-image-manipulator` with quality: 0.85 and resize only if width > 2048px.
-
-**Effort:** S (human: ~2 hours / CC: ~15 min)
-
-**Depends on:** Mobile AI unification (feat/monorepo-web) deployed first.
-
----
-
-## Mobile AI emergency rollback feature flag (P2)
-
-**What:** Add a server-side env var `AI_PROVIDER=gemini` (default) that can be flipped to `openai` to re-enable client-side AI on mobile. Implemented as a feature flag in the mobile app that reads from a remote config endpoint.
-
-**Why:** Moving mobile from client-side GPT-4o to server-side Gemini is a one-way door. If the Next.js server goes down, mobile AI is completely dead with no degradation path. A flag gives a 30-minute emergency rollback without redeploying mobile.
-
-**Pros:** Resilience. Emergency option if Gemini or Vercel has an outage during critical user testing.
-
-**Cons:** Must maintain OpenAI SDK in mobile until flag is removed. Adds complexity to AI path.
-
-**Context:** User chose "build it now in this PR" — implement as part of feat/monorepo-web. Simple env var check in the mobile analyzer factory.
-
-**Effort:** S (human: ~4 hours / CC: ~20 min)
-
-**Depends on:** Mobile AI unification (feat/monorepo-web) — implement alongside.
-
----
-
-## Fix DAU definition: capture DAU → session DAU (P2)
-
-**What:** The Phase 1 validation gate counts `distinct user_id WHERE created_at::date = CURRENT_DATE` (captures table). This is capture DAU — a user batch-uploading 10 old screenshots triggers the gate. Fix: track `last_seen_at` on the user record (updated on any authenticated API call), then count `distinct user_id WHERE last_seen_at::date = CURRENT_DATE`.
-
-**Why:** The gate is meant to confirm that 10 real people are using the app daily. Capture DAU can be gamed by one power user and doesn't reflect actual daily engagement. Fix before the gate is used to make any real ship/no-ship decision.
-
-**Pros:** Accurate signal for Phase 1 validation.
-
-**Cons:** Requires `last_seen_at` middleware on every authenticated route (small but real touch to the request path).
-
-**Context:** Fix before the web dashboard goes live to any real users. The current pg_cron SQL is in Migration 003 — update the WHERE clause once `last_seen_at` tracking is in place.
-
-**Effort:** S (human: ~3 hours / CC: ~15 min)
-
-**Depends on:** Supabase Auth setup (feat/monorepo-web) must be complete first.
-
----
-
-## Replace emoji icons with SVG icon library (P2 — Design)
-
-**What:** Sidebar navigation (🏠📍📝🗺), AnalyzeModal states (🤖❌📍📝), and UploadZone (📸) all use emoji as UI icons. Replace with lucide-react or similar SVG icon library.
-
-**Why:** Emoji render inconsistently across OS/browser, look unpolished in a dark-themed "curated archive" app, and lack aria-label support for accessibility. This is the single biggest remaining visual quality gap from the design review.
-
-**Pros:** Consistent rendering, proper accessibility, professional appearance, icon color/size control via CSS.
-
-**Cons:** New dependency (~20KB gzipped for lucide-react). Requires design decision on icon style (outlined vs. filled).
-
-**Context:** CaptureCard emoji were removed in commit `6f2413b`. Sidebar and modal emoji are deferred because they need an icon library rather than simple text replacement. See design review report: `~/.gstack/projects/ssongji1122-scrave/design-reports/2026-03-28-design-review.md`
-
-**Effort:** S (human: ~2 hours / CC: ~15 min)
-
-**Depends on:** Nothing.
-
----
-
-## Add focus-visible keyboard navigation styles (P3 — Design)
-
-**What:** Interactive elements (buttons, links, nav items) lack `focus-visible` ring outlines for keyboard navigation.
-
-**Why:** WCAG 2.1 AA requires visible focus indicators. Current dark theme makes default browser focus rings invisible.
-
-**Pros:** Keyboard accessibility, WCAG compliance.
-
-**Cons:** Minor visual tuning needed to match design system colors.
-
-**Context:** Suggested approach: add `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background` as a reusable utility or Tailwind plugin.
-
-**Effort:** S (human: ~1 hour / CC: ~10 min)
-
-**Depends on:** Nothing.
-
----
-
-## Fix Supabase Storage RLS policies (P1 — Security)
-
-**What:** Migration 002 allows anonymous upload AND delete to the `captures` storage bucket. Any unauthenticated user can delete another user's images via the Supabase Storage API.
-
-**Why:** This is a real data loss vulnerability. The captures TABLE has proper user-scoped RLS (migration 003), but the storage bucket was never tightened.
-
-**Pros:** Prevents unauthorized image deletion/overwrite.
-
-**Cons:** Requires a new migration (006). Guest upload flow needs adjustment — guests currently can't upload to storage anyway (they use sessionStorage).
-
-**Context:** Add migration 006: drop the anon upload/delete policies, add user-scoped policies that check `auth.uid()` in the file path (`user_id/filename.jpg` pattern already exists in upload route).
-
-**Effort:** S (human: ~2 hours / CC: ~15 min)
-
-**Depends on:** Nothing.
-
----
-
-## Fix in-memory guest rate limiter for Vercel (P2)
-
-**What:** The guest rate limiter in `/api/analyze` uses an in-memory `Map()`. On Vercel serverless, each request can hit a different cold-started instance. The Map resets on every cold start, effectively disabling rate limiting.
-
-**Why:** Guests can analyze unlimited images for free, burning Gemini API credits.
-
-**Pros:** Prevents API abuse without auth.
-
-**Cons:** Adds a DB query per guest request for rate checking.
-
-**Context:** Replace with Supabase-backed counter: create a `guest_rate_limits` table keyed by IP+date, increment on each request, reject when count > 5. Alternative: use Vercel KV if available.
-
-**Effort:** S (human: ~2 hours / CC: ~15 min)
-
-**Depends on:** Nothing.
-
----
-
-## Add file size + content-type validation to /api/upload (P2)
-
-**What:** The upload route accepts any file size and hardcodes `contentType: 'image/jpeg'` regardless of actual file type. A PNG uploaded as "jpeg" will be stored with wrong metadata.
-
-**Why:** Vercel's 4.5MB body limit provides implicit protection, but the error is opaque. Explicit validation gives clear error messages and prevents content-type mismatch.
-
-**Pros:** Clear error messages, correct metadata, defense in depth.
-
-**Cons:** Minimal effort.
-
-**Context:** Check `file.size > 5 * 1024 * 1024` → reject with 413. Check `file.type` against allowlist (`image/jpeg`, `image/png`, `image/webp`) → use actual type for storage contentType.
-
-**Effort:** S (human: ~1 hour / CC: ~10 min)
-
-**Depends on:** Nothing.
-
----
-
-## Add pagination to captures queries (P3)
-
-**What:** `getAllCaptures` and `getCapturesByCategory` in `packages/shared/src/supabase/queries.ts` load ALL captures with `select('*')`. No pagination, no limit.
-
-**Why:** At 1000+ captures, this query will be slow, memory-heavy on both server and client, and may timeout on Vercel's 10-second limit.
-
-**Pros:** Scalable data access pattern.
-
-**Cons:** Requires cursor-based pagination in UI components (FlatList on mobile already supports it, web needs infinite scroll or pagination controls).
-
-**Context:** `searchCaptures` already has `limit`/`offset` — extend this pattern to `getAllCaptures` and `getCapturesByCategory`. Default limit: 50.
-
-**Effort:** S (human: ~3 hours / CC: ~20 min)
-
-**Depends on:** Nothing.
-
----
-
-## Mobile image upload to Supabase Storage (P1 — Cross-device)
-
-**What:** Mobile saves local `file://` URIs into the shared `image_url` column in Supabase. Images break on any device other than the original phone (web, second phone, after reinstall). Need to add Supabase Storage upload to the mobile capture flow.
-
-**Why:** The shared `image_url` column is designed for public Storage URLs, not local filesystem paths. Any cross-device or cross-platform scenario shows broken images. This is a real user-facing bug, not a polish issue.
-
-**Pros:** Images visible everywhere. True cross-device sync. Consistent with web upload flow.
-
-**Cons:** Requires mobile upload pipeline (resize, upload to Storage, get public URL). Adds network dependency to capture save. Need offline queue for no-connectivity captures.
-
-**Context:** Web already has `/api/upload` that stores to Supabase Storage. Mobile should either call the same endpoint or upload directly to Supabase Storage SDK. The `apps/mobile/app/capture/analyze.tsx:94` saves `manipulated.uri` (local file) directly to Supabase `image_url`. Fix: upload to Storage first, use returned URL.
-
-**Effort:** M (human: ~8 hours / CC: ~45 min)
-
-**Depends on:** Nothing.
-
----
-
-## Switch to private storage bucket + signed URLs (P1 — Privacy)
-
-**What:** The `captures` storage bucket is public (world-readable). Anyone who knows or guesses an image URL can view any user's screenshots. Also, deleting a capture only removes the DB row — the storage object stays forever, creating orphaned images.
-
-**Why:** For a personal archive app that stores screenshots of social media, restaurant visits, and personal notes, public image URLs are a privacy leak. Orphaned storage objects grow storage costs indefinitely.
-
-**Pros:** User images are private. Storage costs controlled. GDPR-friendly deletion.
-
-**Cons:** Requires signed URL generation on every image load (adds ~50ms latency). Need to update all image display components to use signed URLs. Storage cleanup requires a trigger or delete hook.
-
-**Context:** Migration 002 creates a public bucket. Fix: (1) New migration to set bucket to private, (2) Create a `getSignedUrl()` helper (Supabase SDK supports this), (3) Add `storage.from('captures').remove()` call in `deleteCapture()` query, (4) Update web CaptureCard and mobile CaptureCard to use signed URLs.
-
-**Effort:** M (human: ~6 hours / CC: ~30 min)
-
-**Depends on:** Nothing.
-
----
-
-## Batch analysis provenance mapping (P2)
-
-**What:** The batch analysis API returns an unordered `results` array. The UI maps results to images by array index, which breaks when AI merges multiple screenshots into one result (e.g., Threads carousel 1/17, 2/17). The first image gets used for the merged result, destroying provenance.
-
-**Why:** Wrong screenshot attached to wrong analysis result. Users see mismatched thumbnails and metadata.
-
-**Pros:** Correct image-to-analysis mapping. Trustworthy batch results.
-
-**Cons:** Requires prompt engineering to get Gemini to return image indices in its response. May need post-processing to validate mapping.
-
-**Context:** `apps/web/src/app/api/analyze-batch/route.ts:101` returns `results` array. `BatchAnalyzeModal.tsx:87` maps by index. Fix: add `imageIndices: number[]` to each result in the Gemini prompt, validate in `parseBatchAnalysisResult()`.
-
-**Effort:** S (human: ~4 hours / CC: ~20 min)
-
-**Depends on:** Nothing.
+# Scrave Improvement Plan
+
+> 2026-05-18 갱신. 이전 TODOS.md는 절반이 stale (이미 해결된 항목 다수 포함).
+> 본 문서는 전체 수동 audit + 3축 분류 (카테고리 / 구조 / 사용자 플로우) 결과.
+> 목표: **10명 dogfood 사용자 안정화** → DAU gate 통과 → 정식 런칭.
+
+## 이번 세션에 완료
+
+| # | 영역 | 변경 |
+|---|------|------|
+| ✅ | Mobile perms | `RECORD_AUDIO` 권한 제거 (Play Store red flag 해소) — [app.config.ts](apps/mobile/app.config.ts) |
+| ✅ | Free tier | `MAX_FREE_CAPTURES` 10 → 100 + DB RLS 동기화 — [migration 011](supabase/migrations/011_raise_free_tier_limit_to_100.sql) |
+| ✅ | Cross-device 이미지 (U3) | shared `getSignedImageUrl()` helper + mobile `useSignedImage` 훅 + `CaptureCard` / `capture/[id]` 와이어업. private bucket 환경에서 모바일 이미지 정상 표시 |
+| ✅ | Auth (U6) | LoginForm OAuth-only로 단순화 — 이메일 확인 마찰 제거. Supabase Dashboard에서 Email confirmations OFF 필요 (수동) |
+| ✅ | 검색 (U7) | `search_user_captures` SQL RPC ([migration 012](supabase/migrations/012_search_user_captures_rpc.sql)) + shared `searchCaptures` 전환. `title/summary/extracted_text/places/tags` 전부 ILIKE 매칭. PostgREST `.or()` JSONB cast 회피. **마이그레이션 012 deploy 필요** |
+| ✅ | Batch storage 고아 (U4) | `findUnusedImagePaths` + `handleBatchSave` 정리 호출 — Threads 17장 merge 시 16장 즉시 삭제 |
+| ✅ | C4 Settings 검증 | 웹 fully wired (SettingsPage + UserPreferencesContext + PlacePopup). 모바일은 미연결 (gap 기록) |
+
+빌드 상태: typecheck 3/3 통과 · shared 160/160 tests · web 59/62 tests (3 skipped, 의도)
+
+## 외부 후속 조치 (코드 외)
+
+| 항목 | 액션 |
+|------|------|
+| **Bundle ID** | Apple Developer 계정 등록 시 `com.anonymous.scrave` → 실 reverse-domain. 미등록 시 App Store 거부 |
+| **Supabase Email confirmations** | LoginForm OAuth-only로 단순화되어 UI에 이메일 가입 없음. Dashboard 토글은 선택 사항 (방어적으로 OFF 권장) |
+| **Migration 012 deploy** | `supabase db push` 또는 SQL Editor에서 `012_search_user_captures_rpc.sql` 실행. RPC 미존재 시 검색 전체가 깨짐 |
+| **Resend API key** | `app_config` 테이블 평문 저장 → Supabase Vault 또는 Vercel env로 이동 (S3) |
+
+## 남은 작업 — 3축 분류 + 우선순위
+
+### P1 — dogfood 마찰 / 신뢰성
+
+| ID | 영역 | 작업 | 추정 |
+|----|------|------|------|
+| **F1** | C1 Analyze | Gemini confidence 캘리브레이션 검증. 20+ 스크린샷 (선명/흐림/장소/텍스트) 수동 라벨링 → confidence 분포 측정 → 0.5 임계값 적정성 판단. 부적정 시 임계값 또는 second heuristic 도입 | 3h |
+| **F2** | U2 Free wall | 100개 도달 시 UX. (1) 오래된 캡처 일괄 보관/삭제 도우미 (2) 가입 후 일수별 잔여 알림 (3) 추후 결제 hook | 4h |
+| **F3** | C4 Mobile Settings | 모바일도 `user_preferences.preferred_nav_app` 읽어서 `getMobileMapLinks` 정렬에 반영. 현재 ActionSheet 고정 순서. iOS/Android에서 사용자 기본 지도 앱 일치 | 1.5h |
+| **F4** | S6 Batch 2-trip | 배치도 `/api/capture` 패턴으로 단일 호출화 (`/api/capture-batch`). storage upload + analyze-batch 1회 round-trip. 현재 N+1 → 1+1 | 3h |
+| **F5** | U8 Offline 충돌 | 모바일 SQLite 캐시 vs Supabase 충돌 정책 정의. 현재 dedupe by imageUrl만 — capture가 mobile에서 delete됐는데 서버에 살아있는 경우 어떻게? Last-write-wins 또는 server-wins 룰 명시 | 2h |
+| **F6** | Image cache TTL | mobile `useSignedImage` 캐시는 module-level Map. 앱 재시작 시 손실. AsyncStorage 또는 expo-image 자체 cache 활용 검토 | 1.5h |
+
+### P2 — 품질 / 보안 / 효율
+
+| ID | 영역 | 작업 | 추정 |
+|----|------|------|------|
+| **G1** | S3 Secret | Resend API key를 `app_config` → Supabase Vault. PL/pgSQL 함수 시그니처 수정 | 1.5h |
+| **G2** | S5 Storage cleanup | 캡처 soft-delete 시 storage object 즉시 삭제 (`deleteCapture` hook). 추가: weekly cron이 `image_url`에 매칭 안되는 storage 오브젝트 일괄 정리 | 2.5h |
+| **G3** | C1 Image quality | 메뉴/영수증/SNS 텍스트 OCR 정확도. resize 시 width > 2048만 줄이고 quality 0.85 floor 유지. 작은 이미지(<2MB)는 PNG 손실 없음 경로 | 1.5h |
+| **G4** | S11 Map geocoding | 100+ 장소 직렬 호출 → DB에 `lat`/`lng` 캐시 컬럼 추가 → 한 번 geocode 후 재사용. 또는 `Promise.all` 묶기 | 3h |
+| **G5** | Design 이모지 | 사이드바/모달/UploadZone의 이모지를 lucide-react SVG로. CaptureCard는 이미 정리됨 | 2h |
+| **G6** | E2E tests | Playwright로 핵심 플로우 3개: (1) OAuth 로그인 (2) 단일 캡처 저장→archive 표시 (3) 배치 17장 merge→1 카드 | 4h |
+
+### P3 — 정착 후
+
+| ID | 영역 | 작업 |
+|----|------|------|
+| H1 | Design a11y | `focus-visible:ring` Tailwind plugin 추가 |
+| H2 | C5 Export | 캡처 CSV/JSON 내보내기 — 개인 아카이브 이동성 |
+| H3 | C6 Notification | 일별/주별 회고 알림 (모바일 push), DAU 이메일 외 |
+| H4 | C8 Reclassify UI | shared에 `reclassifyCapture` 있으나 UI 미노출 — 오분류 정정 |
+| H5 | Search FTS | 트래픽 증가 시 `tsvector` 마이그레이션 — JSONB cast LIKE는 인덱스 못 탐 |
+| H6 | Anonymous auth 정리 | `signInAnonymously` + sessionStorage 두 게스트 경로 병존 — 단일화 검토 |
+
+## 3축 매트릭스 — 어디서 찾나
+
+### 카테고리 (도메인)
+- C1 Analyze: F1, G3
+- C2 Archive 검색: ✅ U7 / H5
+- C3 Map: G4
+- C4 Settings: ✅ Web / F3 Mobile
+- C5 Share/Export: H2
+- C6 Notification: H3
+- C7 Onboarding: F2 (한도 도달 UX 일부)
+- C8 Reclassify: H4
+
+### 구조 (architectural)
+- S1 Bundle ID: 외부 조치
+- S2 RECORD_AUDIO: ✅
+- S3 Secret: G1
+- S4 Guest paths: H6
+- S5 Storage cleanup: G2
+- S6 Batch 2-trip: F4
+- S7 E2E test: G6
+- S8 Image URL: ✅ (U3 fix)
+- S9 Free wall: F2
+- S10 Image quality: G3
+- S11 Map geocoding: G4
+
+### 사용자 플로우
+- U1 게스트 → 가입 migrate: ✅ (drift 검증 통과)
+- U2 한도 도달: F2
+- U3 cross-device 이미지: ✅
+- U4 배치 merge: ✅ (sourceIndices + orphan cleanup)
+- U5 100+ 장소 지도: G4
+- U6 이메일 가입: ✅ (OAuth-only)
+- U7 검색: ✅
+- U8 오프라인 sync: F5
+
+## 추천 실행 순서
+
+1. **외부 조치 (5분)**: Supabase Dashboard에서 Email confirmations OFF.
+2. **P1 묶음 (Sprint 1, ~15h)**: F1 (calibration) → F2 (wall UX) → F3 (mobile settings) → F4 (batch 단일화).
+3. **dogfood 10명 모집 + DAU gate 관찰**. 실 사용 데이터로 P1 우선순위 재조정.
+4. **P2 묶음 (Sprint 2, ~14.5h)**: G1 (secret) → G2 (cleanup) → G6 (E2E) 우선.
+5. **DAU 10+ 통과 후 P3 + 정식 런칭 준비** (Apple Developer 계정 + Bundle ID 최종).
