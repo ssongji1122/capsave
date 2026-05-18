@@ -8,8 +8,9 @@ import { SearchBar } from '@/components/captures/SearchBar';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
-import { CaptureItem, AnalysisResult } from '@scrave/shared';
-import { pairResultsWithImages } from '@/lib/batch-save-mapper';
+import { CaptureItem, AnalysisResult, extractStoragePath } from '@scrave/shared';
+import { pairResultsWithImages, findUnusedImagePaths } from '@/lib/batch-save-mapper';
+import { createClient } from '@/lib/supabase/browser';
 import { Camera } from 'lucide-react';
 
 const CONFIDENCE_THRESHOLD = 0.5;
@@ -51,6 +52,21 @@ export default function HomePage() {
     for (const { result, imageUrl } of pairs) {
       await saveCapture(result, imageUrl);
     }
+
+    // Best-effort cleanup of images that AI merged away (no result references them).
+    // Guests upload base64 data URLs, not storage paths — skip cleanup in that case.
+    if (isAuthenticated) {
+      const orphans = findUnusedImagePaths(results, imageUrls)
+        .map((url) => extractStoragePath(url))
+        .filter((path) => path && !path.startsWith('data:'));
+      if (orphans.length > 0) {
+        const supabase = createClient();
+        await supabase.storage.from('captures').remove(orphans).catch((err) => {
+          console.warn('[batch-save] orphan cleanup failed:', err);
+        });
+      }
+    }
+
     setBatchFiles(null);
   };
 

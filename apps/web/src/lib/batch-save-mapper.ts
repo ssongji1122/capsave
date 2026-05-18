@@ -14,3 +14,12 @@ export function pairResultsWithImages(
     return { result, imageUrl: imageUrls[clamped] };
   });
 }
+
+export function findUnusedImagePaths(
+  results: AnalysisResult[],
+  imageUrls: string[]
+): string[] {
+  if (imageUrls.length === 0) return [];
+  const used = new Set(pairResultsWithImages(results, imageUrls).map((p) => p.imageUrl));
+  return imageUrls.filter((url) => !used.has(url));
+}
