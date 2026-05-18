@@ -21,6 +21,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
@@ -69,6 +70,27 @@ export default function HomePage() {
 
     setBatchFiles(null);
   };
+
+  const handleCleanupOldest = useCallback(async () => {
+    const count = Math.min(5, captures.length);
+    if (count === 0 || isCleaningUp) return;
+    const oldest = [...captures]
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .slice(0, count);
+    const confirmed = window.confirm(
+      `가장 오래된 캡처 ${count}개를 삭제합니다. 되돌릴 수 없습니다.\n\n` +
+        oldest.map((c, i) => `${i + 1}. ${c.title}`).join('\n')
+    );
+    if (!confirmed) return;
+    setIsCleaningUp(true);
+    try {
+      for (const c of oldest) {
+        await deleteCapture(c.id);
+      }
+    } finally {
+      setIsCleaningUp(false);
+    }
+  }, [captures, deleteCapture, isCleaningUp]);
 
   const isSearching = displayCaptures !== null;
   const shown = displayCaptures ?? captures;
@@ -132,7 +154,18 @@ export default function HomePage() {
           />
         </div>
         {isFreeLimitReached && (
-          <p className="text-xs text-error mt-1">한도에 도달했습니다. 더 저장하려면 플랜을 업그레이드하세요.</p>
+          <p className="text-xs text-error mt-1">한도에 도달했습니다. 오래된 캡처를 정리하거나 플랜을 업그레이드하세요.</p>
+        )}
+        {!isSearching && freeRemaining > 0 && freeRemaining <= 20 && captures.length >= 5 && (
+          <button
+            onClick={handleCleanupOldest}
+            disabled={isCleaningUp}
+            className="mt-2 w-full text-left px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary hover:border-primary/40 hover:bg-surface-elevated transition-colors disabled:opacity-50"
+          >
+            {isCleaningUp
+              ? '오래된 캡처 정리 중…'
+              : `${freeRemaining}개 남았습니다. 가장 오래된 ${Math.min(5, captures.length)}개를 정리하기 →`}
+          </button>
         )}
       </div>
 
