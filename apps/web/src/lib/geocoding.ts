@@ -3,14 +3,17 @@ interface ValidationResult {
   error?: string;
 }
 
-export function validateGeocodingInput(name: string, address?: string): ValidationResult {
+export function validateGeocodingInput(name: unknown, address?: unknown): ValidationResult {
   if (!name || typeof name !== 'string') {
     return { valid: false, error: 'name is required' };
   }
   if (name.length > 200) {
     return { valid: false, error: 'name too long' };
   }
-  if (address && address.length > 300) {
+  if (address !== undefined && address !== null && typeof address !== 'string') {
+    return { valid: false, error: 'address must be a string' };
+  }
+  if (typeof address === 'string' && address.length > 300) {
     return { valid: false, error: 'address too long' };
   }
   return { valid: true };

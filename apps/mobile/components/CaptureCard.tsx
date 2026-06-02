@@ -38,7 +38,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
         {
           title: place.name,
           message: place.address,
-          options: [...links.map((l) => `${l.emoji} ${l.label}`), '취소'],
+          options: [...links.map((l) => l.label), '취소'],
           cancelButtonIndex: links.length,
         },
         (idx) => {
@@ -53,7 +53,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
         place.address,
         [
           ...links.map((l) => ({
-            text: `${l.emoji} ${l.label}`,
+            text: l.label,
             onPress: () => openMap(l.provider, place.name, place.address),
           })),
           { text: '취소', style: 'cancel' as const },

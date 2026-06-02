@@ -1,7 +1,20 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Constants from 'expo-constants';
-import { AnalysisResult, ImageAnalyzer, PlaceInfo } from './types';
+import { AnalysisResult, ImageAnalyzer } from './types';
+import { normalizeAnalysisResult } from './normalize-result';
+
+export function getAnalyzeStatusErrorMessage(status: number): string | null {
+  if (status === 401) {
+    return '인증이 필요합니다. 다시 로그인해주세요.';
+  }
+
+  if (status === 413) {
+    return '이미지 크기가 5MB를 초과합니다.';
+  }
+
+  return null;
+}
 
 export class ServerAnalyzer implements ImageAnalyzer {
   private serverUrl: string;
@@ -48,12 +61,9 @@ export class ServerAnalyzer implements ImageAnalyzer {
       body: JSON.stringify({ image: base64Image }),
     });
 
-    if (response.status === 401) {
-      throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
-    }
-
-    if (response.status === 413) {
-      throw new Error('이미지 크기가 1MB를 초과합니다.');
+    const statusError = getAnalyzeStatusErrorMessage(response.status);
+    if (statusError) {
+      throw new Error(statusError);
     }
 
     if (!response.ok) {
@@ -63,17 +73,6 @@ export class ServerAnalyzer implements ImageAnalyzer {
 
     const result = await response.json();
 
-    return {
-      category: result.category === 'place' ? 'place' : 'text',
-      title: result.title || '제목 없음',
-      summary: result.summary || '',
-      places: Array.isArray(result.places) ? result.places.filter((p: PlaceInfo) => p.name) : [],
-      extractedText: result.extractedText || '',
-      links: Array.isArray(result.links) ? result.links : [],
-      tags: Array.isArray(result.tags) ? result.tags : [],
-      source: result.source || 'other',
-      confidence: typeof result.confidence === 'number' ? Math.max(0, Math.min(1, result.confidence)) : 1.0,
-      sourceAccountId: typeof result.sourceAccountId === 'string' ? result.sourceAccountId : null,
-    };
+    return normalizeAnalysisResult(result);
   }
 }

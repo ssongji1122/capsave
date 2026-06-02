@@ -1,5 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+export const GUEST_RATE_LIMIT_MAX_REQUESTS = 5;
+
 let _supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
   if (!_supabase) {
@@ -17,90 +19,68 @@ interface RateLimitResult {
   resetAt: Date;
 }
 
-async function getTodayKey(ip: string): Promise<string> {
-  const today = new Date().toISOString().split('T')[0];
+interface GuestRateLimitRpcRow {
+  allowed: boolean;
+  remaining: number;
+  reset_at: string;
+}
+
+interface GuestRateLimitRpcClient {
+  rpc: (
+    fn: 'consume_guest_rate_limit',
+    args: { p_ip_key: string; p_max_requests: number; p_cost: number }
+  ) => {
+    single: () => Promise<{
+      data: GuestRateLimitRpcRow | null;
+      error: { message?: string } | null;
+    }>;
+  };
+}
+
+function getUtcDay(now: Date): string {
+  return now.toISOString().split('T')[0];
+}
+
+function getResetAt(now: Date): Date {
+  return new Date(`${getUtcDay(now)}T23:59:59.999Z`);
+}
+
+export function buildGuestRateLimitKey(ip: string, now: Date = new Date()): string {
+  const today = getUtcDay(now);
   return `${ip}:${today}`;
 }
 
-export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> {
-  const key = await getTodayKey(ip);
-  const today = new Date().toISOString().split('T')[0];
-  const resetAt = new Date(today + 'T23:59:59.999Z');
-
-  const { data, error } = await getSupabase()
-    .from('guest_rate_limits')
-    .select('count')
-    .eq('ip_key', key)
+export async function consumeGuestRateLimitWithClient(
+  client: GuestRateLimitRpcClient,
+  ip: string,
+  now: Date = new Date(),
+  cost = 1
+): Promise<RateLimitResult> {
+  const fallbackResetAt = getResetAt(now);
+  const { data, error } = await client
+    .rpc('consume_guest_rate_limit', {
+      p_ip_key: buildGuestRateLimitKey(ip, now),
+      p_max_requests: GUEST_RATE_LIMIT_MAX_REQUESTS,
+      p_cost: Math.max(1, cost),
+    })
     .single();
 
-  if (error && error.code !== 'PGRST116') {
-    console.error('Rate limit check error:', error);
-    return { allowed: true, remaining: 5, resetAt };
-  }
-
-  const currentCount = data?.count ?? 0;
-  const maxRequests = 5;
-  const remaining = Math.max(0, maxRequests - currentCount);
-
-  if (currentCount >= maxRequests) {
-    return { allowed: false, remaining: 0, resetAt };
-  }
-
-  return { allowed: true, remaining, resetAt };
-}
-
-export async function incrementGuestRateLimit(ip: string): Promise<void> {
-  const key = await getTodayKey(ip);
-
-  const { data, error } = await getSupabase()
-    .from('guest_rate_limits')
-    .select('count')
-    .eq('ip_key', key)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Rate limit check error:', error);
-    return;
-  }
-
-  if (data) {
-    await getSupabase()
-      .from('guest_rate_limits')
-      .update({ count: data.count + 1 })
-      .eq('ip_key', key);
-  } else {
-    await getSupabase()
-      .from('guest_rate_limits')
-      .insert({ ip_key: key, count: 1 });
-  }
-}
-
-interface RateLimiter {
-  isAllowed(key: string): boolean;
-}
-
-export function createRateLimiter(maxRequests: number, windowMs: number): RateLimiter {
-  const store = new Map<string, { count: number; resetAt: number }>();
-
-  function getEntry(key: string): { count: number; resetAt: number } {
-    const now = Date.now();
-    const existing = store.get(key);
-
-    if (!existing || now >= existing.resetAt) {
-      const entry = { count: 0, resetAt: now + windowMs };
-      store.set(key, entry);
-      return entry;
-    }
-
-    return existing;
+  if (error || !data) {
+    console.error('Rate limit consume error:', error ?? 'No data returned');
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: fallbackResetAt,
+    };
   }
 
   return {
-    isAllowed(key: string): boolean {
-      const entry = getEntry(key);
-      if (entry.count >= maxRequests) return false;
-      entry.count++;
-      return true;
-    },
+    allowed: data.allowed,
+    remaining: Math.max(0, data.remaining),
+    resetAt: new Date(data.reset_at || fallbackResetAt),
   };
+}
+
+export function consumeGuestRateLimit(ip: string, cost = 1): Promise<RateLimitResult> {
+  return consumeGuestRateLimitWithClient(getSupabase() as unknown as GuestRateLimitRpcClient, ip, new Date(), cost);
 }

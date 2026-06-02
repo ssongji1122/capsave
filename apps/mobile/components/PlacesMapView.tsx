@@ -199,7 +199,7 @@ export function PlacesMapView({ places }: PlacesMapViewProps) {
           {
             title: name,
             message: address || undefined,
-            options: [...links.map((l) => `${l.emoji} ${l.label}`), '취소'],
+            options: [...links.map((l) => l.label), '취소'],
             cancelButtonIndex: links.length,
           },
           (idx) => {
@@ -214,7 +214,7 @@ export function PlacesMapView({ places }: PlacesMapViewProps) {
           address || undefined,
           [
             ...links.map((l) => ({
-              text: `${l.emoji} ${l.label}`,
+              text: l.label,
               onPress: () => openMap(l.provider, name, address || null),
             })),
             { text: '취소', style: 'cancel' as const },

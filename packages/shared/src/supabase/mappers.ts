@@ -1,4 +1,22 @@
 import { CaptureItem, CaptureRow, CaptureCategory } from '../types/capture';
+import { sanitizeUrl } from '../utils/url-validator';
+
+function sanitizeLinks(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((link): link is string => typeof link === 'string')
+    .map((link) => sanitizeUrl(link))
+    .filter((link): link is string => link !== null);
+}
+
+function sanitizePlaces(value: CaptureRow['places']): CaptureRow['places'] {
+  if (!Array.isArray(value)) return [];
+  return value.map((place) => {
+    const links = sanitizeLinks(place.links);
+    const { links: _unsafeLinks, ...rest } = place;
+    return links.length > 0 ? { ...rest, links } : rest;
+  });
+}
 
 export function mapRowToCapture(row: CaptureRow): CaptureItem {
   return {
@@ -6,9 +24,9 @@ export function mapRowToCapture(row: CaptureRow): CaptureItem {
     category: row.category as CaptureCategory,
     title: row.title,
     summary: row.summary,
-    places: row.places ?? [],
+    places: sanitizePlaces(row.places),
     extractedText: row.extracted_text,
-    links: row.links ?? [],
+    links: sanitizeLinks(row.links),
     tags: row.tags ?? [],
     source: row.source,
     imageUrl: row.image_url,
@@ -26,9 +44,9 @@ export function mapCaptureToRow(item: Partial<CaptureItem>): Record<string, unkn
   if (item.category !== undefined) row.category = item.category;
   if (item.title !== undefined) row.title = item.title;
   if (item.summary !== undefined) row.summary = item.summary;
-  if (item.places !== undefined) row.places = item.places;
+  if (item.places !== undefined) row.places = sanitizePlaces(item.places);
   if (item.extractedText !== undefined) row.extracted_text = item.extractedText;
-  if (item.links !== undefined) row.links = item.links;
+  if (item.links !== undefined) row.links = sanitizeLinks(item.links);
   if (item.tags !== undefined) row.tags = item.tags;
   if (item.source !== undefined) row.source = item.source;
   if (item.imageUrl !== undefined) row.image_url = item.imageUrl;

@@ -7,6 +7,14 @@ export const ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp
 /** Maximum upload file size (5 MB) */
 export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 
+/** Base64 encoding expands 3 raw bytes into 4 characters */
+export const RAW_BYTES_PER_BASE64_CHUNK = 3;
+export const BASE64_CHARS_PER_CHUNK = 4;
+
+/** Maximum base64 payload length equivalent to MAX_UPLOAD_SIZE */
+export const MAX_ANALYZE_IMAGE_BASE64_LENGTH =
+  Math.ceil(MAX_UPLOAD_SIZE / RAW_BYTES_PER_BASE64_CHUNK) * BASE64_CHARS_PER_CHUNK;
+
 /** Maximum pixel width before resizing for AI analysis */
 export const ANALYZE_MAX_WIDTH = 2048;
 

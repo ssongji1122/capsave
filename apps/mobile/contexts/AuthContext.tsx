@@ -5,6 +5,8 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { supabase } from '../services/supabase';
+import { signOutAndClearLocalCaptures } from '../services/auth-session';
+import { clearAllCaptures } from '../services/database';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -67,7 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [promptAsync]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await signOutAndClearLocalCaptures({
+      signOut: () => supabase.auth.signOut(),
+      clearCaptures: clearAllCaptures,
+    });
     setSession(null);
   }, []);
 

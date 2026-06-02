@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Search } from 'lucide-react';
 import { CaptureItem } from '@scrave/shared';
 import { CaptureCard } from './CaptureCard';
 
@@ -44,7 +45,7 @@ export function CaptureList({
       return (
         <div className="flex flex-col items-center justify-center py-24 px-8">
           <div className="w-24 h-24 rounded-full bg-surface-elevated flex items-center justify-center mb-5">
-            <span className="text-4xl">🔍</span>
+            <Search size={40} className="text-text-tertiary" aria-hidden="true" />
           </div>
           <h3 className="text-xl font-bold text-text-primary">
             &ldquo;{searchQuery}&rdquo; 결과 없음

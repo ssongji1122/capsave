@@ -1,4 +1,5 @@
-import type { CaptureCategory, CaptureItem, PlaceInfo } from '../types/capture';
+import type { CaptureCategory, CaptureItem, PlaceInfo, SourceApp } from '../types/capture';
+import { sanitizeUrl } from './url-validator';
 
 export interface GuestCapture {
   id: number;
@@ -8,11 +9,22 @@ export interface GuestCapture {
   category: CaptureCategory;
   confidence: number;
   tags: string[];
+  links?: string[];
+  source?: SourceApp;
+  sourceAccountId?: string | null;
   places: PlaceInfo[];
   createdAt: string;
   extractedText?: string;
   keyInsights?: string[];
   relatedSearchTerms?: string[];
+}
+
+function sanitizeLinks(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((link): link is string => typeof link === 'string')
+    .map((link) => sanitizeUrl(link))
+    .filter((link): link is string => link !== null);
 }
 
 export function parseGuestCaptures(raw: string | null): GuestCapture[] {
@@ -55,16 +67,16 @@ export function guestCaptureToItem(gc: GuestCapture): CaptureItem {
     summary: gc.summary,
     places: gc.places,
     extractedText: gc.extractedText || '',
-    links: [],
+    links: sanitizeLinks(gc.links),
     tags: gc.tags,
-    source: 'other',
+    source: gc.source ?? 'other',
     imageUrl: gc.imageBase64,
     createdAt: gc.createdAt,
     userId: null,
     confidence: gc.confidence,
     reclassifiedAt: null,
     deletedAt: null,
-    sourceAccountId: null,
+    sourceAccountId: gc.sourceAccountId ?? null,
     ...(gc.keyInsights && { keyInsights: gc.keyInsights }),
     ...(gc.relatedSearchTerms && { relatedSearchTerms: gc.relatedSearchTerms }),
   };

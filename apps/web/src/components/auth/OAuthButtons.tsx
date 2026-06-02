@@ -2,8 +2,13 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/browser';
+import { AUTH_SUCCESS_PATH, buildAuthCallbackRedirect } from '@/lib/auth-redirect';
 
-export function OAuthButtons() {
+interface OAuthButtonsProps {
+  nextPath?: string;
+}
+
+export function OAuthButtons({ nextPath = AUTH_SUCCESS_PATH }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -12,7 +17,7 @@ export function OAuthButtons() {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: buildAuthCallbackRedirect(window.location.origin, nextPath),
         ...(provider === 'kakao' && { scopes: 'profile_nickname profile_image' }),
       },
     });

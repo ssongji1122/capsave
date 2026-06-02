@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -27,8 +27,12 @@ export function SearchBar({ onSearch }: SearchBarProps) {
         className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-tertiary outline-none"
       />
       {query && (
-        <button onClick={() => setQuery('')} className="text-text-tertiary hover:text-text-secondary">
-          ✕
+        <button
+          onClick={() => setQuery('')}
+          aria-label="검색어 지우기"
+          className="text-text-tertiary hover:text-text-secondary"
+        >
+          <X size={14} aria-hidden="true" />
         </button>
       )}
     </div>

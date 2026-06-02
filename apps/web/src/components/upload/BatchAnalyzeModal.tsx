@@ -2,25 +2,54 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import {
+  Bot,
+  Camera,
+  ChevronDown,
+  CircleX,
+  ClipboardList,
+  FileText,
+  Link2,
+  MapPin,
+} from 'lucide-react';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
 import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
+import { getBatchResultImageSourceIndices } from '@/lib/batch-save-mapper';
+import {
+  BATCH_SAVE_CAPACITY_ERROR_MESSAGE,
+  getBatchSaveCapacityState,
+} from '@/lib/batch-save-capacity';
+import { saveBatchCaptureFiles } from '@/lib/batch-capture-save-flow';
+
+const BATCH_ANALYSIS_ERROR_TITLE = '분석 실패';
+const BATCH_SAVE_ERROR_TITLE = '저장 실패';
+const BATCH_SAVE_BLOCKED_TITLE = '저장할 수 없습니다';
 
 interface BatchAnalyzeModalProps {
   files: File[];
-  onSave: (results: AnalysisResult[], imageUrls: string[]) => void;
+  onSave: (results: AnalysisResult[], imageUrls: string[]) => void | Promise<void>;
   onCancel: () => void;
   isGuest?: boolean;
+  maxSaveCount?: number;
 }
 
-export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: BatchAnalyzeModalProps) {
+export function BatchAnalyzeModal({
+  files,
+  onSave,
+  onCancel,
+  isGuest = false,
+  maxSaveCount,
+}: BatchAnalyzeModalProps) {
   const containerRef = useModalFocusTrap(true, onCancel);
-  const [status, setStatus] = useState<'uploading' | 'analyzing' | 'done' | 'error'>('uploading');
+  const [status, setStatus] = useState<'analyzing' | 'done' | 'error'>('analyzing');
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [error, setError] = useState('');
-  const [progress, setProgress] = useState(0); // current file index being processed
+  const [errorTitle, setErrorTitle] = useState(BATCH_ANALYSIS_ERROR_TITLE);
+  const [canRetryAnalysis, setCanRetryAnalysis] = useState(true);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [previews] = useState(() => files.map((f) => URL.createObjectURL(f)));
   const started = useRef(false);
 
@@ -32,35 +61,10 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
 
   async function runBatchAnalysis() {
     try {
-      // Step 1: Upload or convert images
-      setStatus('uploading');
-      const uploadedUrls: string[] = [];
-
-      if (isGuest) {
-        const base64Results = await Promise.all(files.map(f => fileToBase64(f)));
-        base64Results.forEach(b64 => uploadedUrls.push(b64));
-        setProgress(files.length);
-      } else {
-        let completed = 0;
-        const uploadResults = await Promise.all(
-          files.map(async (f) => {
-            const uploadForm = new FormData();
-            uploadForm.append('file', f);
-            const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-            if (!uploadRes.ok) throw new Error('이미지 업로드 실패');
-            const { path } = await uploadRes.json();
-            completed += 1;
-            setProgress(completed);
-            return path;
-          })
-        );
-        uploadedUrls.push(...uploadResults);
-      }
-      setImageUrls(uploadedUrls);
-
-      // Step 2: Batch analyze — 클라이언트에서 리사이즈 + base64 변환 후 JSON 전송
       setStatus('analyzing');
-      setProgress(0);
+      setError('');
+      setErrorTitle(BATCH_ANALYSIS_ERROR_TITLE);
+      setCanRetryAnalysis(true);
       const resizedBlobs = await Promise.all(
         files.map((file) => resizeImageFile(file))
       );
@@ -91,12 +95,105 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
       }
       const { results: analysisResults } = await analyzeRes.json();
 
+      if (isGuest) {
+        const sourceIndices = getBatchResultImageSourceIndices(analysisResults, files.length);
+        const guestImageUrls = await Promise.all(
+          sourceIndices.map((sourceIndex) => fileToBase64(files[sourceIndex]))
+        );
+        setImageUrls(guestImageUrls);
+      } else {
+        setImageUrls([]);
+      }
+
       setResults(analysisResults);
       setExpandedIdx(0); // auto-expand first result
       setStatus('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류');
+      setErrorTitle(BATCH_ANALYSIS_ERROR_TITLE);
+      setCanRetryAnalysis(true);
       setStatus('error');
+    }
+  }
+
+  async function uploadFile(file: File): Promise<string> {
+    const uploadForm = new FormData();
+    uploadForm.append('file', file);
+    const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+    if (!uploadRes.ok) {
+      const errData = await uploadRes.json().catch(() => null);
+      throw new Error(errData?.error || '이미지 업로드 실패');
+    }
+    const { path } = await uploadRes.json();
+    return path;
+  }
+
+  async function uploadImagesForResults(): Promise<string[]> {
+    const sourceIndices = getBatchResultImageSourceIndices(results, files.length);
+    const uniqueIndices = [...new Set(sourceIndices)];
+    const uploadedByIndex = new Map<number, string>();
+
+    await Promise.all(
+      uniqueIndices.map(async (sourceIndex) => {
+        uploadedByIndex.set(sourceIndex, await uploadFile(files[sourceIndex]));
+      })
+    );
+
+    return sourceIndices.map((sourceIndex) => {
+      const path = uploadedByIndex.get(sourceIndex);
+      if (!path) throw new Error('이미지 업로드 결과를 찾을 수 없습니다');
+      return path;
+    });
+  }
+
+  async function deleteUploadedFiles(paths: string[]): Promise<void> {
+    const uniquePaths = [...new Set(paths)];
+    if (uniquePaths.length === 0) return;
+
+    const deleteRes = await fetch('/api/upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: uniquePaths }),
+    });
+    if (!deleteRes.ok) {
+      const errData = await deleteRes.json().catch(() => null);
+      throw new Error(errData?.error || '이미지 정리 실패');
+    }
+  }
+
+  async function handleSaveClick() {
+    if (isSaving || results.length === 0) return;
+
+    setIsSaving(true);
+    try {
+      const capacity = getBatchSaveCapacityState({
+        resultCount: results.length,
+        maxSaveCount,
+      });
+      if (!capacity.canSave) {
+        setError(BATCH_SAVE_CAPACITY_ERROR_MESSAGE);
+        setErrorTitle(BATCH_SAVE_BLOCKED_TITLE);
+        setCanRetryAnalysis(false);
+        setStatus('error');
+        return;
+      }
+
+      const urls = await saveBatchCaptureFiles({
+        isGuest,
+        results,
+        guestImageUrls: imageUrls,
+        uploadFilesForResults: uploadImagesForResults,
+        deleteUploadedFiles,
+        onSave,
+      });
+      setImageUrls(urls);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '저장 중 오류가 발생했습니다');
+      setErrorTitle(BATCH_SAVE_ERROR_TITLE);
+      setCanRetryAnalysis(false);
+      setStatus('error');
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -124,59 +221,46 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
             </div>
           ))}
           <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs font-semibold text-text-primary">
-            📸 {files.length}장
+            <Camera size={13} className="inline mr-1" aria-hidden="true" />
+            {files.length}장
           </div>
         </div>
 
         <div className="p-6">
           {/* Loading states */}
-          {(status === 'uploading' || status === 'analyzing') && (
+          {status === 'analyzing' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4 animate-bounce">
-                {status === 'uploading' ? '📤' : '🤖'}
-              </div>
-              <p className="text-text-primary font-semibold">
-                {status === 'uploading'
-                  ? `이미지 업로드 중... (${progress}/${files.length}장)`
-                  : 'AI가 통합 분석 중...'}
-              </p>
+              <Bot size={40} className="text-ai-accent mx-auto mb-4 animate-bounce" aria-hidden="true" />
+              <p className="text-text-primary font-semibold">AI가 통합 분석 중...</p>
               <p className="text-text-tertiary text-sm mt-1">
-                {status === 'uploading'
-                  ? `${files.length}장의 이미지를 업로드합니다`
-                  : '연결된 내용을 자동으로 합칩니다'}
+                연결된 내용을 자동으로 합칩니다
               </p>
               {/* Progress bar */}
               <div className="mt-4 mx-auto max-w-xs h-1.5 rounded-full bg-surface-elevated overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-300"
-                  style={{
-                    width: status === 'uploading'
-                      ? `${(progress / files.length) * 100}%`
-                      : '100%',
-                  }}
+                  className="h-full rounded-full bg-primary transition-all duration-300 animate-pulse"
+                  style={{ width: '100%' }}
                 />
               </div>
-              <p className="text-text-tertiary text-xs mt-2">
-                {status === 'uploading'
-                  ? `${progress}/${files.length}장 완료`
-                  : `${files.length}장 통합 분석 중`}
-              </p>
+              <p className="text-text-tertiary text-xs mt-2">{files.length}장 통합 분석 중</p>
             </div>
           )}
 
           {/* Error */}
           {status === 'error' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4">❌</div>
-              <p className="text-error font-semibold">분석 실패</p>
+              <CircleX size={40} className="text-error mx-auto mb-4" aria-hidden="true" />
+              <p className="text-error font-semibold">{errorTitle}</p>
               <p className="text-text-tertiary text-sm mt-1">{error}</p>
               <div className="flex gap-3 mt-6 justify-center">
                 <button onClick={onCancel} className="px-6 py-2.5 rounded-xl bg-surface-elevated text-text-secondary font-medium">
                   닫기
                 </button>
-                <button onClick={runBatchAnalysis} className="px-6 py-2.5 rounded-xl bg-primary text-black font-semibold">
-                  재시도
-                </button>
+                {canRetryAnalysis && (
+                  <button onClick={runBatchAnalysis} className="px-6 py-2.5 rounded-xl bg-primary text-black font-semibold">
+                    재시도
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -187,7 +271,7 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
               {/* Merge indicator */}
               {isMerged && (
                 <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-ai-surface">
-                  <span className="text-sm">🔗</span>
+                  <Link2 size={14} className="text-ai-accent" aria-hidden="true" />
                   <span className="text-xs font-medium text-ai-accent">
                     {files.length}장이 하나의 콘텐츠로 합쳐졌습니다
                   </span>
@@ -195,7 +279,7 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
               )}
               {!isMerged && results.length > 1 && (
                 <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-surface-elevated">
-                  <span className="text-sm">📋</span>
+                  <ClipboardList size={14} className="text-text-secondary" aria-hidden="true" />
                   <span className="text-xs font-medium text-text-secondary">
                     {results.length}개의 다른 콘텐츠로 분리되었습니다
                   </span>
@@ -219,7 +303,11 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
                       <div className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
                         isPlace ? 'bg-place-surface text-place-accent' : 'bg-text-surface text-text-accent'
                       }`}>
-                        {isPlace ? '📍' : '📝'}
+                        {isPlace ? (
+                          <MapPin size={13} aria-hidden="true" />
+                        ) : (
+                          <FileText size={13} aria-hidden="true" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-bold text-text-primary truncate">{result.title}</h3>
@@ -227,9 +315,11 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
                           <p className="text-xs text-text-tertiary truncate mt-0.5">{result.summary}</p>
                         )}
                       </div>
-                      <span className={`text-text-tertiary text-xs transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                        ▼
-                      </span>
+                      <ChevronDown
+                        size={14}
+                        className={`text-text-tertiary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
+                      />
                     </div>
 
                     {/* Details — expanded */}
@@ -268,10 +358,11 @@ export function BatchAnalyzeModal({ files, onSave, onCancel, isGuest = false }: 
                   취소
                 </button>
                 <button
-                  onClick={() => onSave(results, imageUrls)}
-                  className="flex-1 py-3 rounded-xl bg-primary text-black font-bold hover:bg-primary-light transition-colors"
+                  onClick={handleSaveClick}
+                  disabled={isSaving}
+                  className="flex-1 py-3 rounded-xl bg-primary text-black font-bold hover:bg-primary-light transition-colors disabled:opacity-50"
                 >
-                  {results.length === 1 ? '저장하기' : `${results.length}개 모두 저장`}
+                  {isSaving ? '저장 중...' : results.length === 1 ? '저장하기' : `${results.length}개 모두 저장`}
                 </button>
               </div>
             </>

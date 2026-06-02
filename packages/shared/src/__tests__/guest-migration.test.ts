@@ -50,4 +50,33 @@ describe('buildMigrationPayload', () => {
     expect(payload).not.toHaveProperty('id');
     expect(payload).not.toHaveProperty('imageBase64');
   });
+
+  it('preserves safe guest links in the migration payload', () => {
+    const payload = buildMigrationPayload({
+      ...gc,
+      links: ['https://safe.example/article', 'javascript:alert(1)'],
+    }, 'user-123', 'https://example.com/img.jpg');
+
+    expect(payload.links).toEqual(['https://safe.example/article']);
+  });
+
+  it('preserves extracted text in the migration payload', () => {
+    const payload = buildMigrationPayload({
+      ...gc,
+      extractedText: '영수증 합계 12000원',
+    }, 'user-123', 'https://example.com/img.jpg');
+
+    expect(payload.extracted_text).toBe('영수증 합계 12000원');
+  });
+
+  it('preserves source metadata in the migration payload', () => {
+    const payload = buildMigrationPayload({
+      ...gc,
+      source: 'instagram',
+      sourceAccountId: '@scrave_user',
+    }, 'user-123', 'https://example.com/img.jpg');
+
+    expect(payload.source).toBe('instagram');
+    expect(payload.source_account_id).toBe('@scrave_user');
+  });
 });

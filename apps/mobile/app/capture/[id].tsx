@@ -19,6 +19,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
+import { runCaptureDetailDeleteFlow } from '@/services/capture-delete-flow';
 
 export default function CaptureDetailScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
@@ -45,7 +46,7 @@ export default function CaptureDetailScreen() {
         {
           title: place.name,
           message: place.address ?? undefined,
-          options: [...links.map((l) => `${l.emoji} ${l.label}`), '취소'],
+          options: [...links.map((l) => l.label), '취소'],
           cancelButtonIndex: links.length,
         },
         (idx) => {
@@ -60,7 +61,7 @@ export default function CaptureDetailScreen() {
         place.address ?? undefined,
         [
           ...links.map((l) => ({
-            text: `${l.emoji} ${l.label}`,
+            text: l.label,
             onPress: () => openMap(l.provider, place.name, place.address ?? null),
           })),
           { text: '취소', style: 'cancel' as const },
@@ -84,8 +85,11 @@ export default function CaptureDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           if (!item) return;
-          await deleteCapture(item.id);
-          router.back();
+          await runCaptureDetailDeleteFlow({
+            captureId: item.id,
+            deleteCapture,
+            navigateBack: () => router.back(),
+          });
         },
       },
     ]);
@@ -291,18 +295,18 @@ export default function CaptureDetailScreen() {
               <View style={styles.searchRow}>
                 {(
                   [
-                    { engine: 'naver' as const, emoji: '🟢', label: '네이버' },
-                    { engine: 'google' as const, emoji: '🔵', label: 'Google' },
-                    { engine: 'youtube' as const, emoji: '🔴', label: 'YouTube' },
+                    { engine: 'naver' as const, icon: 'search' as const, color: colors.placeAccent, label: '네이버' },
+                    { engine: 'google' as const, icon: 'search-outline' as const, color: colors.textAccent, label: 'Google' },
+                    { engine: 'youtube' as const, icon: 'play' as const, color: colors.error, label: 'YouTube' },
                   ] as const
-                ).map(({ engine, emoji, label }) => (
+                ).map(({ engine, icon, color, label }) => (
                   <TouchableOpacity
                     key={engine}
                     style={[styles.searchBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => handleSearch(item.title, engine)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.searchEmoji}>{emoji}</Text>
+                    <Ionicons name={icon} size={15} color={color} />
                     <Text style={[styles.searchLabel, { color: colors.textSecondary }]}>{label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -556,9 +560,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 4,
-  },
-  searchEmoji: {
-    fontSize: 14,
   },
   searchLabel: {
     fontSize: 12,

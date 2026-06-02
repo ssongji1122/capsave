@@ -5,17 +5,25 @@ import {
   CaptureItem,
   CaptureRow,
   CaptureCategory,
+  PlaceInfo,
   AnalysisResult,
   getAllCaptures,
   getCapturesByCategory as getCapturesByCategoryQuery,
   searchCaptures as searchCapturesQuery,
   saveCapture as saveCaptureQuery,
   deleteCapture as deleteCaptureQuery,
+  reclassifyCapture as reclassifyCaptureQuery,
   mapRowToCapture,
   MAX_FREE_CAPTURES,
 } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 import { showErrorToast } from '@/lib/notifications';
+import { getRealUserId } from '@/lib/auth-user';
+import {
+  applyRealtimeCaptureDelete,
+  applyRealtimeCaptureInsert,
+  applyRealtimeCaptureUpdate,
+} from '@/lib/realtime-captures';
 
 export { MAX_FREE_CAPTURES };
 
@@ -30,9 +38,14 @@ interface CapturesContextValue {
   isAuthReady: boolean;
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
-  deleteCapture: (id: number) => Promise<void>;
+  deleteCapture: (id: number) => Promise<boolean>;
   searchCaptures: (query: string) => Promise<CaptureItem[]>;
   getCapturesByCategory: (category: CaptureCategory) => Promise<CaptureItem[]>;
+  reclassifyCapture: (
+    id: number,
+    category: CaptureCategory,
+    places: PlaceInfo[] | null
+  ) => Promise<CaptureItem | null>;
   saveCapture: (result: AnalysisResult, imageUrl: string) => Promise<void>;
 }
 
@@ -51,18 +64,21 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       const { data: { user } } = await client.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
-        const { data } = await client.auth.signInAnonymously();
-        setUserId(data.user?.id ?? null);
-      }
+      setUserId(getRealUserId(user));
       setIsAuthReady(true);
     };
     initAuth();
   }, [client]);
 
   const refresh = useCallback(async () => {
+    if (!isAuthReady || !userId) {
+      setCaptures([]);
+      setHasMore(false);
+      setNextCursor(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const result = await getAllCaptures(client);
@@ -75,10 +91,10 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [client]);
+  }, [client, isAuthReady, userId]);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || isLoadingMore || !nextCursor) return;
+    if (!userId || !hasMore || isLoadingMore || !nextCursor) return;
     try {
       setIsLoadingMore(true);
       const result = await getAllCaptures(client, { cursor: nextCursor });
@@ -91,7 +107,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [client, hasMore, isLoadingMore, nextCursor]);
+  }, [client, userId, hasMore, isLoadingMore, nextCursor]);
 
   useEffect(() => {
     refresh();
@@ -99,35 +115,33 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
 
   // Realtime subscription — INSERT / UPDATE / DELETE
   useEffect(() => {
+    if (!userId) return;
+
+    const filter = `user_id=eq.${userId}`;
     const channel = client
       .channel('captures-realtime')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'captures' },
+        { event: 'INSERT', schema: 'public', table: 'captures', filter },
         (payload) => {
           const newItem = mapRowToCapture(payload.new as CaptureRow);
-          setCaptures((prev) => {
-            if (prev.some((c) => c.id === newItem.id)) return prev;
-            return [newItem, ...prev];
-          });
+          setCaptures((prev) => applyRealtimeCaptureInsert(prev, newItem, userId));
         }
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'captures' },
+        { event: 'UPDATE', schema: 'public', table: 'captures', filter },
         (payload) => {
           const updated = mapRowToCapture(payload.new as CaptureRow);
-          setCaptures((prev) =>
-            prev.map((c) => (c.id === updated.id ? updated : c))
-          );
+          setCaptures((prev) => applyRealtimeCaptureUpdate(prev, updated, userId));
         }
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'captures' },
+        { event: 'DELETE', schema: 'public', table: 'captures', filter },
         (payload) => {
           const deletedId = (payload.old as { id: number }).id;
-          setCaptures((prev) => prev.filter((c) => c.id !== deletedId));
+          setCaptures((prev) => applyRealtimeCaptureDelete(prev, deletedId));
         }
       )
       .subscribe();
@@ -135,29 +149,58 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
     return () => {
       client.removeChannel(channel);
     };
-  }, [client]);
+  }, [client, userId]);
 
   const handleDelete = useCallback(async (id: number) => {
     try {
       await deleteCaptureQuery(client, id);
       setCaptures((prev) => prev.filter((c) => c.id !== id));
+      return true;
     } catch (error) {
       console.error('Failed to delete capture:', error);
       showErrorToast('삭제에 실패했습니다. 다시 시도해주세요.');
+      return false;
     }
   }, [client]);
 
   const handleSearch = useCallback(async (query: string) => {
+    if (!userId) return [];
     const { items } = await searchCapturesQuery(client, query);
     return items;
-  }, [client]);
+  }, [client, userId]);
 
   const handleGetByCategory = useCallback(async (category: CaptureCategory) => {
+    if (!userId) return [];
     const result = await getCapturesByCategoryQuery(client, category);
     return result.items;
-  }, [client]);
+  }, [client, userId]);
+
+  const handleReclassify = useCallback(async (
+    id: number,
+    category: CaptureCategory,
+    places: PlaceInfo[] | null
+  ) => {
+    if (!userId) {
+      showErrorToast('로그인이 필요합니다.');
+      return null;
+    }
+
+    try {
+      const updated = await reclassifyCaptureQuery(client, id, category, places);
+      setCaptures((prev) => applyRealtimeCaptureUpdate(prev, updated, userId));
+      return updated;
+    } catch (error) {
+      console.error('Failed to reclassify capture:', error);
+      showErrorToast('분류 변경에 실패했습니다. 다시 시도해주세요.');
+      return null;
+    }
+  }, [client, userId]);
 
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
+    if (!userId) {
+      showErrorToast('로그인이 필요합니다.');
+      throw new Error('AUTH_REQUIRED');
+    }
     if (captures.length >= MAX_FREE_CAPTURES) {
       showErrorToast(`무료 플랜은 최대 ${MAX_FREE_CAPTURES}개까지 저장할 수 있습니다.`);
       throw new Error('FREE_LIMIT_REACHED');
@@ -194,6 +237,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         deleteCapture: handleDelete,
         searchCaptures: handleSearch,
         getCapturesByCategory: handleGetByCategory,
+        reclassifyCapture: handleReclassify,
         saveCapture: handleSave,
       }}
     >

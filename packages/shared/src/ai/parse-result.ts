@@ -1,4 +1,5 @@
 import { AnalysisResult, PlaceInfo, SourceApp } from '../types/capture';
+import { sanitizeUrl } from '../utils/url-validator';
 
 const VALID_SOURCES: SourceApp[] = ['instagram', 'threads', 'naver', 'google', 'youtube', 'other'];
 
@@ -9,6 +10,14 @@ function validateSource(raw: unknown): SourceApp {
   return 'other';
 }
 
+function sanitizeLinks(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((link): link is string => typeof link === 'string')
+    .map((link) => sanitizeUrl(link))
+    .filter((link): link is string => link !== null);
+}
+
 function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
   if (!result.category || !result.title) {
     throw new Error('필수 필드가 누락되었습니다.');
@@ -17,12 +26,15 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
   // Parse places array (support both new format and legacy placeName)
   let places: PlaceInfo[] = [];
   if (Array.isArray(result.places)) {
-    places = result.places.map((p: { name?: string; address?: string; date?: string; links?: string[] }) => ({
-      name: p.name || '',
-      ...(p.address && { address: p.address }),
-      ...(p.date && { date: p.date }),
-      ...(Array.isArray(p.links) && p.links.length > 0 && { links: p.links }),
-    })).filter((p: PlaceInfo) => p.name);
+    places = result.places.map((p: { name?: string; address?: string; date?: string; links?: string[] }) => {
+      const links = sanitizeLinks(p.links);
+      return {
+        name: p.name || '',
+        ...(p.address && { address: p.address }),
+        ...(p.date && { date: p.date }),
+        ...(links.length > 0 && { links }),
+      };
+    }).filter((p: PlaceInfo) => p.name);
   } else if (result.placeName) {
     places = [{ name: (result as Record<string, string>).placeName, ...((result as Record<string, string>).address && { address: (result as Record<string, string>).address }) }];
   }
@@ -37,7 +49,7 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
     summary: (result.summary as string) || '',
     places,
     extractedText: (result.extractedText as string) || '',
-    links: Array.isArray(result.links) ? result.links : [],
+    links: sanitizeLinks(result.links),
     tags: Array.isArray(result.tags) ? result.tags : [],
     source: validateSource(result.source),
     confidence,
@@ -46,7 +58,7 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
     ...(Array.isArray(result.relatedSearchTerms) && { relatedSearchTerms: result.relatedSearchTerms as string[] }),
     ...(Array.isArray(result.sourceIndices) && {
       sourceIndices: (result.sourceIndices as unknown[])
-        .filter((v): v is number => typeof v === 'number')
+        .filter((v): v is number => typeof v === 'number' && Number.isInteger(v))
     }),
   };
 }

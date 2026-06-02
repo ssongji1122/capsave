@@ -7,15 +7,18 @@ import {
   countUserCaptures,
   MAX_FREE_CAPTURES,
 } from '@scrave/shared';
-import { MAX_BATCH_FILES } from '@/lib/constants';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
-import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
+import { consumeGuestRateLimit } from '@/lib/rate-limit';
+import { ANALYZE_IMAGE_SIZE_ERROR, validateBatchAnalyzeImagesInput } from '@/lib/analyze-input';
+import { getJsonRecord, parseJsonBody } from '@/lib/http-json';
 
 async function getRemainingCapacity(userId: string): Promise<number> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) return MAX_FREE_CAPTURES; // fail open if key not configured
+  if (!serviceRoleKey) {
+    throw new Error('Capture limit service not configured');
+  }
 
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,45 +31,42 @@ async function getRemainingCapacity(userId: string): Promise<number> {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUserAndTouch(request);
-
-    if (!user) {
-      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-      const rateLimit = await checkGuestRateLimit(ip);
-      if (!rateLimit.allowed) {
-        return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
-      }
-      await incrementGuestRateLimit(ip);
+    const parsedBody = await parseJsonBody(request);
+    if (!parsedBody.valid) {
+      return NextResponse.json({ error: parsedBody.error }, { status: 400 });
     }
 
+    const body = getJsonRecord(parsedBody.body);
+    const imagesInput: unknown = body.images;
+    const validation = validateBatchAnalyzeImagesInput(imagesInput);
+    if (!validation.valid) {
+      const status = validation.error === ANALYZE_IMAGE_SIZE_ERROR ? 413 : 400;
+      return NextResponse.json({ error: validation.error }, { status });
+    }
+
+    const images = imagesInput as string[];
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    const body = await request.json();
-    const images: string[] = body.images;
+    const user = await getAuthUserAndTouch(request);
 
-    if (!images || images.length === 0) {
-      return NextResponse.json({ error: 'No images provided' }, { status: 400 });
-    }
-
-    if (images.length > MAX_BATCH_FILES) {
-      return NextResponse.json({ error: `한번에 최대 ${MAX_BATCH_FILES}장까지 업로드 가능합니다` }, { status: 400 });
+    if (!user) {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+      const rateLimit = await consumeGuestRateLimit(ip, images.length);
+      if (!rateLimit.allowed) {
+        return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
+      }
     }
 
     if (user) {
-      // Authenticated: enforce free tier limit — reject if no capacity for any image
+      // Authenticated: reject only when no save capacity remains.
+      // Multiple source images can still merge into a single saved capture.
       const remaining = await getRemainingCapacity(user.id);
       if (remaining === 0) {
         return NextResponse.json(
           { error: `무료 플랜 저장 한도(${MAX_FREE_CAPTURES}개)에 도달했습니다` },
-          { status: 403 }
-        );
-      }
-      if (images.length > remaining) {
-        return NextResponse.json(
-          { error: `저장 가능한 캡처가 ${remaining}개 남았습니다 (요청: ${images.length}개)` },
           { status: 403 }
         );
       }

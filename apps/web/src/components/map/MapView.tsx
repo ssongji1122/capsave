@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { AlertTriangle, Map, MapPin } from 'lucide-react';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
@@ -97,7 +98,7 @@ function naverGeocode(query: string): Promise<{ lat: number; lng: number; addres
 // --- Main component ---
 
 export function MapView() {
-  const { captures, isLoading: contextLoading, isAuthenticated } = useCaptures();
+  const { captures, isLoading: contextLoading } = useCaptures();
   const searchParams = useSearchParams();
   const captureFilter = searchParams.get('capture');
 
@@ -278,34 +279,18 @@ export function MapView() {
     return (
       <div className="flex items-center justify-center h-full" role="status" aria-label="로딩 중">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-bounce">📍</div>
+          <MapPin size={40} className="text-place-accent mx-auto mb-4 animate-bounce" aria-hidden="true" />
           <p className="text-text-secondary">장소 좌표를 불러오는 중...</p>
         </div>
       </div>
     );
   }
 
-  // Uncomment to require login for map access (anonymous auth currently handles guests)
-  // if (!isAuthenticated) {
-  //   return (
-  //     <div className="flex items-center justify-center h-full">
-  //       <div className="text-center">
-  //         <div className="text-4xl mb-4">🔐</div>
-  //         <p className="text-text-primary font-semibold">로그인이 필요합니다</p>
-  //         <p className="text-text-tertiary text-sm mt-1 mb-4">지도 기능을 사용하려면 로그인하세요</p>
-  //         <a href="/login" className="px-4 py-2 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary-light transition-colors">
-  //           로그인하기
-  //         </a>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   if (geocodeError) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-4xl mb-4">⚠️</div>
+          <AlertTriangle size={40} className="text-warning mx-auto mb-4" aria-hidden="true" />
           <p className="text-text-primary font-semibold">좌표 변환에 실패했습니다</p>
           <p className="text-text-tertiary text-sm mt-1">Google Geocoding API 또는 Naver 지도 API를 확인해주세요</p>
         </div>
@@ -317,7 +302,7 @@ export function MapView() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-4xl mb-4">🗺</div>
+          <Map size={40} className="text-place-accent mx-auto mb-4" aria-hidden="true" />
           <p className="text-text-primary font-semibold">저장된 장소가 없습니다</p>
           <p className="text-text-tertiary text-sm mt-1">장소 캡처를 추가하면 지도에 표시됩니다</p>
         </div>
@@ -329,8 +314,9 @@ export function MapView() {
     <div className="relative h-full">
       {/* Top bar */}
       <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center">
-        <div className="px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
-          📍 {filteredPlaces.length}개 장소
+        <div className="flex items-center gap-1.5 px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
+          <MapPin size={13} aria-hidden="true" />
+          {filteredPlaces.length}개 장소
         </div>
 
         {/* Provider toggle */}
@@ -339,13 +325,15 @@ export function MapView() {
             onClick={() => setProvider('naver')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
-            🟢 네이버
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-place-accent mr-1" aria-hidden="true" />
+            네이버
           </button>
           <button
             onClick={() => setProvider('google')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'google' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
-            🔵 구글
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-text-accent mr-1" aria-hidden="true" />
+            구글
           </button>
         </div>
       </div>
