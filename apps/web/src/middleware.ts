@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { buildLoginRedirectPath } from '@/lib/auth-redirect';
 import { isRealAuthenticatedUser } from '@/lib/auth-user';
+import { E2E_AUTH_BYPASS_HEADER, shouldBypassAuthForE2E } from '@/lib/e2e-auth-bypass';
 
 const PROTECTED = ['/dashboard', '/places', '/texts', '/map', '/settings'] as const;
 
@@ -16,6 +17,13 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
 
   if (!isProtected) {
+    return NextResponse.next();
+  }
+
+  if (shouldBypassAuthForE2E(
+    process.env.SCRAVE_E2E_AUTH_BYPASS,
+    request.headers.get(E2E_AUTH_BYPASS_HEADER)
+  )) {
     return NextResponse.next();
   }
 

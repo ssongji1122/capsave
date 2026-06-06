@@ -1,23 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { countUserCaptures, MAX_FREE_CAPTURES } from '@scrave/shared';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
 import { validateUploadFile } from '@/lib/upload-validation';
 import { isOwnedCaptureStoragePath } from '@/lib/storage-ownership';
 
-async function checkFreeTierLimit(userId: string): Promise<boolean> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    throw new Error('Capture limit service not configured');
-  }
-
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    { auth: { persistSession: false } }
-  );
-  const count = await countUserCaptures(admin, userId);
+async function checkFreeTierLimit(userId: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<boolean> {
+  const count = await countUserCaptures(supabase, userId);
   return count >= MAX_FREE_CAPTURES;
 }
 
@@ -42,7 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status });
     }
 
-    const atLimit = await checkFreeTierLimit(user.id);
+    const supabase = await createClient();
+    const atLimit = await checkFreeTierLimit(user.id, supabase);
     if (atLimit) {
       return NextResponse.json(
         { error: `무료 플랜 저장 한도(${MAX_FREE_CAPTURES}개)에 도달했습니다` },
@@ -57,8 +47,6 @@ export async function POST(request: NextRequest) {
     const fileName = `${user.id}/${timestamp}_${random}.${extension}`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
-
-    const supabase = await createClient();
 
     const { error: uploadError } = await supabase.storage
       .from('captures')

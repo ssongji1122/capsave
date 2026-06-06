@@ -7,25 +7,17 @@ import {
   countUserCaptures,
   MAX_FREE_CAPTURES,
 } from '@scrave/shared';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+import { createPendingAnalysisResult, shouldReturnPendingAnalysis } from '@/lib/analysis-fallback';
 import { consumeGuestRateLimit } from '@/lib/rate-limit';
 import { ANALYZE_IMAGE_SIZE_ERROR, validateBatchAnalyzeImagesInput } from '@/lib/analyze-input';
 import { getJsonRecord, parseJsonBody } from '@/lib/http-json';
+import { createClient } from '@/lib/supabase/server';
 
 async function getRemainingCapacity(userId: string): Promise<number> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    throw new Error('Capture limit service not configured');
-  }
-
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    { auth: { persistSession: false } }
-  );
-  const count = await countUserCaptures(admin, userId);
+  const supabase = await createClient();
+  const count = await countUserCaptures(supabase, userId);
   return Math.max(0, MAX_FREE_CAPTURES - count);
 }
 
@@ -110,6 +102,13 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[batch-analyze] Gemini API error:', response.status, errorText);
+      if (shouldReturnPendingAnalysis(response.status)) {
+        return NextResponse.json({
+          results: [
+            createPendingAnalysisResult(images.map((_, index) => index)),
+          ],
+        });
+      }
       return NextResponse.json(
         { error: `Gemini API error: ${response.status}` },
         { status: 502 }

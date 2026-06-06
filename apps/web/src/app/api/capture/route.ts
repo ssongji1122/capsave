@@ -7,7 +7,6 @@ import {
   countUserCaptures,
   MAX_FREE_CAPTURES,
 } from '@scrave/shared';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { extractGeminiText } from '@/lib/gemini';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
@@ -15,20 +14,11 @@ import {
   ANALYZE_MAX_WIDTH,
   ANALYZE_JPEG_QUALITY_SHARP,
 } from '@/lib/constants';
+import { createPendingAnalysisResult, shouldReturnPendingAnalysis } from '@/lib/analysis-fallback';
 import { validateUploadFile } from '@/lib/upload-validation';
 
-async function checkFreeTierLimit(userId: string): Promise<boolean> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    throw new Error('Capture limit service not configured');
-  }
-
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    { auth: { persistSession: false } }
-  );
-  const count = await countUserCaptures(admin, userId);
+async function checkFreeTierLimit(userId: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<boolean> {
+  const count = await countUserCaptures(supabase, userId);
   return count >= MAX_FREE_CAPTURES;
 }
 
@@ -61,7 +51,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status });
     }
 
-    const atLimit = await checkFreeTierLimit(user.id);
+    const supabase = await createClient();
+    const atLimit = await checkFreeTierLimit(user.id, supabase);
     if (atLimit) {
       return NextResponse.json(
         { error: `무료 플랜 저장 한도(${MAX_FREE_CAPTURES}개)에 도달했습니다` },
@@ -115,7 +106,13 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    if (!geminiResponse.ok) {
+    const result = geminiResponse.ok
+      ? null
+      : shouldReturnPendingAnalysis(geminiResponse.status)
+        ? createPendingAnalysisResult()
+        : null;
+
+    if (!geminiResponse.ok && !result) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error:', geminiResponse.status, errorText);
       return NextResponse.json(
@@ -124,18 +121,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await geminiResponse.json();
-    const content = extractGeminiText(data.candidates);
-    if (!content) {
-      console.error('No text content in response:', JSON.stringify(data.candidates?.[0]?.content));
-      return NextResponse.json({ error: 'Empty AI response' }, { status: 502 });
-    }
+    let analysisResult = result;
+    if (!analysisResult) {
+      const data = await geminiResponse.json();
+      const content = extractGeminiText(data.candidates);
+      if (!content) {
+        console.error('No text content in response:', JSON.stringify(data.candidates?.[0]?.content));
+        return NextResponse.json({ error: 'Empty AI response' }, { status: 502 });
+      }
 
-    const result = parseAnalysisResult(content);
+      analysisResult = parseAnalysisResult(content);
+    }
 
     // Upload original to Storage after Gemini succeeds to avoid orphaned files
     // when analysis fails or returns an empty response.
-    const supabase = await createClient();
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     const extension = file.type.split('/')[1];
@@ -151,7 +150,7 @@ export async function POST(request: NextRequest) {
       throw uploadError;
     }
 
-    return NextResponse.json({ result, storagePath });
+    return NextResponse.json({ result: analysisResult, storagePath });
   } catch (error) {
     console.error('Capture error:', error);
     return NextResponse.json(

@@ -49,6 +49,11 @@ interface CapturesContextValue {
   saveCapture: (result: AnalysisResult, imageUrl: string) => Promise<void>;
 }
 
+interface RealtimeCapturePayload {
+  new: unknown;
+  old: unknown;
+}
+
 const CapturesContext = createContext<CapturesContextValue | null>(null);
 
 export function CapturesProvider({ children }: { children: React.ReactNode }) {
@@ -123,7 +128,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'captures', filter },
-        (payload) => {
+        (payload: RealtimeCapturePayload) => {
           const newItem = mapRowToCapture(payload.new as CaptureRow);
           setCaptures((prev) => applyRealtimeCaptureInsert(prev, newItem, userId));
         }
@@ -131,7 +136,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'captures', filter },
-        (payload) => {
+        (payload: RealtimeCapturePayload) => {
           const updated = mapRowToCapture(payload.new as CaptureRow);
           setCaptures((prev) => applyRealtimeCaptureUpdate(prev, updated, userId));
         }
@@ -139,7 +144,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'captures', filter },
-        (payload) => {
+        (payload: RealtimeCapturePayload) => {
           const deletedId = (payload.old as { id: number }).id;
           setCaptures((prev) => applyRealtimeCaptureDelete(prev, deletedId));
         }

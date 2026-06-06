@@ -86,9 +86,12 @@ async function uploadTinyPngAndSave(page: Page, fileName: string) {
     page.getByRole('button', { name: '스크린샷 업로드' }).click(),
   ]);
   await fileChooser.setFiles(imgPath);
-  const saveBtn = page.getByRole('button', { name: /저장/ });
+  const dialog = page.getByRole('dialog', { name: 'AI 분석 결과' });
+  await expect(dialog).toBeVisible({ timeout: 20000 });
+  const saveBtn = dialog.getByRole('button', { name: /^저장/ });
   await expect(saveBtn).toBeVisible({ timeout: 20000 });
   await saveBtn.click();
+  await expect(dialog).toHaveCount(0);
 }
 
 test.describe('게스트 업로드 & AI 분석', () => {
@@ -152,7 +155,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
     await uploadTinyPngAndSave(page, 'scrave_single_save.png');
 
     // 슬롯이 1 줄었는지 확인
-    await expect(page.getByText('무료 체험: 2회 남음')).toBeVisible();
+    await expect(page.getByText('체험 2회 남음')).toBeVisible();
     await expect(page.getByText('테스트 장소')).toBeVisible();
   });
 
@@ -167,7 +170,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
     });
     await page.getByRole('button', { name: '테스트 장소 삭제' }).click();
 
-    await expect(page.getByText('무료 체험: 3회 남음')).toBeVisible();
+    await expect(page.getByText('체험 3회 남음')).toBeVisible();
     await expect(page.getByText('테스트 장소')).toHaveCount(0);
   });
 
@@ -179,7 +182,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
     await uploadTinyPngAndSave(page, 'scrave_limit_2.png');
     await uploadTinyPngAndSave(page, 'scrave_limit_3.png');
 
-    await expect(page.getByText('체험 한도에 도달했습니다')).toBeVisible();
+    await expect(page.getByText('체험 한도 도달')).toBeVisible();
 
     const imgPath = await createTinyPng('scrave_limit_4.png');
     const [fileChooser] = await Promise.all([
@@ -211,7 +214,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
 
     await expect(page.getByText('첫 번째 장소')).toBeVisible();
     await expect(page.getByText('두 번째 텍스트')).toBeVisible();
-    await expect(page.getByText('무료 체험: 1회 남음')).toBeVisible();
+    await expect(page.getByText('체험 1회 남음')).toBeVisible();
   });
 
   test('게스트 남은 슬롯보다 배치 결과가 많으면 부분 저장하지 않고 가입 유도한다', async ({ page }) => {
@@ -221,7 +224,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
 
     await uploadTinyPngAndSave(page, 'scrave_batch_capacity_1.png');
     await uploadTinyPngAndSave(page, 'scrave_batch_capacity_2.png');
-    await expect(page.getByText('무료 체험: 1회 남음')).toBeVisible();
+    await expect(page.getByText('체험 1회 남음')).toBeVisible();
 
     const firstPath = await createTinyPng('scrave_batch_capacity_over_1.png');
     const secondPath = await createTinyPng('scrave_batch_capacity_over_2.png');
@@ -238,6 +241,6 @@ test.describe('게스트 업로드 & AI 분석', () => {
     await expect(page.getByRole('heading', { name: '캡처 3개를 분석했어요!' })).toBeVisible();
     await expect(page.getByText('첫 번째 장소')).toHaveCount(0);
     await expect(page.getByText('두 번째 텍스트')).toHaveCount(0);
-    await expect(page.getByText('무료 체험: 1회 남음')).toBeVisible();
+    await expect(page.getByText('체험 1회 남음')).toBeVisible();
   });
 });

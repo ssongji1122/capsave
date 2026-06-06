@@ -6,7 +6,6 @@ import { UPLOAD_EMPTY_ERROR } from '@/lib/upload-validation';
 const mocks = vi.hoisted(() => ({
   getAuthUserAndTouch: vi.fn(),
   createClient: vi.fn(),
-  createAdminClient: vi.fn(),
   countUserCaptures: vi.fn(),
   upload: vi.fn(),
   remove: vi.fn(),
@@ -18,10 +17,6 @@ vi.mock('@/lib/api-auth', () => ({
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: mocks.createClient,
-}));
-
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: mocks.createAdminClient,
 }));
 
 vi.mock('@scrave/shared', async () => {
@@ -47,9 +42,7 @@ describe('POST /api/upload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
     mocks.getAuthUserAndTouch.mockResolvedValue({ id: 'user-1' });
-    mocks.createAdminClient.mockReturnValue({});
     mocks.countUserCaptures.mockResolvedValue(0);
     mocks.upload.mockResolvedValue({ error: null });
     mocks.remove.mockResolvedValue({ error: null });
@@ -109,15 +102,14 @@ describe('POST /api/upload', () => {
     expect(mocks.upload).not.toHaveBeenCalled();
   });
 
-  it('fails closed before storage upload when free-limit service credentials are missing', async () => {
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  it('fails closed before storage upload when free-limit check fails', async () => {
+    mocks.countUserCaptures.mockRejectedValue(new Error('count failed'));
     const file = new File([new Uint8Array([1, 2, 3])], 'capture.png', { type: 'image/png' });
 
     const { POST } = await import('@/app/api/upload/route');
     const response = await POST(uploadRequest(file));
 
     expect(response.status).toBe(500);
-    expect(mocks.createAdminClient).not.toHaveBeenCalled();
     expect(mocks.upload).not.toHaveBeenCalled();
   });
 });

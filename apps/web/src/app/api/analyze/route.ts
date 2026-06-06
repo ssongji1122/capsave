@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, countUserCaptures, MAX_FREE_CAPTURES } from '@scrave/shared';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
 import { consumeGuestRateLimit } from '@/lib/rate-limit';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
 import { ANALYZE_IMAGE_SIZE_ERROR, validateAnalyzeImageInput } from '@/lib/analyze-input';
+import { createPendingAnalysisResult, shouldReturnPendingAnalysis } from '@/lib/analysis-fallback';
 import { getJsonRecord, parseJsonBody } from '@/lib/http-json';
+import { createClient } from '@/lib/supabase/server';
 
 async function checkFreeTierLimit(userId: string): Promise<boolean> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    throw new Error('Capture limit service not configured');
-  }
-
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    { auth: { persistSession: false } }
-  );
-  const count = await countUserCaptures(admin, userId);
+  const supabase = await createClient();
+  const count = await countUserCaptures(supabase, userId);
   return count >= MAX_FREE_CAPTURES;
 }
 
@@ -99,6 +91,9 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', response.status, errorText);
+      if (shouldReturnPendingAnalysis(response.status)) {
+        return NextResponse.json(createPendingAnalysisResult());
+      }
       return NextResponse.json(
         { error: `Gemini API error: ${response.status}` },
         { status: 502 }

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   getAuthUserAndTouch: vi.fn(),
   consumeGuestRateLimit: vi.fn(),
   countUserCaptures: vi.fn(),
-  createClient: vi.fn(),
+  createSupabaseClient: vi.fn(),
 }));
 
 vi.mock('@/lib/api-auth', () => ({
@@ -19,7 +19,11 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
-  createClient: mocks.createClient,
+  createClient: mocks.createSupabaseClient,
+}));
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => ({})),
 }));
 
 vi.mock('@scrave/shared', async () => {
@@ -63,7 +67,6 @@ describe('POST /api/analyze', () => {
     vi.clearAllMocks();
     process.env.GEMINI_API_KEY = 'test-gemini-key';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
     mocks.getAuthUserAndTouch.mockResolvedValue(null);
     mocks.consumeGuestRateLimit.mockResolvedValue({
       allowed: true,
@@ -71,7 +74,7 @@ describe('POST /api/analyze', () => {
       resetAt: new Date('2026-05-20T23:59:59.999Z'),
     });
     mocks.countUserCaptures.mockResolvedValue(0);
-    mocks.createClient.mockReturnValue({});
+    mocks.createSupabaseClient.mockReturnValue({});
   });
 
   it('rejects malformed JSON before rate-limit consumption and paid analysis', async () => {
@@ -143,9 +146,9 @@ describe('POST /api/analyze', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('fails closed before paid analysis when authenticated free-limit service credentials are missing', async () => {
+  it('fails closed before paid analysis when authenticated free-limit check fails', async () => {
     mocks.getAuthUserAndTouch.mockResolvedValue({ id: 'user-1' });
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    mocks.countUserCaptures.mockRejectedValue(new Error('count failed'));
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -153,8 +156,30 @@ describe('POST /api/analyze', () => {
     const response = await POST(analyzeRequest());
 
     expect(response.status).toBe(500);
-    expect(mocks.createClient).not.toHaveBeenCalled();
-    expect(mocks.countUserCaptures).not.toHaveBeenCalled();
+    expect(mocks.countUserCaptures).toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns a pending analysis result when Gemini rate limit is exhausted', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 429,
+      text: async () => 'quota exhausted',
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { POST } = await import('@/app/api/analyze/route');
+    const response = await POST(analyzeRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      category: 'text',
+      title: '분석 대기 캡처',
+      confidence: 0,
+      sourceAccountId: null,
+    });
+    expect(mocks.consumeGuestRateLimit).toHaveBeenCalledWith('203.0.113.7');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

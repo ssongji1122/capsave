@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => {
     upload: vi.fn(),
     getAuthUserAndTouch: vi.fn(),
     countUserCaptures: vi.fn(),
-    createAdminClient: vi.fn(),
   };
 });
 
@@ -24,10 +23,6 @@ vi.mock('@/lib/supabase/server', () => ({
       })),
     },
   })),
-}));
-
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: mocks.createAdminClient,
 }));
 
 vi.mock('@scrave/shared', async () => {
@@ -65,11 +60,9 @@ describe('POST /api/capture', () => {
     vi.clearAllMocks();
     process.env.GEMINI_API_KEY = 'test-gemini-key';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
     mocks.getAuthUserAndTouch.mockResolvedValue({ id: 'user-1' });
     mocks.upload.mockResolvedValue({ error: null });
     mocks.countUserCaptures.mockResolvedValue(0);
-    mocks.createAdminClient.mockReturnValue({});
   });
 
   it('returns file validation errors before API key or free-limit checks', async () => {
@@ -114,7 +107,7 @@ describe('POST /api/capture', () => {
   });
 
   it('fails closed before paid analysis and storage upload when free-limit service credentials are missing', async () => {
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    mocks.countUserCaptures.mockRejectedValue(new Error('count failed'));
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -122,7 +115,6 @@ describe('POST /api/capture', () => {
     const response = await POST(createCaptureRequest());
 
     expect(response.status).toBe(500);
-    expect(mocks.createAdminClient).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(mocks.upload).not.toHaveBeenCalled();
   });
@@ -139,6 +131,28 @@ describe('POST /api/capture', () => {
 
     expect(response.status).toBe(502);
     expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
+  it('uploads the original image with a pending result when Gemini rate limit is exhausted', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 429,
+      text: async () => 'quota exhausted',
+    })));
+
+    const { POST } = await import('@/app/api/capture/route');
+    const response = await POST(createCaptureRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.result).toMatchObject({
+      category: 'text',
+      title: '분석 대기 캡처',
+      confidence: 0,
+      sourceAccountId: null,
+    });
+    expect(body.storagePath).toMatch(/^user-1\/.+\.png$/);
+    expect(mocks.upload).toHaveBeenCalledTimes(1);
   });
 
   it('uploads the original image only after Gemini returns a valid result', async () => {

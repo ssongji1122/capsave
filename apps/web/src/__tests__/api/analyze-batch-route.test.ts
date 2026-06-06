@@ -6,7 +6,7 @@ import { MAX_ANALYZE_IMAGE_BASE64_LENGTH } from '@/lib/constants';
 const mocks = vi.hoisted(() => ({
   getAuthUserAndTouch: vi.fn(),
   countUserCaptures: vi.fn(),
-  createClient: vi.fn(),
+  createSupabaseClient: vi.fn(),
   consumeGuestRateLimit: vi.fn(),
 }));
 
@@ -15,7 +15,11 @@ vi.mock('@/lib/api-auth', () => ({
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
-  createClient: mocks.createClient,
+  createClient: mocks.createSupabaseClient,
+}));
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => ({})),
 }));
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -60,10 +64,9 @@ describe('POST /api/analyze-batch', () => {
     vi.clearAllMocks();
     process.env.GEMINI_API_KEY = 'test-gemini-key';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
     mocks.getAuthUserAndTouch.mockResolvedValue({ id: 'user-1' });
     mocks.countUserCaptures.mockResolvedValue(9);
-    mocks.createClient.mockReturnValue({});
+    mocks.createSupabaseClient.mockReturnValue({});
     mocks.consumeGuestRateLimit.mockResolvedValue({
       allowed: true,
       remaining: 3,
@@ -243,9 +246,31 @@ describe('POST /api/analyze-batch', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('fails closed before paid batch analysis when authenticated free-limit service credentials are missing', async () => {
+  it('returns one pending merged result when Gemini rate limit is exhausted', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 429,
+      text: async () => 'quota exhausted',
+    })));
+
+    const { POST } = await import('@/app/api/analyze-batch/route');
+    const response = await POST(analyzeBatchRequest(['aW1hZ2Ux', 'aW1hZ2Uy']));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.results).toHaveLength(1);
+    expect(body.results[0]).toMatchObject({
+      category: 'text',
+      title: '분석 대기 캡처',
+      confidence: 0,
+      sourceAccountId: null,
+      sourceIndices: [0, 1],
+    });
+  });
+
+  it('fails closed before paid batch analysis when authenticated free-limit check fails', async () => {
     mocks.getAuthUserAndTouch.mockResolvedValue({ id: 'user-1' });
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    mocks.countUserCaptures.mockRejectedValue(new Error('count failed'));
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -253,8 +278,7 @@ describe('POST /api/analyze-batch', () => {
     const response = await POST(analyzeBatchRequest(['aW1hZ2Ux']));
 
     expect(response.status).toBe(500);
-    expect(mocks.createClient).not.toHaveBeenCalled();
-    expect(mocks.countUserCaptures).not.toHaveBeenCalled();
+    expect(mocks.countUserCaptures).toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

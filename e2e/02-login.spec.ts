@@ -10,7 +10,8 @@ test.describe('로그인 페이지', () => {
 
   test('로그인 폼 렌더링', async ({ page }) => {
     await expect(page.getByText('Scrave').first()).toBeVisible();
-    await expect(page.getByText('AI 캡처 오거나이저')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '내 캡처 보관함으로 들어가기' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
     await expect(page.getByPlaceholder('이메일')).toBeVisible();
     await expect(page.getByPlaceholder('비밀번호')).toBeVisible();
     await expect(page.getByRole('button', { name: '로그인' })).toBeVisible();
