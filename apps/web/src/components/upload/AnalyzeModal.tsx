@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Bot, CircleX, FileText, MapPin } from 'lucide-react';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
-import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
+import { createJpegUploadFile, fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import {
   analyzeSingleCaptureFile,
@@ -109,6 +109,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
         isGuest,
         result,
         imageUrl,
+        prepareUploadFile: createJpegUploadFile,
         uploadFile,
         onSave,
         deleteUploadedFile,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { isDataUri, fileToBase64 } from '@/lib/image-utils';
+import { fileToBase64, getJpegUploadFileName, isDataUri } from '@/lib/image-utils';
 
 describe('isDataUri', () => {
   it('returns true for data:image URI', () => {
@@ -26,5 +26,15 @@ describe('fileToBase64', () => {
     const file = new File([blob], 'test.jpg', { type: 'image/jpeg' });
     const result = await fileToBase64(file);
     expect(result).toMatch(/^data:image\/jpeg;base64,/);
+  });
+});
+
+describe('getJpegUploadFileName', () => {
+  it('replaces the original extension with jpg', () => {
+    expect(getJpegUploadFileName('instagram-screenshot.png')).toBe('instagram-screenshot.jpg');
+  });
+
+  it('uses a fallback name when the original name is empty', () => {
+    expect(getJpegUploadFileName('')).toBe('capture.jpg');
   });
 });

@@ -7,6 +7,8 @@ export const ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp
 /** Maximum upload file size (5 MB) */
 export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 
+export const MAX_SELECTED_IMAGE_SIZE = 25 * 1024 * 1024;
+
 /** Base64 encoding expands 3 raw bytes into 4 characters */
 export const RAW_BYTES_PER_BASE64_CHUNK = 3;
 export const BASE64_CHARS_PER_CHUNK = 4;

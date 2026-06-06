@@ -69,6 +69,26 @@ describe('saveSingleCaptureFile', () => {
     expect(onSave).toHaveBeenCalledWith(analysisResult, 'user-1/capture.png');
   });
 
+  it('prepares authenticated files before uploading them', async () => {
+    const originalFile = createImageFile();
+    const preparedFile = new File([new Uint8Array([4, 5, 6])], 'capture.jpg', { type: 'image/jpeg' });
+    const prepareUploadFile = vi.fn().mockResolvedValue(preparedFile);
+    const uploadFile = vi.fn().mockResolvedValue('user-1/capture.jpg');
+
+    await saveSingleCaptureFile({
+      file: originalFile,
+      isGuest: false,
+      result: analysisResult,
+      imageUrl: '',
+      prepareUploadFile,
+      uploadFile,
+      onSave: vi.fn().mockResolvedValue(undefined),
+    });
+
+    expect(prepareUploadFile).toHaveBeenCalledWith(originalFile);
+    expect(uploadFile).toHaveBeenCalledWith(preparedFile);
+  });
+
   it('saves guest files without uploading', async () => {
     const uploadFile = vi.fn();
     const onSave = vi.fn().mockResolvedValue(undefined);

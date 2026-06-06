@@ -17,6 +17,7 @@ interface SaveSingleCaptureOptions {
   isGuest: boolean;
   result: AnalysisResult;
   imageUrl: string;
+  prepareUploadFile?: (file: File) => Promise<File>;
   uploadFile: (file: File) => Promise<string>;
   onSave: (result: AnalysisResult, imageUrl: string) => void | Promise<void>;
   deleteUploadedFile?: (imageUrl: string) => Promise<unknown>;
@@ -38,11 +39,14 @@ export async function saveSingleCaptureFile({
   isGuest,
   result,
   imageUrl,
+  prepareUploadFile,
   uploadFile,
   onSave,
   deleteUploadedFile,
 }: SaveSingleCaptureOptions): Promise<void> {
-  const imageUrlToSave = isGuest ? imageUrl : await uploadFile(file);
+  const imageUrlToSave = isGuest
+    ? imageUrl
+    : await uploadFile(prepareUploadFile ? await prepareUploadFile(file) : file);
   try {
     await onSave(result, imageUrlToSave);
   } catch (error) {
