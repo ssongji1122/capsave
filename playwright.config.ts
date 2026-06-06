@@ -10,7 +10,7 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     headless: true,
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: process.env.CI ? 'off' : 'retain-on-failure',
   },
   projects: [
     {
