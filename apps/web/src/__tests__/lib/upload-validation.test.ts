@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import {
+  SELECTED_IMAGE_SIZE_ERROR,
   UPLOAD_EMPTY_ERROR,
   UPLOAD_SIZE_ERROR,
   UPLOAD_TYPE_ERROR,
+  validateSelectedImageFile,
   validateUploadFile,
 } from '@/lib/upload-validation';
 
@@ -43,6 +45,19 @@ describe('validateUploadFile', () => {
     expect(validateUploadFile(makeFile('large.png', 'image/png', MAX_UPLOAD_SIZE + 1))).toEqual({
       valid: false,
       error: UPLOAD_SIZE_ERROR,
+    });
+  });
+
+  it('accepts large screenshot originals at the file picker before client compression', () => {
+    expect(validateSelectedImageFile(makeFile('screenshot.png', 'image/png', 7 * 1024 * 1024))).toEqual({
+      valid: true,
+    });
+  });
+
+  it('still rejects extremely large originals at the file picker', () => {
+    expect(validateSelectedImageFile(makeFile('huge.png', 'image/png', 26 * 1024 * 1024))).toEqual({
+      valid: false,
+      error: SELECTED_IMAGE_SIZE_ERROR,
     });
   });
 });

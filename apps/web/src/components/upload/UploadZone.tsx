@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Clipboard, Images } from 'lucide-react';
 import { MAX_BATCH_FILES } from '@/lib/constants';
-import { validateUploadFile } from '@/lib/upload-validation';
+import { validateSelectedImageFile } from '@/lib/upload-validation';
 
 interface UploadZoneProps {
   onImageSelected: (file: File) => void;
@@ -22,7 +22,7 @@ export function UploadZone({ onImageSelected, onMultipleSelected, multiple = fal
       let firstError = '';
 
       for (const file of files) {
-        const validation = validateUploadFile(file);
+        const validation = validateSelectedImageFile(file);
         if (validation.valid) {
           validFiles.push(file);
         } else if (!firstError) {

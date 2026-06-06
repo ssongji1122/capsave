@@ -13,6 +13,17 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
+export function getJpegUploadFileName(name: string): string {
+  const dotIndex = name.lastIndexOf('.');
+  const baseName = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+  return `${baseName || 'capture'}.jpg`;
+}
+
+export async function createJpegUploadFile(file: File): Promise<File> {
+  const blob = await resizeImageFile(file);
+  return new File([blob], getJpegUploadFileName(file.name), { type: 'image/jpeg' });
+}
+
 /**
  * 클라이언트에서 이미지를 리사이즈하여 Blob으로 반환.
  * Defaults follow the W2 OCR-quality floor: max 2048px width, JPEG quality 0.85.

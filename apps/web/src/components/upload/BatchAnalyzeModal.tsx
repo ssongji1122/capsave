@@ -13,7 +13,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
-import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
+import { createJpegUploadFile, fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import { getBatchResultImageSourceIndices } from '@/lib/batch-save-mapper';
 import {
@@ -117,8 +117,9 @@ export function BatchAnalyzeModal({
   }
 
   async function uploadFile(file: File): Promise<string> {
+    const fileToUpload = await createJpegUploadFile(file);
     const uploadForm = new FormData();
-    uploadForm.append('file', file);
+    uploadForm.append('file', fileToUpload);
     const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
     if (!uploadRes.ok) {
       const errData = await uploadRes.json().catch(() => null);
