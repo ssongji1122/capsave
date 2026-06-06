@@ -4,6 +4,12 @@ import { getMapLinks, MapProvider } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 
 const NAV_OPTIONS = getMapLinks('preview', null);
+const PROVIDER_DOT_CLASS: Record<MapProvider, string> = {
+  tmap: 'bg-error',
+  naver: 'bg-place-accent',
+  google: 'bg-text-accent',
+  kakao: 'bg-warning',
+};
 
 export default function SettingsPage() {
   const { preferences, setPreferredNavApp, isLoading } = useUserPreferences();
@@ -37,7 +43,10 @@ export default function SettingsPage() {
                     : 'border-border bg-surface text-text-secondary hover:border-border-light hover:text-text-primary'
                 }`}
               >
-                <span className="text-xl">{option.emoji}</span>
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${PROVIDER_DOT_CLASS[option.provider]}`}
+                  aria-hidden="true"
+                />
                 <span className="font-semibold text-sm">{option.label}</span>
                 {isSelected && (
                   <span className="ml-auto text-xs font-medium text-place-accent">선택됨</span>

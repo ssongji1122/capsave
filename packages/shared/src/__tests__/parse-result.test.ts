@@ -62,6 +62,46 @@ describe('parseAnalysisResult', () => {
     expect(result.extractedText).toBe('some code here');
   });
 
+  it('filters unsafe links from parsed analysis results', () => {
+    const input = JSON.stringify({
+      category: 'text',
+      title: 'Link capture',
+      links: [
+        'https://safe.example/article',
+        'javascript:alert(1)',
+        'data:text/html,<script>alert(1)</script>',
+        'HTTP://safe.example/upper',
+      ],
+    });
+
+    const result = parseAnalysisResult(input);
+
+    expect(result.links).toEqual([
+      'https://safe.example/article',
+      'HTTP://safe.example/upper',
+    ]);
+  });
+
+  it('filters unsafe place links from parsed analysis results', () => {
+    const input = JSON.stringify({
+      category: 'place',
+      title: 'Place capture',
+      places: [
+        {
+          name: 'Safe Cafe',
+          links: [
+            'https://safe.example/place',
+            'javascript:alert(1)',
+          ],
+        },
+      ],
+    });
+
+    const result = parseAnalysisResult(input);
+
+    expect(result.places[0].links).toEqual(['https://safe.example/place']);
+  });
+
   it('strips markdown code fences', () => {
     const raw = '```json\n{"category":"text","title":"Test","summary":""}\n```';
     const result = parseAnalysisResult(raw);
@@ -276,6 +316,26 @@ describe('parseBatchAnalysisResult with sourceIndices', () => {
     expect(results).toHaveLength(2);
     expect(results[0].sourceIndices).toEqual([0]);
     expect(results[1].sourceIndices).toEqual([1]);
+  });
+
+  it('filters non-integer sourceIndices from batch results', () => {
+    const input = JSON.stringify({
+      category: 'text',
+      title: '인덱스 보정',
+      summary: '',
+      places: [],
+      extractedText: '',
+      links: [],
+      tags: [],
+      source: 'other',
+      confidence: 0.9,
+      sourceAccountId: null,
+      sourceIndices: [0, 1.5, '2', 3],
+    });
+
+    const results = parseBatchAnalysisResult(input);
+
+    expect(results[0].sourceIndices).toEqual([0, 3]);
   });
 
   it('returns undefined sourceIndices when field is absent (backward compat)', () => {

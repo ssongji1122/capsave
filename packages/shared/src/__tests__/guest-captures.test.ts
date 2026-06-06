@@ -95,4 +95,28 @@ describe('guestCaptureToItem', () => {
     expect(item.reclassifiedAt).toBeNull();
     expect(item.deletedAt).toBeNull();
   });
+
+  it('preserves safe links when converting GuestCapture to CaptureItem', () => {
+    const gc: GuestCapture = {
+      ...makeCapture(-1),
+      links: ['https://safe.example/article', 'javascript:alert(1)'],
+    };
+
+    const item = guestCaptureToItem(gc);
+
+    expect(item.links).toEqual(['https://safe.example/article']);
+  });
+
+  it('preserves source metadata when converting GuestCapture to CaptureItem', () => {
+    const gc: GuestCapture = {
+      ...makeCapture(-1),
+      source: 'instagram',
+      sourceAccountId: '@scrave_user',
+    };
+
+    const item = guestCaptureToItem(gc);
+
+    expect(item.source).toBe('instagram');
+    expect(item.sourceAccountId).toBe('@scrave_user');
+  });
 });

@@ -77,6 +77,24 @@ describe('mapRowToCapture', () => {
     expect(result.links).toEqual([]);
     expect(result.tags).toEqual([]);
   });
+
+  it('filters unsafe stored links before exposing captures to UI clients', () => {
+    const row: CaptureRow = {
+      ...FULL_ROW,
+      places: [
+        {
+          name: '스시오마카세',
+          links: ['https://safe.example/place', 'javascript:alert(1)'],
+        },
+      ],
+      links: ['https://safe.example/article', 'javascript:alert(1)', 'data:text/html,<h1>x</h1>'],
+    };
+
+    const result = mapRowToCapture(row);
+
+    expect(result.links).toEqual(['https://safe.example/article']);
+    expect(result.places[0].links).toEqual(['https://safe.example/place']);
+  });
 });
 
 describe('mapCaptureToRow', () => {
@@ -124,5 +142,25 @@ describe('mapCaptureToRow', () => {
 
     expect(row.deleted_at).toBeNull();
     expect(row.confidence).toBeNull();
+  });
+
+  it('filters unsafe links before mapping captures to database rows', () => {
+    const row = mapCaptureToRow({
+      places: [
+        {
+          name: '블루보틀',
+          links: ['https://safe.example/place', 'javascript:alert(1)'],
+        },
+      ],
+      links: ['https://safe.example/article', 'javascript:alert(1)'],
+    });
+
+    expect(row.links).toEqual(['https://safe.example/article']);
+    expect(row.places).toEqual([
+      {
+        name: '블루보틀',
+        links: ['https://safe.example/place'],
+      },
+    ]);
   });
 });

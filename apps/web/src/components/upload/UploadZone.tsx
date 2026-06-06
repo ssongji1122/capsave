@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-
-const MAX_BATCH_FILES = 10;
+import { Camera, Clipboard, Images } from 'lucide-react';
+import { MAX_BATCH_FILES } from '@/lib/constants';
+import { validateUploadFile } from '@/lib/upload-validation';
 
 interface UploadZoneProps {
   onImageSelected: (file: File) => void;
@@ -12,27 +13,42 @@ interface UploadZoneProps {
 
 export function UploadZone({ onImageSelected, onMultipleSelected, multiple = false }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [limitWarning, setLimitWarning] = useState('');
+  const [uploadWarning, setUploadWarning] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const processFiles = useCallback(
     (files: File[]) => {
-      // Accept any file from file picker (trust accept= attribute for filtering)
-      // Some browsers return empty type for HEIC/HEIF images
-      const images = files.filter((f) => !f.type || f.type.startsWith('image/'));
+      const validFiles: File[] = [];
+      let firstError = '';
+
+      for (const file of files) {
+        const validation = validateUploadFile(file);
+        if (validation.valid) {
+          validFiles.push(file);
+        } else if (!firstError) {
+          firstError = validation.error;
+        }
+      }
+
+      if (firstError) {
+        setUploadWarning(firstError);
+        setTimeout(() => setUploadWarning(''), 4000);
+      }
+
+      const images = validFiles;
       if (images.length === 0) return;
 
       if (multiple && onMultipleSelected && images.length > 1) {
         const limited = images.slice(0, MAX_BATCH_FILES);
         if (images.length > MAX_BATCH_FILES) {
-          setLimitWarning(`최대 ${MAX_BATCH_FILES}장까지 업로드 가능합니다. ${images.length}장 중 ${MAX_BATCH_FILES}장만 선택됩니다.`);
-          setTimeout(() => setLimitWarning(''), 4000);
+          setUploadWarning(`최대 ${MAX_BATCH_FILES}장까지 업로드 가능합니다. ${images.length}장 중 ${MAX_BATCH_FILES}장만 선택됩니다.`);
+          setTimeout(() => setUploadWarning(''), 4000);
         } else {
-          setLimitWarning('');
+          setUploadWarning(firstError);
         }
         onMultipleSelected(limited);
       } else {
-        setLimitWarning('');
+        setUploadWarning(firstError);
         onImageSelected(images[0]);
       }
     },
@@ -74,33 +90,59 @@ export function UploadZone({ onImageSelected, onMultipleSelected, multiple = fal
     }, 100);
   };
 
+  const openFilePicker = () => {
+    inputRef.current?.click();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    openFilePicker();
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label="스크린샷 업로드"
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      onClick={() => inputRef.current?.click()}
+      onClick={openFilePicker}
+      onKeyDown={handleKeyDown}
       className={`
-        border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all
+        group relative overflow-hidden rounded-3xl border border-dashed p-6 text-center cursor-pointer transition-all sm:p-8
+        focus:outline-none focus:ring-2 focus:ring-primary/50
         ${isDragging
-          ? 'border-primary bg-primary/5 scale-[1.02]'
-          : 'border-border hover:border-primary/50 hover:bg-surface-elevated'
+          ? 'border-primary bg-primary-surface scale-[1.01]'
+          : 'border-border bg-background/40 hover:border-primary/50 hover:bg-surface-elevated'
         }
       `}
     >
-      <div className="text-4xl mb-3">📸</div>
-      <p className="text-text-primary font-semibold">드래그, 클릭 또는 붙여넣기</p>
-      <p className="text-text-tertiary text-sm mt-1">
-        스크린샷을 업로드하면 AI가 자동 분석합니다{multiple && ` (최대 ${MAX_BATCH_FILES}장)`}
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary-border bg-primary-surface text-primary transition-transform group-hover:scale-105">
+        <Camera size={28} aria-hidden="true" />
+      </div>
+      <p className="text-lg font-bold text-text-primary">스크린샷 추가</p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-secondary">
+        SNS, 지도, 블로그 캡처를 선택하면 장소와 텍스트로 정리합니다.
       </p>
-      <p className="text-text-tertiary text-xs mt-1 opacity-60">⌘V 로 클립보드 이미지 바로 붙여넣기</p>
-      {limitWarning && (
-        <p className="text-warning text-sm mt-2 font-medium">{limitWarning}</p>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-text-tertiary">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5">
+          <Images size={13} aria-hidden="true" />
+          {multiple ? `최대 ${MAX_BATCH_FILES}장` : '이미지 1장'}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5">
+          <Clipboard size={13} aria-hidden="true" />
+          붙여넣기 지원
+        </span>
+      </div>
+      {uploadWarning && (
+        <p className="text-warning text-sm mt-4 font-medium">{uploadWarning}</p>
       )}
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,.heic,.heif"
+        accept="image/jpeg,image/png,image/webp"
         multiple={multiple}
         onChange={handleFileChange}
         className="hidden"

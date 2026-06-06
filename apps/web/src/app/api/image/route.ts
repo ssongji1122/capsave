@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { extractStoragePath } from '@scrave/shared';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+import { isOwnedCaptureStoragePath } from '@/lib/storage-ownership';
 
 const SIGNED_URL_EXPIRY = 3600; // 1 hour
 
@@ -18,9 +19,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
-
     const storagePath = extractStoragePath(pathParam);
+    if (!isOwnedCaptureStoragePath(storagePath, user.id)) {
+      return NextResponse.json({ error: 'Invalid storage path' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
 
     const { data, error } = await supabase.storage
       .from('captures')

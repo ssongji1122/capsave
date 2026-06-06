@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory, PlaceInfo, PaginatedResult } from '../types/capture';
-import { mapRowToCapture } from './mappers';
+import { mapCaptureToRow, mapRowToCapture } from './mappers';
 
 export const MAX_FREE_CAPTURES = 10;
 
@@ -118,19 +118,19 @@ export async function saveCapture(
   imageUrl: string,
   userId?: string
 ): Promise<CaptureItem> {
-  const insertData: Record<string, unknown> = {
+  const insertData = mapCaptureToRow({
     category: analysis.category,
     title: analysis.title,
     summary: analysis.summary,
     places: analysis.places,
-    extracted_text: analysis.extractedText,
+    extractedText: analysis.extractedText,
     links: analysis.links,
     tags: analysis.tags,
     source: analysis.source,
-    image_url: imageUrl,
+    imageUrl,
     confidence: analysis.confidence,
-    source_account_id: analysis.sourceAccountId,
-  };
+    sourceAccountId: analysis.sourceAccountId,
+  });
 
   if (userId) {
     insertData.user_id = userId;
@@ -150,8 +150,7 @@ export async function deleteCapture(
   client: SupabaseClient,
   id: number
 ): Promise<void> {
-  const { error } = await client.from('captures').delete().eq('id', id);
-  if (error) throw error;
+  await softDeleteCapture(client, id);
 }
 
 export async function getCaptureById(
@@ -162,6 +161,7 @@ export async function getCaptureById(
     .from('captures')
     .select('*')
     .eq('id', id)
+    .is('deleted_at', null)
     .single();
 
   if (error) {
@@ -180,6 +180,7 @@ export async function updateCapturePlaces(
     .from('captures')
     .update({ places })
     .eq('id', id)
+    .is('deleted_at', null)
     .select()
     .single();
 
@@ -202,6 +203,7 @@ export async function reclassifyCapture(
       reclassified_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .is('deleted_at', null)
     .select()
     .single();
 

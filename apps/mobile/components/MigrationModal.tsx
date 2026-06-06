@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native';
-import { supabase } from '@/services/supabase';
-import { getAllCaptures, clearAllCaptures, CaptureItem } from '@/services/database';
+import { deleteImageFromStorage, supabase, uploadImageToStorage } from '@/services/supabase';
+import { getAllCaptures, replaceAllCaptures } from '@/services/database';
 import { saveCapture as supaSave } from '@scrave/shared';
+import { migrateLocalCapturesToAccount } from '@/services/local-migration';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Colors } from '@/constants/Colors';
 
@@ -23,34 +24,18 @@ export function MigrationModal({ visible, userId, localCount, onComplete, onSkip
   const handleMigrate = async () => {
     setMigrating(true);
     try {
-      const captures = await getAllCaptures();
-      let done = 0;
-
-      for (const capture of captures) {
-        try {
-          await supaSave(supabase, {
-            category: capture.category,
-            title: capture.title,
-            summary: capture.summary,
-            places: capture.places,
-            extractedText: capture.extractedText,
-            links: capture.links,
-            tags: capture.tags,
-            source: capture.source as 'instagram' | 'threads' | 'naver' | 'google' | 'youtube' | 'other',
-            confidence: capture.confidence ?? 1.0,
-            sourceAccountId: capture.sourceAccountId,
-          }, capture.imageUri, userId);
-          done++;
-          setProgress({ done, total: captures.length });
-        } catch {
-          // Skip individual failures, continue with rest
-        }
-      }
-
-      await clearAllCaptures();
+      await migrateLocalCapturesToAccount({
+        userId,
+        getLocalCaptures: getAllCaptures,
+        uploadLocalImage: uploadImageToStorage,
+        saveRemoteCapture: (analysis, imageUri, accountId) => supaSave(supabase, analysis, imageUri, accountId),
+        deleteUploadedImage: deleteImageFromStorage,
+        replaceLocalCaptures: replaceAllCaptures,
+        onProgress: ({ done, total }) => setProgress({ done, total }),
+      });
       onComplete();
     } catch {
-      onComplete(); // Close even on failure
+      onComplete();
     } finally {
       setMigrating(false);
     }

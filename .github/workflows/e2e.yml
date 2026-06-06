@@ -1,0 +1,66 @@
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  playwright:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "1"
+      SCRAVE_E2E_AUTH_BYPASS: "1"
+      NEXT_PUBLIC_SCRAVE_E2E_CLIENT_BYPASS: "1"
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key"
+      GEMINI_API_KEY: "test-gemini-key"
+      GOOGLE_MAPS_API_KEY: "test-google-key"
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "test-google-map-key"
+      NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: "test-naver-client-id"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npx turbo build --filter=@scrave/web --force
+
+      - name: Run Playwright E2E
+        run: |
+          npm --workspace @scrave/web run start -- -p 3000 > /tmp/scrave-web.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:3000 >/dev/null; then
+              npx playwright test
+              exit $?
+            fi
+            sleep 1
+          done
+
+          cat /tmp/scrave-web.log
+          exit 1
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e-report/
+            test-results/
+          if-no-files-found: ignore

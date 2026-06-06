@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Camera } from 'lucide-react';
+import { Camera, Navigation, X } from 'lucide-react';
 import { getMapLinks, getReviewLinks } from '@scrave/shared';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
@@ -11,6 +11,13 @@ interface PlacePopupProps {
   place: MapPlace;
   onClose: () => void;
 }
+
+const PROVIDER_DOT_CLASS: Record<string, string> = {
+  tmap: 'bg-error',
+  naver: 'bg-place-accent',
+  google: 'bg-text-accent',
+  kakao: 'bg-warning',
+};
 
 export function PlacePopup({ place, onClose }: PlacePopupProps) {
   const containerRef = useModalFocusTrap(!!place, onClose);
@@ -33,7 +40,7 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
         aria-label="팝업 닫기"
         className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-sm"
       >
-        ✕
+        <X size={14} aria-hidden="true" />
       </button>
 
       {/* Place info */}
@@ -56,7 +63,7 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
           rel="noopener noreferrer"
           className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-place-surface text-xs font-semibold text-place-accent hover:bg-[rgba(52,211,153,0.15)] transition-colors"
         >
-          <span>{preferred.emoji}</span>
+          <Navigation size={13} aria-hidden="true" />
           <span>{preferred.label}로 길찾기</span>
         </a>
       )}
@@ -72,7 +79,10 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
             className="flex-1 py-1.5 rounded-lg border border-border text-center text-[11px] font-medium text-text-secondary hover:text-text-primary hover:border-border-light transition-colors"
             title={link.label}
           >
-            {link.emoji}
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${PROVIDER_DOT_CLASS[link.provider] ?? 'bg-text-tertiary'}`}
+              aria-hidden="true"
+            />
           </a>
         ))}
       </div>
@@ -88,7 +98,11 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
             className="flex-1 py-1.5 rounded-lg bg-surface text-center text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
             title={link.label}
           >
-            {link.emoji} 리뷰
+            <span
+              className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${PROVIDER_DOT_CLASS[link.provider] ?? 'bg-text-tertiary'}`}
+              aria-hidden="true"
+            />
+            리뷰
           </a>
         ))}
       </div>

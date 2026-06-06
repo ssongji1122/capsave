@@ -1,35 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SYSTEM_PROMPT, parseAnalysisResult, AI_MODEL_ENDPOINT, countUserCaptures, MAX_FREE_CAPTURES } from '@scrave/shared';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { extractGeminiText } from '@/lib/gemini';
-import { checkGuestRateLimit, incrementGuestRateLimit } from '@/lib/rate-limit';
+import { consumeGuestRateLimit } from '@/lib/rate-limit';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+import { ANALYZE_IMAGE_SIZE_ERROR, validateAnalyzeImageInput } from '@/lib/analyze-input';
+import { createPendingAnalysisResult, shouldReturnPendingAnalysis } from '@/lib/analysis-fallback';
+import { getJsonRecord, parseJsonBody } from '@/lib/http-json';
+import { createClient } from '@/lib/supabase/server';
 
 async function checkFreeTierLimit(userId: string): Promise<boolean> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) return false; // fail open if key not configured
-
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    { auth: { persistSession: false } }
-  );
-  const count = await countUserCaptures(admin, userId);
+  const supabase = await createClient();
+  const count = await countUserCaptures(supabase, userId);
   return count >= MAX_FREE_CAPTURES;
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const parsedBody = await parseJsonBody(request);
+    if (!parsedBody.valid) {
+      return NextResponse.json({ error: parsedBody.error }, { status: 400 });
+    }
+
+    const body = getJsonRecord(parsedBody.body);
+    const base64ImageInput: unknown = body.image;
+    const validation = validateAnalyzeImageInput(base64ImageInput);
+    if (!validation.valid) {
+      const status = validation.error === ANALYZE_IMAGE_SIZE_ERROR ? 413 : 400;
+      return NextResponse.json({ error: validation.error }, { status });
+    }
+    const base64Image = base64ImageInput as string;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
+    }
+
     const user = await getAuthUserAndTouch(request);
 
     if (!user) {
-      // Guest: apply rate limit (DB-based)
+      // Guest: atomically consume the DB-backed rate limit before paid AI work.
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-      const rateLimit = await checkGuestRateLimit(ip);
+      const rateLimit = await consumeGuestRateLimit(ip);
       if (!rateLimit.allowed) {
         return NextResponse.json({ error: '일일 체험 한도를 초과했습니다' }, { status: 429 });
       }
-      await incrementGuestRateLimit(ip);
     } else {
       // Authenticated: enforce free tier capture limit server-side
       const atLimit = await checkFreeTierLimit(user.id);
@@ -39,18 +53,6 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-    }
-
-    const body = await request.json();
-    const base64Image: string = body.image;
-
-    if (!base64Image) {
-      return NextResponse.json({ error: 'No image provided' }, { status: 400 });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
     const response = await fetch(
@@ -89,6 +91,9 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', response.status, errorText);
+      if (shouldReturnPendingAnalysis(response.status)) {
+        return NextResponse.json(createPendingAnalysisResult());
+      }
       return NextResponse.json(
         { error: `Gemini API error: ${response.status}` },
         { status: 502 }

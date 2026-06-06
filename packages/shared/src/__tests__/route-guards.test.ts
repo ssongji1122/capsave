@@ -20,24 +20,24 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/api/cron/dau')).toBe(true);
   });
 
-  it('returns true for /dashboard (guest-accessible)', () => {
-    expect(isPublicRoute('/dashboard')).toBe(true);
+  it('returns false for /dashboard', () => {
+    expect(isPublicRoute('/dashboard')).toBe(false);
   });
 
-  it('returns true for /places (guest-accessible)', () => {
-    expect(isPublicRoute('/places')).toBe(true);
+  it('returns false for /places', () => {
+    expect(isPublicRoute('/places')).toBe(false);
   });
 
-  it('returns true for /texts (guest-accessible)', () => {
-    expect(isPublicRoute('/texts')).toBe(true);
+  it('returns false for /texts', () => {
+    expect(isPublicRoute('/texts')).toBe(false);
   });
 
   it('returns false for /settings', () => {
     expect(isPublicRoute('/settings')).toBe(false);
   });
 
-  it('returns true for /map (guest-accessible for demo)', () => {
-    expect(isPublicRoute('/map')).toBe(true);
+  it('returns false for /map', () => {
+    expect(isPublicRoute('/map')).toBe(false);
   });
 });
 
@@ -60,8 +60,20 @@ describe('shouldRedirectToDashboard', () => {
 });
 
 describe('shouldRedirectToLogin', () => {
-  it('returns false when unauthenticated user visits /dashboard (guest-accessible)', () => {
-    expect(shouldRedirectToLogin('/dashboard', false)).toBe(false);
+  it('returns true when unauthenticated user visits /dashboard', () => {
+    expect(shouldRedirectToLogin('/dashboard', false)).toBe(true);
+  });
+
+  it('returns true when unauthenticated user visits /places', () => {
+    expect(shouldRedirectToLogin('/places', false)).toBe(true);
+  });
+
+  it('returns true when unauthenticated user visits /texts', () => {
+    expect(shouldRedirectToLogin('/texts', false)).toBe(true);
+  });
+
+  it('returns true when unauthenticated user visits /map', () => {
+    expect(shouldRedirectToLogin('/map', false)).toBe(true);
   });
 
   it('returns true when unauthenticated user visits /settings', () => {

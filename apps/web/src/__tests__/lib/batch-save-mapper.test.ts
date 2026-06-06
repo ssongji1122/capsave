@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { pairResultsWithImages } from '@/lib/batch-save-mapper';
+import {
+  getBatchResultImageSourceIndices,
+  pairResultsWithImages,
+} from '@/lib/batch-save-mapper';
 import type { AnalysisResult } from '@scrave/shared';
 
 const r = (overrides: Partial<AnalysisResult> = {}): AnalysisResult => ({
@@ -76,5 +79,46 @@ describe('pairResultsWithImages', () => {
   it('clamps when imageUrls is empty (defensive — should never happen)', () => {
     const results = [r()];
     expect(pairResultsWithImages(results, [])).toEqual([]);
+  });
+});
+
+describe('getBatchResultImageSourceIndices', () => {
+  it('returns one source image index per analysis result', () => {
+    const results = [
+      r({ sourceIndices: [2] }),
+      r({ sourceIndices: [0] }),
+    ];
+    expect(getBatchResultImageSourceIndices(results, 3)).toEqual([2, 0]);
+  });
+
+  it('uses the first source index for merged results', () => {
+    const results = [r({ sourceIndices: [1, 2, 3] })];
+    expect(getBatchResultImageSourceIndices(results, 4)).toEqual([1]);
+  });
+
+  it('falls back to result index when source indices are missing', () => {
+    const results = [r(), r()];
+    expect(getBatchResultImageSourceIndices(results, 3)).toEqual([0, 1]);
+  });
+
+  it('clamps invalid source indices to available files', () => {
+    const results = [
+      r({ sourceIndices: [-1] }),
+      r({ sourceIndices: [99] }),
+    ];
+    expect(getBatchResultImageSourceIndices(results, 3)).toEqual([0, 2]);
+  });
+
+  it('falls back to result index for non-integer source indices', () => {
+    const results = [
+      r({ sourceIndices: [1.5] }),
+      r({ sourceIndices: [Number.NaN] }),
+    ];
+    expect(getBatchResultImageSourceIndices(results, 3)).toEqual([0, 1]);
+  });
+
+  it('returns no indices when there are no source files', () => {
+    const results = [r(), r()];
+    expect(getBatchResultImageSourceIndices(results, 0)).toEqual([]);
   });
 });

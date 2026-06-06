@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { ChevronDown, NotebookText, Play, Search as SearchIcon, X, Zap } from 'lucide-react';
 import { CaptureItem, PlaceInfo, getReviewLinks, extractStoragePath } from '@scrave/shared';
 import { isDataUri } from '@/lib/image-utils';
 
@@ -9,6 +10,12 @@ interface CaptureCardProps {
   item: CaptureItem;
   onDelete: (id: number) => void;
 }
+
+const PROVIDER_DOT_CLASS: Record<string, string> = {
+  naver: 'bg-place-accent',
+  google: 'bg-text-accent',
+  kakao: 'bg-warning',
+};
 
 export function CaptureCard({ item, onDelete }: CaptureCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -98,7 +105,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
             aria-label={`${item.title} 삭제`}
             className="absolute top-2 right-2 w-11 h-11 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-text-tertiary hover:text-error transition-colors"
           >
-            ✕
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -107,9 +114,11 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
       <div className="p-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
-          <span className={`text-text-tertiary text-xs transition-transform ml-2 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
+          <ChevronDown
+            size={14}
+            className={`text-text-tertiary transition-transform ml-2 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
         </div>
 
         {/* Collapsed: summary preview */}
@@ -180,7 +189,11 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                             onClick={(e) => e.stopPropagation()}
                             className="px-2 py-1 rounded-lg bg-surface border border-border text-[10px] font-medium text-text-secondary hover:text-text-primary transition-colors"
                           >
-                            {rl.emoji} {rl.label}
+                            <span
+                              className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${PROVIDER_DOT_CLASS[rl.provider] ?? 'bg-text-tertiary'}`}
+                              aria-hidden="true"
+                            />
+                            {rl.label}
                           </a>
                         ))}
                       </div>
@@ -239,11 +252,11 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                 ) : (
                   <div className="flex gap-4">
                     {[
-                      { emoji: '⚡', label: 'Perplexity', href: `https://www.perplexity.ai/search?q=${encodeURIComponent(item.title)}` },
-                      { emoji: '🔵', label: 'Google', href: `https://www.google.com/search?q=${encodeURIComponent(item.title)}` },
-                      { emoji: '▶', label: 'YouTube', href: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}` },
-                      { emoji: '📝', label: '블로그', href: `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(item.title)}` },
-                    ].map(({ emoji, label, href }) => (
+                      { icon: Zap, label: 'Perplexity', href: `https://www.perplexity.ai/search?q=${encodeURIComponent(item.title)}` },
+                      { icon: SearchIcon, label: 'Google', href: `https://www.google.com/search?q=${encodeURIComponent(item.title)}` },
+                      { icon: Play, label: 'YouTube', href: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}` },
+                      { icon: NotebookText, label: '블로그', href: `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(item.title)}` },
+                    ].map(({ icon: Icon, label, href }) => (
                       <a
                         key={label}
                         href={href}
@@ -253,7 +266,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                         className="flex flex-col items-center gap-1 group"
                       >
                         <div className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center text-lg group-hover:border-border-light transition-colors">
-                          {emoji}
+                          <Icon size={16} aria-hidden="true" />
                         </div>
                         <span className="text-[9px] text-text-tertiary group-hover:text-text-secondary transition-colors">{label}</span>
                       </a>

@@ -18,17 +18,41 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { analyzeImage, AnalysisResult, PlaceInfo } from '@/services/ai-analyzer';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { supabase, uploadImageToStorage } from '@/services/supabase';
+import { deleteImageFromStorage, supabase, uploadImageToStorage } from '@/services/supabase';
+import {
+  ANALYZE_IMAGE_URI_MISSING_ERROR,
+  getAnalyzeImageUriState,
+} from '@/services/analyze-input';
+import {
+  CaptureSaveLimitError,
+  saveAnalyzedCapture,
+} from '@/services/analyze-save-flow';
+import { MAX_FREE_CAPTURES, countUserCaptures, type MapProvider } from '@scrave/shared';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
 type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
+
+function getProviderColor(provider: MapProvider, colors: typeof Colors.dark): string {
+  switch (provider) {
+    case 'tmap':
+      return colors.error;
+    case 'naver':
+      return colors.placeAccent;
+    case 'google':
+      return colors.textAccent;
+    case 'kakao':
+      return colors.warning;
+  }
+}
 
 export default function AnalyzeScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
-  const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
-  const { refresh, saveCapture } = useCaptures();
+  const { imageUri: imageUriParam } = useLocalSearchParams<{ imageUri?: string | string[] }>();
+  const imageUriState = getAnalyzeImageUriState(imageUriParam);
+  const imageUri = imageUriState.imageUri;
+  const { captures, refresh, saveCapture } = useCaptures();
 
   const [status, setStatus] = useState<AnalyzeStatus>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -65,26 +89,21 @@ export default function AnalyzeScreen() {
 
   // Auto-analyze on mount
   useEffect(() => {
-    if (imageUri) {
-      runAnalysis();
-    }
+    runAnalysis();
   }, [imageUri]);
 
-  // Auto-upload after successful analysis
-  useEffect(() => {
-    if (status !== 'done' || storagePath || uploadStatus !== 'idle') return;
-    void runUpload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
-
-  const runUpload = async () => {
-    if (!imageUri) return;
+  const runUpload = async (): Promise<string | null> => {
+    if (!imageUri) {
+      setUploadStatus('error');
+      setUploadError(ANALYZE_IMAGE_URI_MISSING_ERROR);
+      return null;
+    }
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;
     if (!userId) {
       setUploadStatus('error');
       setUploadError('로그인이 필요합니다.');
-      return;
+      return null;
     }
     setUploadStatus('uploading');
     setUploadError('');
@@ -92,14 +111,22 @@ export default function AnalyzeScreen() {
       const path = await uploadImageToStorage(imageUri, userId);
       setStoragePath(path);
       setUploadStatus('done');
+      return path;
     } catch (e) {
       setUploadStatus('error');
       setUploadError(e instanceof Error ? e.message : '이미지 업로드 실패');
+      return null;
     }
   };
 
   const runAnalysis = async () => {
     if (isAnalyzing.current) return;
+    if (!imageUri) {
+      setErrorMessage(imageUriState.error ?? ANALYZE_IMAGE_URI_MISSING_ERROR);
+      setStatus('error');
+      return;
+    }
+
     isAnalyzing.current = true;
     setStatus('analyzing');
     try {
@@ -119,14 +146,39 @@ export default function AnalyzeScreen() {
   };
 
   const handleSave = async () => {
-    if (!result || !storagePath) return;
+    if (!result) return;
 
     setIsSaving(true);
     try {
-      await saveCapture(result, storagePath);
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user.id;
+      if (!userId) {
+        Alert.alert('로그인 필요', '캡처를 저장하려면 로그인해주세요.');
+        return;
+      }
+
+      const saved = await saveAnalyzedCapture({
+        result,
+        imageUri,
+        userId,
+        localCaptureCount: captures.length,
+        maxCaptures: MAX_FREE_CAPTURES,
+        existingStoragePath: storagePath,
+        uploadStatus,
+        countServerCaptures: (accountId) => countUserCaptures(supabase, accountId),
+        uploadImage: runUpload,
+        saveCapture,
+        deleteUploadedImage: deleteImageFromStorage,
+      });
+      if (!saved.saved) return;
+
       await refresh();
       router.back();
     } catch (error) {
+      if (error instanceof CaptureSaveLimitError) {
+        Alert.alert('저장 한도 도달', `무료 플랜은 최대 ${MAX_FREE_CAPTURES}개까지 저장할 수 있습니다.`);
+        return;
+      }
       Alert.alert('저장 실패', '캡처를 저장하는 중 오류가 발생했습니다.');
     } finally {
       setIsSaving(false);
@@ -156,13 +208,19 @@ export default function AnalyzeScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Preview */}
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: imageUri }}
-            style={styles.image}
-            contentFit="cover"
-            transition={200}
-          />
-          {status === 'analyzing' && (
+          {imageUri ? (
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.image}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View style={[styles.imageMissing, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="image-outline" size={36} color={colors.textTertiary} />
+            </View>
+          )}
+          {status === 'analyzing' && imageUri && (
             <Animated.View style={[styles.imageOverlay, { opacity: pulseAnim }]}>
               <View style={[styles.scanLine, { backgroundColor: colors.primary }]} />
             </Animated.View>
@@ -259,7 +317,12 @@ export default function AnalyzeScreen() {
                       style={[styles.mapBtn, { borderColor }]}
                       onPress={() => openMap(link.provider, place.name, place.address)}
                     >
-                      <Text style={styles.mapEmoji}>{link.emoji}</Text>
+                      <View
+                        style={[
+                          styles.providerDot,
+                          { backgroundColor: getProviderColor(link.provider, colors) },
+                        ]}
+                      />
                       <Text style={[styles.mapLabel, { color: colors.text }]}>{link.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -333,7 +396,7 @@ export default function AnalyzeScreen() {
               </View>
             )}
 
-            {uploadStatus === 'done' && (
+            {(uploadStatus === 'idle' || uploadStatus === 'done') && (
               <TouchableOpacity
                 style={[styles.saveButton, { backgroundColor: colors.primary }]}
                 onPress={handleSave}
@@ -390,6 +453,13 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 280,
+  },
+  imageMissing: {
+    width: '100%',
+    height: 280,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -534,8 +604,10 @@ const styles = StyleSheet.create({
     gap: 6,
     flex: 1,
   },
-  mapEmoji: {
-    fontSize: 16,
+  providerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   mapLabel: {
     fontSize: 12,

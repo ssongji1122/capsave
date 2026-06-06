@@ -47,11 +47,11 @@ describe('getMapLinks', () => {
     }
   });
 
-  it('each link has label and emoji', () => {
+  it('each link has label and provider', () => {
     const links = getMapLinks('test');
     for (const link of links) {
       expect(link.label).toBeTruthy();
-      expect(link.emoji).toBeTruthy();
+      expect(link.provider).toBeTruthy();
     }
   });
 
@@ -121,11 +121,11 @@ describe('getReviewLinks', () => {
     }
   });
 
-  it('each link has label and emoji', () => {
+  it('each link has label and provider', () => {
     const links = getReviewLinks('test');
     for (const link of links) {
       expect(link.label).toBeTruthy();
-      expect(link.emoji).toBeTruthy();
+      expect(link.provider).toBeTruthy();
     }
   });
 
@@ -208,20 +208,24 @@ describe('getMobileMapLinks', () => {
     }
   });
 
-  it('preserves label and emoji from base getMapLinks', () => {
+  it('preserves label from base getMapLinks', () => {
     const mobileLinks = getMobileMapLinks('카페');
     const webLinks = getMapLinks('카페');
     for (const webLink of webLinks) {
       const mobileLink = mobileLinks.find((l) => l.provider === webLink.provider)!;
       expect(mobileLink.label).toBe(webLink.label);
-      expect(mobileLink.emoji).toBe(webLink.emoji);
     }
   });
 
   it('includes address in query when provided', () => {
     const links = getMobileMapLinks('스타벅스', '강남구 역삼동');
-    const tmap = links.find((l) => l.provider === 'tmap')!;
-    // tmap uses placeName only (not full query) for app URL
-    expect(tmap.appUrl).toContain(encodeURIComponent('스타벅스'));
+    const encoded = encodeURIComponent('스타벅스 강남구 역삼동');
+
+    for (const link of links) {
+      expect(link.appUrl).toContain(encoded);
+      if (link.iosAppUrl) {
+        expect(link.iosAppUrl).toContain(encoded);
+      }
+    }
   });
 });

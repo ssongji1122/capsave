@@ -54,3 +54,5 @@ packages/*/dist/
 supabase/.temp/
 .gstack/
 .vercel
+
+.envrc

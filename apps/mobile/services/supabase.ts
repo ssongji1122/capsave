@@ -53,3 +53,15 @@ export async function uploadImageToStorage(
 
   return path;
 }
+
+export async function deleteImageFromStorage(path: string): Promise<void> {
+  if (!path) return;
+
+  const { error } = await supabase.storage
+    .from('captures')
+    .remove([path]);
+
+  if (error) {
+    throw new Error(`이미지 삭제 실패: ${error.message}`);
+  }
+}

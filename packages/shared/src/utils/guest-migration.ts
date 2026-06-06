@@ -1,4 +1,5 @@
 import type { GuestCapture } from './guest-captures';
+import { sanitizeUrl } from './url-validator';
 
 export function base64ToBlob(dataUri: string): Blob {
   const match = dataUri.match(/^data:([^;]+);base64,(.+)$/);
@@ -26,8 +27,17 @@ export interface MigrationPayload {
   tags: string[];
   places: GuestCapture['places'];
   source: string;
+  source_account_id: string | null;
   extracted_text: string;
   links: string[];
+}
+
+function sanitizeLinks(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((link): link is string => typeof link === 'string')
+    .map((link) => sanitizeUrl(link))
+    .filter((link): link is string => link !== null);
 }
 
 export function buildMigrationPayload(
@@ -44,8 +54,9 @@ export function buildMigrationPayload(
     confidence: gc.confidence,
     tags: gc.tags,
     places: gc.places,
-    source: 'other',
-    extracted_text: '',
-    links: [],
+    source: gc.source ?? 'other',
+    source_account_id: gc.sourceAccountId ?? null,
+    extracted_text: gc.extractedText ?? '',
+    links: sanitizeLinks(gc.links),
   };
 }

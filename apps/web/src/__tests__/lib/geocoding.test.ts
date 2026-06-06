@@ -31,6 +31,11 @@ describe('validateGeocodingInput', () => {
     expect(result.valid).toBe(false);
   });
 
+  it('rejects non-string address values', () => {
+    const result = validateGeocodingInput('valid', { city: '서울' });
+    expect(result.valid).toBe(false);
+  });
+
   it('accepts name with optional address', () => {
     expect(validateGeocodingInput('카페', '강남구')).toEqual({ valid: true });
   });

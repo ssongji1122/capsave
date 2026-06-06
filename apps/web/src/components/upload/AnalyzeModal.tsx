@@ -2,13 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { Bot, CircleX, FileText, MapPin } from 'lucide-react';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
 import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
+import {
+  analyzeSingleCaptureFile,
+  saveSingleCaptureFile,
+} from '@/lib/single-capture-flow';
 
 interface AnalyzeModalProps {
   file: File;
-  onSave: (result: AnalysisResult, imageUrl: string) => void;
+  onSave: (result: AnalysisResult, imageUrl: string) => void | Promise<void>;
   onCancel: () => void;
   isGuest?: boolean;
   queueInfo?: { current: number; total: number };
@@ -20,6 +25,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
   const [preview] = useState(() => URL.createObjectURL(file));
   const started = useRef(false);
 
@@ -29,57 +35,89 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
     analyzeImage();
   }, []);
 
+  async function analyzeFile(fileToAnalyze: File): Promise<AnalysisResult> {
+    const resizedBlob = await resizeImageFile(fileToAnalyze);
+    const resizedB64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(resizedBlob);
+    });
+
+    const analyzeRes = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: resizedB64 }),
+    });
+    if (!analyzeRes.ok) {
+      const errData = await analyzeRes.json().catch(() => null);
+      throw new Error(errData?.error || 'AI 분석 실패');
+    }
+    return analyzeRes.json();
+  }
+
+  async function uploadFile(fileToUpload: File): Promise<string> {
+    const uploadForm = new FormData();
+    uploadForm.append('file', fileToUpload);
+    const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+    if (!uploadRes.ok) {
+      const errData = await uploadRes.json().catch(() => null);
+      throw new Error(errData?.error || '이미지 업로드 실패');
+    }
+    const { path } = await uploadRes.json();
+    return path;
+  }
+
+  async function deleteUploadedFile(path: string): Promise<void> {
+    const deleteRes = await fetch('/api/upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: [path] }),
+    });
+    if (!deleteRes.ok) {
+      const errData = await deleteRes.json().catch(() => null);
+      throw new Error(errData?.error || '이미지 정리 실패');
+    }
+  }
+
   async function analyzeImage() {
     try {
       setStatus('analyzing');
+      const analyzed = await analyzeSingleCaptureFile({
+        file,
+        isGuest,
+        analyzeImage: analyzeFile,
+        getGuestImageUrl: fileToBase64,
+      });
 
-      let uploadedPath: string;
-      let analysisResult: AnalysisResult;
-
-      if (isGuest) {
-        // Guest: client-side resize + base64, no upload (no Storage perms)
-        const resizedBlob = await resizeImageFile(file);
-        const resizedB64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(resizedBlob);
-        });
-
-        const base64 = await fileToBase64(file);
-        uploadedPath = base64;
-        const analyzeRes = await fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: resizedB64 }),
-        });
-        if (!analyzeRes.ok) {
-          const errData = await analyzeRes.json().catch(() => null);
-          throw new Error(errData?.error || 'AI 분석 실패');
-        }
-        analysisResult = await analyzeRes.json();
-      } else {
-        // Authenticated: single round-trip /api/capture (upload + analyze)
-        const captureForm = new FormData();
-        captureForm.append('file', file);
-
-        const captureRes = await fetch('/api/capture', { method: 'POST', body: captureForm });
-        if (!captureRes.ok) {
-          const errData = await captureRes.json().catch(() => null);
-          throw new Error(errData?.error || '캡처 처리 실패');
-        }
-
-        const { result, storagePath } = await captureRes.json();
-        uploadedPath = storagePath;
-        analysisResult = result;
-      }
-
-      setImageUrl(uploadedPath);
-      setResult(analysisResult);
+      setImageUrl(analyzed.imageUrl);
+      setResult(analyzed.result);
       setStatus('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류');
       setStatus('error');
+    }
+  }
+
+  async function handleSaveClick() {
+    if (!result || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      await saveSingleCaptureFile({
+        file,
+        isGuest,
+        result,
+        imageUrl,
+        uploadFile,
+        onSave,
+        deleteUploadedFile,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '저장 중 오류가 발생했습니다');
+      setStatus('error');
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -106,7 +144,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
         <div className="p-6">
           {status === 'analyzing' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4 animate-bounce">🤖</div>
+              <Bot size={40} className="text-ai-accent mx-auto mb-4 animate-bounce" aria-hidden="true" />
               <p className="text-text-primary font-semibold">AI가 분석 중...</p>
               <p className="text-text-tertiary text-sm mt-1">잠시만 기다려주세요</p>
             </div>
@@ -114,7 +152,7 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
 
           {status === 'error' && (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4">❌</div>
+              <CircleX size={40} className="text-error mx-auto mb-4" aria-hidden="true" />
               <p className="text-error font-semibold">분석 실패</p>
               <p className="text-text-tertiary text-sm mt-1">{error}</p>
               <div className="flex gap-3 mt-6 justify-center">
@@ -130,10 +168,20 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
 
           {status === 'done' && result && (
             <>
-              <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold mb-3 ${
+              <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-3 ${
                 isPlace ? 'bg-place-surface text-place-accent' : 'bg-text-surface text-text-accent'
               }`}>
-                {isPlace ? `📍 장소 (${result.places.length}개)` : '📝 텍스트'}
+                {isPlace ? (
+                  <>
+                    <MapPin size={13} className="mr-1" aria-hidden="true" />
+                    장소 ({result.places.length}개)
+                  </>
+                ) : (
+                  <>
+                    <FileText size={13} className="mr-1" aria-hidden="true" />
+                    텍스트
+                  </>
+                )}
               </div>
 
               <h2 className="text-xl font-bold text-text-primary">{result.title}</h2>
@@ -167,10 +215,11 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
                   {queueInfo && queueInfo.total > 1 ? '건너뛰기' : '취소'}
                 </button>
                 <button
-                  onClick={() => onSave(result, imageUrl)}
+                  onClick={handleSaveClick}
+                  disabled={isSaving}
                   className="flex-1 py-3 rounded-xl bg-primary text-black font-bold hover:bg-primary-light transition-colors"
                 >
-                  {queueInfo && queueInfo.current < queueInfo.total ? '저장 → 다음' : '저장하기'}
+                  {isSaving ? '저장 중...' : queueInfo && queueInfo.current < queueInfo.total ? '저장 → 다음' : '저장하기'}
                 </button>
               </div>
             </>

@@ -1,15 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateGeocodingInput, buildGeocodingQuery, parseGoogleGeocodeResponse } from '@/lib/geocoding';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
+import { getJsonRecord, parseJsonBody } from '@/lib/http-json';
 
 export async function POST(request: NextRequest) {
   try {
-    void getAuthUserAndTouch(request); // fire-and-forget DAU tracking
-    const { name, address } = await request.json();
+    const parsedBody = await parseJsonBody(request);
+    if (!parsedBody.valid) {
+      return NextResponse.json({ error: parsedBody.error }, { status: 400 });
+    }
 
-    const validation = validateGeocodingInput(name, address);
+    const body = getJsonRecord(parsedBody.body);
+    const nameInput = body.name;
+    const addressInput = body.address;
+
+    const validation = validateGeocodingInput(nameInput, addressInput);
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const name = nameInput as string;
+    const address = typeof addressInput === 'string' ? addressInput : undefined;
+
+    const user = await getAuthUserAndTouch(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const query = buildGeocodingQuery(name, address);

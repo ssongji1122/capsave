@@ -13,6 +13,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { openMap, getMapLinks } from '@/services/map-linker';
 import { isUrlSafe } from '@scrave/shared';
+import { Ionicons } from '@expo/vector-icons';
 
 interface PlaceQuickSearchProps {
   placeName: string;
@@ -22,7 +23,7 @@ interface PlaceQuickSearchProps {
 const SEARCH_ICONS = [
   {
     key: 'navermap',
-    emoji: '🗺️',
+    icon: 'map' as const,
     label: '네이버맵',
     appUrl: (q: string) => `nmap://search?query=${encodeURIComponent(q)}&appname=com.scrave.app`,
     webUrl: (q: string) => `https://map.naver.com/v5/search/${encodeURIComponent(q)}`,
@@ -30,7 +31,7 @@ const SEARCH_ICONS = [
   },
   {
     key: 'instagram',
-    emoji: '📷',
+    icon: 'camera' as const,
     label: '인스타그램',
     appUrl: (q: string) => `instagram://search?q=${encodeURIComponent(q)}`,
     webUrl: (q: string) =>
@@ -39,7 +40,7 @@ const SEARCH_ICONS = [
   },
   {
     key: 'naverblog',
-    emoji: '✍️',
+    icon: 'create' as const,
     label: '네이버블로그',
     appUrl: null,
     webUrl: (q: string) =>
@@ -48,7 +49,7 @@ const SEARCH_ICONS = [
   },
   {
     key: 'youtube',
-    emoji: '▶️',
+    icon: 'play' as const,
     label: '유튜브',
     appUrl: (q: string) =>
       `vnd.youtube://results?search_query=${encodeURIComponent(q)}`,
@@ -100,7 +101,7 @@ export function PlaceQuickSearch({ placeName, address }: PlaceQuickSearchProps) 
         {
           title: placeName,
           message: address ?? undefined,
-          options: [...links.map((l) => `${l.emoji} ${l.label}`), '취소'],
+          options: [...links.map((l) => l.label), '취소'],
           cancelButtonIndex: links.length,
         },
         (idx) => {
@@ -115,7 +116,7 @@ export function PlaceQuickSearch({ placeName, address }: PlaceQuickSearchProps) 
         address ?? undefined,
         [
           ...links.map((l) => ({
-            text: `${l.emoji} ${l.label}`,
+            text: l.label,
             onPress: () => openMap(l.provider, placeName, address ?? null),
           })),
           { text: '취소', style: 'cancel' as const },
@@ -134,7 +135,7 @@ export function PlaceQuickSearch({ placeName, address }: PlaceQuickSearchProps) 
           activeOpacity={0.7}
           accessibilityLabel={`${icon.label}에서 검색`}
         >
-          <Text style={styles.iconEmoji}>{icon.emoji}</Text>
+          <Ionicons name={icon.icon} size={17} color={colors.text} />
         </TouchableOpacity>
       ))}
       <TouchableOpacity
@@ -163,9 +164,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconEmoji: {
-    fontSize: 17,
   },
   mapOpenBtn: {
     marginLeft: 'auto',

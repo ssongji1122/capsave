@@ -8,14 +8,13 @@ import { SearchBar } from '@/components/captures/SearchBar';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
-import { CaptureItem, AnalysisResult } from '@scrave/shared';
-import { pairResultsWithImages } from '@/lib/batch-save-mapper';
+import { CaptureItem, AnalysisResult, CaptureCategory, PlaceInfo } from '@scrave/shared';
 import { Camera } from 'lucide-react';
 
 const CONFIDENCE_THRESHOLD = 0.5;
 
 export default function HomePage() {
-  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated, isAuthReady } = useCaptures();
+  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, reclassifyCapture, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated, isAuthReady } = useCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -47,12 +46,31 @@ export default function HomePage() {
   };
 
   const handleBatchSave = async (results: AnalysisResult[], imageUrls: string[]) => {
-    const pairs = pairResultsWithImages(results, imageUrls);
-    for (const { result, imageUrl } of pairs) {
-      await saveCapture(result, imageUrl);
+    for (let i = 0; i < results.length; i++) {
+      const imageUrl = imageUrls[i];
+      if (!imageUrl) throw new Error('BATCH_IMAGE_URL_MISSING');
+      await saveCapture(results[i], imageUrl);
     }
     setBatchFiles(null);
   };
+
+  const handleDelete = useCallback(async (id: number) => {
+    const deleted = await deleteCapture(id);
+    if (!deleted) return;
+    setDisplayCaptures((prev) => prev ? prev.filter((capture) => capture.id !== id) : prev);
+  }, [deleteCapture]);
+
+  const handleReclassify = useCallback(async (
+    id: number,
+    category: CaptureCategory,
+    places: PlaceInfo[] | null
+  ) => {
+    const updated = await reclassifyCapture(id, category, places);
+    if (!updated) return;
+    setDisplayCaptures((prev) => (
+      prev ? prev.map((capture) => (capture.id === updated.id ? updated : capture)) : prev
+    ));
+  }, [reclassifyCapture]);
 
   const isSearching = displayCaptures !== null;
   const shown = displayCaptures ?? captures;
@@ -136,7 +154,8 @@ export default function HomePage() {
       {uncertain.length > 0 && (
         <UncertainQueue
           captures={uncertain}
-          onDelete={deleteCapture}
+          onDelete={handleDelete}
+          onReclassify={handleReclassify}
         />
       )}
 
@@ -144,7 +163,7 @@ export default function HomePage() {
       <CaptureList
         captures={confident}
         isLoading={isLoading}
-        onDelete={deleteCapture}
+        onDelete={handleDelete}
         emptyIcon={<Camera size={40} className="text-primary" />}
         emptyTitle="캡처를 시작해보세요"
         emptySubtitle={'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}
@@ -171,6 +190,7 @@ export default function HomePage() {
           onSave={handleBatchSave}
           onCancel={() => setBatchFiles(null)}
           isGuest={!isAuthenticated}
+          maxSaveCount={isAuthenticated ? freeRemaining : undefined}
         />
       )}
     </div>

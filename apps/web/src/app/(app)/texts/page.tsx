@@ -1,29 +1,36 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
 import { CaptureItem } from '@scrave/shared';
 import { FileText } from 'lucide-react';
+import {
+  getProtectedCategoryPageModel,
+  removeCaptureFromCategoryPage,
+} from '@/lib/protected-category-page';
 
 export default function TextsPage() {
-  const { getCapturesByCategory, captures: allCaptures, isLoading, deleteCapture } = useCaptures();
-  const { guestCaptures, deleteCapture: deleteGuestCapture } = useGuestCaptures();
+  const { getCapturesByCategory, isLoading, deleteCapture, isAuthReady } = useCaptures();
   const [dbCaptures, setDbCaptures] = useState<CaptureItem[]>([]);
 
   useEffect(() => {
+    if (!isAuthReady) return;
     getCapturesByCategory('text').then(setDbCaptures);
-  }, [getCapturesByCategory]);
+  }, [getCapturesByCategory, isAuthReady]);
 
-  const guestTexts = useMemo(
-    () => guestCaptures.filter((c) => c.category === 'text'),
-    [guestCaptures],
-  );
+  const pageModel = getProtectedCategoryPageModel({
+    dbCaptures,
+    guestCaptures: [],
+    isAuthReady,
+    isLoading,
+  });
 
-  const isLoggedIn = allCaptures.length > 0 || dbCaptures.length > 0;
-  const captures = isLoggedIn ? dbCaptures : guestTexts;
-  const onDelete = isLoggedIn ? deleteCapture : deleteGuestCapture;
+  const handleDelete = useCallback(async (id: number) => {
+    const deleted = await deleteCapture(id);
+    if (!deleted) return;
+    setDbCaptures((prev) => removeCaptureFromCategoryPage(prev, id));
+  }, [deleteCapture]);
 
   return (
     <div className="pb-20 lg:pb-8">
@@ -34,9 +41,9 @@ export default function TextsPage() {
         <p className="text-text-secondary text-sm mt-1">AI 정보, 코드, 레시피, 기사</p>
       </div>
       <CaptureList
-        captures={captures}
-        isLoading={isLoading}
-        onDelete={onDelete}
+        captures={pageModel.captures}
+        isLoading={pageModel.isLoading}
+        onDelete={handleDelete}
         emptyIcon={<FileText size={40} className="text-text-accent" />}
         emptyTitle="저장된 텍스트가 없습니다"
         emptySubtitle={'AI 정보, 코드, 레시피, 기사 스크린샷을\n캡처하면 자동으로 여기에 정리됩니다'}

@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Scrave Web (Next.js)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web"],
+      "port": 3000
+    },
+    {
+      "name": "Scrave Mobile (Expo)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:mobile"],
+      "port": 8081
+    },
+    {
+      "name": "Shared Watch (tsup)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace", "packages/shared"],
+      "port": 0
+    },
+    {
+      "name": "All (Turbo)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    }
+  ]
+}

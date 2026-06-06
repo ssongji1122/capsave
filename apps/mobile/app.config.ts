@@ -1,5 +1,10 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
+const { getIosUrlSchemeGroups } = require('./config/google-oauth');
+
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const iosUrlSchemeGroups = getIosUrlSchemeGroups(googleIosClientId);
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Scrave',
@@ -17,6 +22,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     infoPlist: {
+      CFBundleURLTypes: [
+        ...iosUrlSchemeGroups.map((urlSchemes: string[]) => ({
+          CFBundleURLSchemes: urlSchemes,
+        })),
+      ],
       NSPhotoLibraryUsageDescription:
         '스크린샷을 선택하여 AI가 분석할 수 있도록 사진 접근 권한이 필요합니다.',
       LSApplicationQueriesSchemes: [
@@ -44,8 +54,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-font',
+    'expo-image',
     'expo-sqlite',
     'expo-secure-store',
+    'expo-web-browser',
     [
       'expo-image-picker',
       {
@@ -63,7 +76,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-    googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    googleIosClientId,
     kakaoJsKey: process.env.EXPO_PUBLIC_KAKAO_JS_KEY,
     kakaoRestApiKey: process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY,
   },

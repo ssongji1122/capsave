@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Constants from 'expo-constants';
 import { AnalysisResult, ImageAnalyzer } from './types';
+import { normalizeAnalysisResult } from './normalize-result';
 
 const SYSTEM_PROMPT = `You are an AI assistant that analyzes screenshots from mobile apps.
 Your job is to extract structured information from the screenshot.
@@ -113,17 +114,6 @@ export class OpenAIAnalyzer implements ImageAnalyzer {
       throw new Error('필수 필드가 누락되었습니다.');
     }
 
-    return {
-      category: result.category === 'place' ? 'place' : 'text',
-      title: result.title || '제목 없음',
-      summary: result.summary || '',
-      places: Array.isArray(result.places) ? result.places.filter((p: { name?: string }) => p.name) : [],
-      extractedText: result.extractedText || '',
-      links: Array.isArray(result.links) ? result.links : [],
-      tags: Array.isArray(result.tags) ? result.tags : [],
-      source: result.source || 'other',
-      confidence: typeof result.confidence === 'number' ? Math.max(0, Math.min(1, result.confidence)) : 1.0,
-      sourceAccountId: typeof result.sourceAccountId === 'string' ? result.sourceAccountId : null,
-    };
+    return normalizeAnalysisResult(result);
   }
 }
