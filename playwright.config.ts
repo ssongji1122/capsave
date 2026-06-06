@@ -15,7 +15,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(process.env.CI ? { channel: 'chrome' } : {}),
+      },
     },
   ],
   // 테스트 전에 dev 서버가 이미 켜져 있어야 함
