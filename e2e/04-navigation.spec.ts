@@ -35,6 +35,11 @@ test.describe('라우트 및 네비게이션', () => {
     expect(url.searchParams.get('next')).toBe('/map?view=places');
   });
 
+  test('OAuth code가 루트로 돌아와도 auth callback으로 복구한다', async ({ page }) => {
+    await page.goto('/?code=e2e-invalid-code&next=%2Fmap');
+    await expect(page).toHaveURL(/\/login\?error=auth/, { timeout: 8000 });
+  });
+
   test('미인증 → /settings 접근 시 /login으로 리다이렉트', async ({ page }) => {
     await page.goto('/settings');
     await expect(page).toHaveURL(/\/login/, { timeout: 8000 });
