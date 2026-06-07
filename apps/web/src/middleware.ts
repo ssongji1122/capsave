@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { buildLoginRedirectPath } from '@/lib/auth-redirect';
+import { buildLoginRedirectPath, buildRootAuthCallbackPath } from '@/lib/auth-redirect';
 import { isRealAuthenticatedUser } from '@/lib/auth-user';
 import { E2E_AUTH_BYPASS_HEADER, shouldBypassAuthForE2E } from '@/lib/e2e-auth-bypass';
 
@@ -8,6 +8,10 @@ const PROTECTED = ['/dashboard', '/places', '/texts', '/map', '/settings'] as co
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const rootAuthCallbackPath = buildRootAuthCallbackPath(pathname, request.nextUrl.search);
+  if (rootAuthCallbackPath) {
+    return NextResponse.redirect(new URL(rootAuthCallbackPath, request.url));
+  }
 
   // API routes: pass through
   if (pathname.startsWith('/api')) {

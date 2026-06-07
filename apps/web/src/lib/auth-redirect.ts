@@ -14,6 +14,13 @@ export function buildAuthCallbackRedirect(origin: string, nextPath = AUTH_SUCCES
   return url.toString();
 }
 
+export function buildRootAuthCallbackPath(pathname: string, search = ''): string | null {
+  if (pathname !== '/') return null;
+  const params = new URLSearchParams(search);
+  if (!params.has('code')) return null;
+  return `/auth/callback?${params.toString()}`;
+}
+
 export function buildLoginRedirectPath(pathname: string, search = ''): string {
   const nextPath = getAuthCallbackNextPath(`${pathname}${search}`);
   const params = new URLSearchParams({ next: nextPath });

@@ -3,6 +3,7 @@ import {
   AUTH_SUCCESS_PATH,
   buildAuthCallbackRedirect,
   buildLoginRedirectPath,
+  buildRootAuthCallbackPath,
   getAuthCallbackNextPath,
 } from '@/lib/auth-redirect';
 
@@ -34,5 +35,13 @@ describe('auth redirect helpers', () => {
 
   it('rejects protocol-relative next URLs and falls back to dashboard', () => {
     expect(getAuthCallbackNextPath('//evil.example/phish')).toBe('/dashboard');
+  });
+
+  it('redirects root OAuth codes to the auth callback route', () => {
+    expect(buildRootAuthCallbackPath('/', '?code=abc123')).toBe('/auth/callback?code=abc123');
+  });
+
+  it('does not redirect non-root OAuth callback paths', () => {
+    expect(buildRootAuthCallbackPath('/map', '?code=abc123')).toBeNull();
   });
 });
