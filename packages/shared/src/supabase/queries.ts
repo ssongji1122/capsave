@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory, PlaceInfo, PaginatedResult } from '../types/capture';
 import { mapCaptureToRow, mapRowToCapture } from './mappers';
+import { extractStoragePath } from '../utils/storage';
 
 export const MAX_FREE_CAPTURES = 100;
 
@@ -149,7 +150,30 @@ export async function deleteCapture(
   client: SupabaseClient,
   id: number
 ): Promise<void> {
-  await softDeleteCapture(client, id);
+  const { data, error } = await client
+    .from('captures')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('image_url');
+
+  if (error) throw error;
+
+  // Best-effort storage cleanup: only owned bucket paths qualify.
+  // data:/file:// previews and external http URLs are not storage objects.
+  const rows = (data ?? []) as Array<{ image_url: string | null }>;
+  const imageUrl = rows[0]?.image_url ?? '';
+  const path = extractStoragePath(imageUrl);
+  if (
+    path &&
+    !path.startsWith('data:') &&
+    !path.startsWith('file://') &&
+    !path.startsWith('http')
+  ) {
+    const { error: removeError } = await client.storage.from('captures').remove([path]);
+    if (removeError) {
+      console.warn('[deleteCapture] storage cleanup failed:', removeError);
+    }
+  }
 }
 
 export async function getCaptureById(

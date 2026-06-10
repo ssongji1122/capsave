@@ -1,15 +1,26 @@
 # Scrave Improvement Plan
 
-> 2026-05-18 갱신. 이전 TODOS.md는 절반이 stale (이미 해결된 항목 다수 포함).
+> 2026-06-10 갱신. 미머지 브랜치 5개(thirsty-babbage / nice-edison / scr-21 / scr-23 / scr-25)의
+> 작업을 main 후속 커밋과 통합 회수. scr-23은 main의 원자적 RPC rate limit(migration 011)으로 superseded.
 > 본 문서는 전체 수동 audit + 3축 분류 (카테고리 / 구조 / 사용자 플로우) 결과.
 > 목표: **10명 dogfood 사용자 안정화** → DAU gate 통과 → 정식 런칭.
+
+## 2026-06-10 세션 추가 완료
+
+| # | 영역 | 변경 |
+|---|------|------|
+| ✅ | G2 Storage cleanup | shared `deleteCapture`가 soft-delete 후 storage object를 best-effort 삭제 (web/mobile 공통). weekly cron 일괄 정리는 P3 잔존 |
+| ✅ | Migration 정리 | free tier 100 마이그레이션을 013으로 renumber (main 011_atomic_guest_rate_limit과 번호 충돌 해소). 010에 superseded 주석 |
+| ✅ | OCR 품질 | `ANALYZE_JPEG_QUALITY(_SHARP)` 0.85 → 0.92 상수 반영 (G3 결정의 constants 누락분) |
+| ✅ | LoginForm | OAuth-only(U6) + main의 `next` 리다이렉트 복구(지도 로그인) 결합 |
+| ✅ | Mobile 테스트 | geocoding/map-linker 에러 로깅 + 단위 테스트 6개 회수 (nice-edison) |
 
 ## 이번 세션에 완료
 
 | # | 영역 | 변경 |
 |---|------|------|
 | ✅ | Mobile perms | `RECORD_AUDIO` 권한 제거 (Play Store red flag 해소) — [app.config.ts](apps/mobile/app.config.ts) |
-| ✅ | Free tier | `MAX_FREE_CAPTURES` 10 → 100 + DB RLS 동기화 — [migration 011](supabase/migrations/011_raise_free_tier_limit_to_100.sql) |
+| ✅ | Free tier | `MAX_FREE_CAPTURES` 10 → 100 + DB RLS 동기화 — [migration 013](supabase/migrations/013_raise_free_tier_limit_to_100.sql) (011에서 renumber) |
 | ✅ | Cross-device 이미지 (U3) | shared `getSignedImageUrl()` helper + mobile `useSignedImage` 훅 + `CaptureCard` / `capture/[id]` 와이어업. private bucket 환경에서 모바일 이미지 정상 표시 |
 | ✅ | Auth (U6) | LoginForm OAuth-only로 단순화 — 이메일 확인 마찰 제거. Supabase Dashboard에서 Email confirmations OFF 필요 (수동) |
 | ✅ | 검색 (U7) | `search_user_captures` SQL RPC ([migration 012](supabase/migrations/012_search_user_captures_rpc.sql)) + shared `searchCaptures` 전환. `title/summary/extracted_text/places/tags` 전부 ILIKE 매칭. PostgREST `.or()` JSONB cast 회피. **마이그레이션 012 deploy 필요** |
@@ -45,7 +56,7 @@
 | ID | 영역 | 작업 | 추정 |
 |----|------|------|------|
 | **G1** | S3 Secret | Resend API key를 `app_config` → Supabase Vault. PL/pgSQL 함수 시그니처 수정 | 1.5h |
-| **G2** | S5 Storage cleanup | 캡처 soft-delete 시 storage object 즉시 삭제 (`deleteCapture` hook). 추가: weekly cron이 `image_url`에 매칭 안되는 storage 오브젝트 일괄 정리 | 2.5h |
+| ~~G2~~ | ~~S5 Storage cleanup~~ | ✅ 완료 (2026-06-10) — shared `deleteCapture`에서 soft-delete 후 storage object best-effort 삭제. weekly cron 일괄 정리만 P3 잔존 | — |
 | ~~G3~~ | ~~C1 Image quality~~ | ✅ 완료 — client + server JPEG quality 0.85 → 0.92. PNG 경로는 mimeType 컨트랙트 확장 비용으로 보류 | — |
 | **G4** | S11 Map geocoding | 100+ 장소 직렬 호출 → DB에 `lat`/`lng` 캐시 컬럼 추가 → 한 번 geocode 후 재사용. 또는 `Promise.all` 묶기 | 3h |
 | ~~G5~~ | ~~Design 이모지~~ | ✅ 완료 — AnalyzeModal/BatchAnalyzeModal/UploadZone/MapView/SearchBar/CaptureCard/UncertainQueue/PlacePopup 8 사이트 모두 lucide-react로 교체 + aria 처리 | — |
