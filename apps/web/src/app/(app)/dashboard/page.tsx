@@ -63,7 +63,7 @@ export default function HomePage() {
         .filter((path) => path && !path.startsWith('data:'));
       if (orphans.length > 0) {
         const supabase = createClient();
-        await supabase.storage.from('captures').remove(orphans).catch((err) => {
+        await supabase.storage.from('captures').remove(orphans).catch((err: unknown) => {
           console.warn('[batch-save] orphan cleanup failed:', err);
         });
       }

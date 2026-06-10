@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import { MAX_FREE_CAPTURES } from '@scrave/shared';
 import { UPLOAD_EMPTY_ERROR } from '@/lib/upload-validation';
 
 const mocks = vi.hoisted(() => ({
@@ -92,7 +93,7 @@ describe('POST /api/upload', () => {
   });
 
   it('rejects users at the free capture limit before storage upload', async () => {
-    mocks.countUserCaptures.mockResolvedValue(10);
+    mocks.countUserCaptures.mockResolvedValue(MAX_FREE_CAPTURES);
     const file = new File([new Uint8Array([1, 2, 3])], 'capture.png', { type: 'image/png' });
 
     const { POST } = await import('@/app/api/upload/route');
