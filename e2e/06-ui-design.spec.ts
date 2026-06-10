@@ -53,14 +53,14 @@ test.describe('UI & 반응형', () => {
     await expect(page.locator('aside')).toHaveCount(0);
   });
 
-  test('로그인 페이지 — 이메일 input focus 시 border 변화', async ({ page }) => {
+  test('로그인 페이지 — OAuth 버튼 focus-visible 스타일 적용', async ({ page }) => {
     await page.goto('/login');
-    const input = page.getByPlaceholder('이메일');
-    await input.focus();
-    const borderColor = await input.evaluate(
-      (el) => getComputedStyle(el).borderColor
+    const button = page.getByRole('button', { name: /Google로 시작하기/ });
+    await button.focus();
+    const outlineWidth = await button.evaluate(
+      (el) => getComputedStyle(el).outlineWidth
     );
-    // focus 시 primary color로 변경
-    expect(borderColor).not.toBe('');
+    // 전역 :focus-visible 2px outline (globals.css)
+    expect(outlineWidth).not.toBe('');
   });
 });
