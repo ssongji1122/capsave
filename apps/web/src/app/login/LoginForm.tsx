@@ -1,54 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase/browser';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FileText, ImagePlus, LockKeyhole, MapPin } from 'lucide-react';
 import { OAuthButtons } from '@/components/auth/OAuthButtons';
-import { buildAuthCallbackRedirect, getAuthCallbackNextPath } from '@/lib/auth-redirect';
+import { getAuthCallbackNextPath } from '@/lib/auth-redirect';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
   const nextPath = getAuthCallbackNextPath(searchParams.get('next'));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setMessage('');
-
-    if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
-      } else {
-        router.push(nextPath);
-        router.refresh();
-      }
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: buildAuthCallbackRedirect(window.location.origin, nextPath) },
-      });
-      if (error) {
-        setError(error.message);
-      } else {
-        setMessage('확인 이메일을 발송했습니다. 메일함을 확인해주세요.');
-      }
-    }
-
-    setLoading(false);
-  };
 
   return (
     <div className="min-h-screen bg-background px-4 py-8 text-text-primary sm:px-6">
@@ -107,51 +67,9 @@ export default function LoginForm() {
 
           <OAuthButtons nextPath={nextPath} />
 
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-text-tertiary text-xs">또는</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <input
-              type="email"
-              placeholder="이메일"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-text-primary placeholder:text-text-tertiary transition-colors focus:border-primary focus:outline-none"
-            />
-            <input
-              type="password"
-              placeholder="비밀번호"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-text-primary placeholder:text-text-tertiary transition-colors focus:border-primary focus:outline-none"
-            />
-
-            {error && <p className="text-error text-sm">{error}</p>}
-            {message && <p className="text-success text-sm">{message}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-primary py-3 font-bold text-black transition-colors hover:bg-primary-light disabled:opacity-50"
-            >
-              {loading ? '처리 중...' : mode === 'login' ? '로그인' : '회원가입'}
-            </button>
-          </form>
-
-          <button
-            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage(''); }}
-            className="mt-4 w-full text-center text-sm text-text-tertiary transition-colors hover:text-text-secondary"
-          >
-            {mode === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
-          </button>
+          <p className="text-text-tertiary text-center text-xs mt-6">
+            소셜 계정으로 로그인하면 자동으로 계정이 생성됩니다.
+          </p>
 
           <Link
             href="/"

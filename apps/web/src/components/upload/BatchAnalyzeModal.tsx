@@ -301,7 +301,7 @@ export function BatchAnalyzeModal({
                   >
                     {/* Header — always visible */}
                     <div className="flex items-center gap-3">
-                      <div className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full ${
                         isPlace ? 'bg-place-surface text-place-accent' : 'bg-text-surface text-text-accent'
                       }`}>
                         {isPlace ? (

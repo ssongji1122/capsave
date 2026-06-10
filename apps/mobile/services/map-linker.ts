@@ -12,6 +12,18 @@ export function getMapLinks(placeName: string, address?: string | null) {
   return getMobileMapLinks(placeName, address);
 }
 
+export function sortByPreferredProvider<T extends { provider: MapProvider }>(
+  links: T[],
+  preferred: MapProvider | null | undefined
+): T[] {
+  if (!preferred) return links;
+  return [...links].sort((a, b) => {
+    if (a.provider === preferred) return -1;
+    if (b.provider === preferred) return 1;
+    return 0;
+  });
+}
+
 export async function openMap(
   provider: MapProvider,
   placeName: string,

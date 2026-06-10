@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory, PlaceInfo, PaginatedResult } from '../types/capture';
 import { mapCaptureToRow, mapRowToCapture } from './mappers';
 
-export const MAX_FREE_CAPTURES = 10;
+export const MAX_FREE_CAPTURES = 100;
 
 export async function countUserCaptures(
   client: SupabaseClient,
@@ -91,24 +91,23 @@ export async function searchCaptures(
 ): Promise<{ items: CaptureItem[]; total: number }> {
   const limit = options?.limit ?? 20;
   const offset = options?.offset ?? 0;
-  const pattern = `%${query}%`;
+  const trimmed = query.trim();
+  if (!trimmed) return { items: [], total: 0 };
 
-  const baseQuery = client
-    .from('captures')
-    .select('*', { count: 'exact' })
-    .is('deleted_at', null)
-    .or(
-      `title.ilike.${pattern},summary.ilike.${pattern},extracted_text.ilike.${pattern}`
-    )
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  const { data, error, count } = await baseQuery;
+  // Use the SQL RPC (migration 012) so JSONB columns (places, tags) participate
+  // in the search via ::text ILIKE — PostgREST .or() doesn't reliably accept ::text cast.
+  // RLS is preserved because the function is SECURITY INVOKER.
+  const { data, error } = await client.rpc('search_user_captures', {
+    search_query: trimmed,
+    search_limit: limit,
+    search_offset: offset,
+  });
 
   if (error) throw error;
+  const rows = (data ?? []) as CaptureRow[];
   return {
-    items: (data as CaptureRow[]).map(mapRowToCapture),
-    total: count ?? 0,
+    items: rows.map(mapRowToCapture),
+    total: rows.length,
   };
 }
 

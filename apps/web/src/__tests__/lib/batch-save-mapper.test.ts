@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getBatchResultImageSourceIndices,
   pairResultsWithImages,
+  findUnusedImagePaths,
 } from '@/lib/batch-save-mapper';
 import type { AnalysisResult } from '@scrave/shared';
 
@@ -120,5 +121,35 @@ describe('getBatchResultImageSourceIndices', () => {
   it('returns no indices when there are no source files', () => {
     const results = [r(), r()];
     expect(getBatchResultImageSourceIndices(results, 0)).toEqual([]);
+  });
+});
+
+describe('findUnusedImagePaths', () => {
+  it('returns the merged-away images when 17 photos collapse to one result', () => {
+    const urls = Array.from({ length: 17 }, (_, i) => `img-${i}`);
+    const results = [r({ sourceIndices: [0] })];
+    const unused = findUnusedImagePaths(results, urls);
+    expect(unused).toHaveLength(16);
+    expect(unused).not.toContain('img-0');
+    expect(unused).toContain('img-1');
+    expect(unused).toContain('img-16');
+  });
+
+  it('returns an empty list when every image is paired', () => {
+    const urls = ['a', 'b', 'c'];
+    const results = [r(), r(), r()];
+    expect(findUnusedImagePaths(results, urls)).toEqual([]);
+  });
+
+  it('returns empty when imageUrls is empty', () => {
+    expect(findUnusedImagePaths([r()], [])).toEqual([]);
+  });
+
+  it('treats a partial merge correctly (kept thumbnails preserved)', () => {
+    // result 0 merges [0, 2] (thumbnail = a), result 1 keeps [1] (thumbnail = b)
+    // → c is unused (it was merged into result 0, only a kept as thumbnail)
+    const urls = ['a', 'b', 'c'];
+    const results = [r({ sourceIndices: [0, 2] }), r({ sourceIndices: [1] })];
+    expect(findUnusedImagePaths(results, urls)).toEqual(['c']);
   });
 });

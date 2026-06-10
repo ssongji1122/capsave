@@ -38,7 +38,7 @@ export function PlacePopup({ place, onClose }: PlacePopupProps) {
       <button
         onClick={onClose}
         aria-label="팝업 닫기"
-        className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-sm"
+        className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary"
       >
         <X size={14} aria-hidden="true" />
       </button>
