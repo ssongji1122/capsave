@@ -12,6 +12,18 @@ export function getMapLinks(placeName: string, address?: string | null) {
   return getMobileMapLinks(placeName, address);
 }
 
+export function sortByPreferredProvider<T extends { provider: MapProvider }>(
+  links: T[],
+  preferred: MapProvider | null | undefined
+): T[] {
+  if (!preferred) return links;
+  return [...links].sort((a, b) => {
+    if (a.provider === preferred) return -1;
+    if (b.provider === preferred) return 1;
+    return 0;
+  });
+}
+
 export async function openMap(
   provider: MapProvider,
   placeName: string,
@@ -35,7 +47,8 @@ export async function openMap(
       return;
     }
     Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
-  } catch {
+  } catch (err) {
+    console.error('[map-linker] openMap failed', err);
     if (isUrlSafe(link.webUrl)) {
       await Linking.openURL(link.webUrl).catch(() => {
         Alert.alert('오류', `${link.label}을(를) 열 수 없습니다.`);
@@ -57,7 +70,8 @@ export async function openUrl(url: string): Promise<void> {
     } else {
       Alert.alert('오류', '해당 링크를 열 수 없습니다.');
     }
-  } catch {
+  } catch (err) {
+    console.error('[openUrl] failed', err);
     Alert.alert('오류', '링크를 여는 중 오류가 발생했습니다.');
   }
 }

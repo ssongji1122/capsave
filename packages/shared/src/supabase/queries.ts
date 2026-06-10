@@ -1,8 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { AnalysisResult, CaptureItem, CaptureRow, CaptureCategory, PlaceInfo, PaginatedResult } from '../types/capture';
 import { mapCaptureToRow, mapRowToCapture } from './mappers';
+import { extractStoragePath } from '../utils/storage';
 
-export const MAX_FREE_CAPTURES = 10;
+export const MAX_FREE_CAPTURES = 100;
 
 export async function countUserCaptures(
   client: SupabaseClient,
@@ -91,24 +92,23 @@ export async function searchCaptures(
 ): Promise<{ items: CaptureItem[]; total: number }> {
   const limit = options?.limit ?? 20;
   const offset = options?.offset ?? 0;
-  const pattern = `%${query}%`;
+  const trimmed = query.trim();
+  if (!trimmed) return { items: [], total: 0 };
 
-  const baseQuery = client
-    .from('captures')
-    .select('*', { count: 'exact' })
-    .is('deleted_at', null)
-    .or(
-      `title.ilike.${pattern},summary.ilike.${pattern},extracted_text.ilike.${pattern}`
-    )
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  const { data, error, count } = await baseQuery;
+  // Use the SQL RPC (migration 012) so JSONB columns (places, tags) participate
+  // in the search via ::text ILIKE — PostgREST .or() doesn't reliably accept ::text cast.
+  // RLS is preserved because the function is SECURITY INVOKER.
+  const { data, error } = await client.rpc('search_user_captures', {
+    search_query: trimmed,
+    search_limit: limit,
+    search_offset: offset,
+  });
 
   if (error) throw error;
+  const rows = (data ?? []) as CaptureRow[];
   return {
-    items: (data as CaptureRow[]).map(mapRowToCapture),
-    total: count ?? 0,
+    items: rows.map(mapRowToCapture),
+    total: rows.length,
   };
 }
 
@@ -150,7 +150,30 @@ export async function deleteCapture(
   client: SupabaseClient,
   id: number
 ): Promise<void> {
-  await softDeleteCapture(client, id);
+  const { data, error } = await client
+    .from('captures')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('image_url');
+
+  if (error) throw error;
+
+  // Best-effort storage cleanup: only owned bucket paths qualify.
+  // data:/file:// previews and external http URLs are not storage objects.
+  const rows = (data ?? []) as Array<{ image_url: string | null }>;
+  const imageUrl = rows[0]?.image_url ?? '';
+  const path = extractStoragePath(imageUrl);
+  if (
+    path &&
+    !path.startsWith('data:') &&
+    !path.startsWith('file://') &&
+    !path.startsWith('http')
+  ) {
+    const { error: removeError } = await client.storage.from('captures').remove([path]);
+    if (removeError) {
+      console.warn('[deleteCapture] storage cleanup failed:', removeError);
+    }
+  }
 }
 
 export async function getCaptureById(

@@ -21,7 +21,7 @@ export const MAX_ANALYZE_IMAGE_BASE64_LENGTH =
 export const ANALYZE_MAX_WIDTH = 2048;
 
 /** JPEG quality for client-side canvas resize (0–1 scale, used with canvas.toBlob) */
-export const ANALYZE_JPEG_QUALITY = 0.85;
+export const ANALYZE_JPEG_QUALITY = 0.92;
 
 /** JPEG quality for server-side sharp resize (1–100 scale, used with sharp) */
-export const ANALYZE_JPEG_QUALITY_SHARP = 85;
+export const ANALYZE_JPEG_QUALITY_SHARP = 92;

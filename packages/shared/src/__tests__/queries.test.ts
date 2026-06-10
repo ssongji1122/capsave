@@ -86,13 +86,42 @@ describe('getCapturesByCategory', () => {
 });
 
 describe('searchCaptures', () => {
-  it('filters out soft-deleted rows (deleted_at IS NULL)', async () => {
-    const { client, calls } = makeMockClient({ count: 0 });
-    await searchCaptures(client as never, 'test').catch(() => {});
-    const isCall = calls.find((c) => c.startsWith('is('));
-    expect(isCall, 'searchCaptures must call .is("deleted_at", null)').toBeTruthy();
-    expect(isCall).toContain('"deleted_at"');
-    expect(isCall).toContain('null');
+  function makeRpcClient(resolveWith: { data: unknown[] | null; error: unknown }) {
+    const rpc = vi.fn().mockResolvedValue(resolveWith);
+    return { client: { rpc } as unknown, rpc };
+  }
+
+  it('returns an empty result without calling the RPC when query is whitespace', async () => {
+    const { client, rpc } = makeRpcClient({ data: [], error: null });
+    const result = await searchCaptures(client as never, '   ');
+    expect(rpc).not.toHaveBeenCalled();
+    expect(result).toEqual({ items: [], total: 0 });
+  });
+
+  it('invokes the search_user_captures RPC with trimmed query and default paging', async () => {
+    const { client, rpc } = makeRpcClient({ data: [], error: null });
+    await searchCaptures(client as never, '  강남  ');
+    expect(rpc).toHaveBeenCalledWith('search_user_captures', {
+      search_query: '강남',
+      search_limit: 20,
+      search_offset: 0,
+    });
+  });
+
+  it('passes custom limit and offset through to the RPC', async () => {
+    const { client, rpc } = makeRpcClient({ data: [], error: null });
+    await searchCaptures(client as never, 'a', { limit: 5, offset: 10 });
+    expect(rpc).toHaveBeenCalledWith('search_user_captures', {
+      search_query: 'a',
+      search_limit: 5,
+      search_offset: 10,
+    });
+  });
+
+  it('throws when the RPC returns an error', async () => {
+    const err = new Error('rpc failed');
+    const { client } = makeRpcClient({ data: null, error: err });
+    await expect(searchCaptures(client as never, 'x')).rejects.toThrow('rpc failed');
   });
 });
 
@@ -107,9 +136,22 @@ describe('getCaptureById', () => {
   });
 });
 
+function makeStorageClient(
+  builderResult: { data?: unknown; count?: number; error?: unknown },
+  removeResult: { data?: unknown; error?: unknown } = { data: null, error: null }
+) {
+  const { builder, calls } = makeMockBuilder(builderResult);
+  const remove = vi.fn().mockResolvedValue(removeResult);
+  const client = {
+    from: () => builder,
+    storage: { from: vi.fn(() => ({ remove })) },
+  };
+  return { client, calls, remove };
+}
+
 describe('deleteCapture', () => {
   it('soft-deletes by setting deleted_at instead of deleting the row', async () => {
-    const { client, calls } = makeMockClient();
+    const { client, calls } = makeStorageClient({ data: [{ image_url: null }] });
     await deleteCapture(client as never, 123);
 
     const updateCall = calls.find((c) => c.startsWith('update('));
@@ -120,6 +162,53 @@ describe('deleteCapture', () => {
     const eqCall = calls.find((c) => c.startsWith('eq('));
     expect(eqCall).toContain('"id"');
     expect(eqCall).toContain('123');
+  });
+
+  it('removes the storage object for a storage-path image_url', async () => {
+    const { client, remove } = makeStorageClient({
+      data: [{ image_url: 'user-1/1700000000_abc.jpg' }],
+    });
+    await deleteCapture(client as never, 123);
+    expect(remove).toHaveBeenCalledWith(['user-1/1700000000_abc.jpg']);
+  });
+
+  it('extracts the storage path from a full Supabase URL before removal', async () => {
+    const { client, remove } = makeStorageClient({
+      data: [{
+        image_url:
+          'https://example.supabase.co/storage/v1/object/public/captures/user-1/img.jpg',
+      }],
+    });
+    await deleteCapture(client as never, 123);
+    expect(remove).toHaveBeenCalledWith(['user-1/img.jpg']);
+  });
+
+  it('skips storage removal for data: URLs and missing image_url', async () => {
+    const dataUrl = makeStorageClient({ data: [{ image_url: 'data:image/jpeg;base64,abc' }] });
+    await deleteCapture(dataUrl.client as never, 1);
+    expect(dataUrl.remove).not.toHaveBeenCalled();
+
+    const noUrl = makeStorageClient({ data: [{ image_url: null }] });
+    await deleteCapture(noUrl.client as never, 2);
+    expect(noUrl.remove).not.toHaveBeenCalled();
+  });
+
+  it('skips storage removal for non-storage external URLs and local file URIs', async () => {
+    const external = makeStorageClient({ data: [{ image_url: 'https://cdn.example.com/x.jpg' }] });
+    await deleteCapture(external.client as never, 3);
+    expect(external.remove).not.toHaveBeenCalled();
+
+    const localFile = makeStorageClient({ data: [{ image_url: 'file:///var/mobile/img.jpg' }] });
+    await deleteCapture(localFile.client as never, 4);
+    expect(localFile.remove).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when storage removal fails (best-effort cleanup)', async () => {
+    const { client } = makeStorageClient(
+      { data: [{ image_url: 'user-1/img.jpg' }] },
+      { data: null, error: new Error('rls denied') }
+    );
+    await expect(deleteCapture(client as never, 5)).resolves.toBeUndefined();
   });
 });
 
@@ -196,8 +285,8 @@ describe('reclassifyCapture', () => {
 });
 
 describe('MAX_FREE_CAPTURES', () => {
-  it('is 10', () => {
-    expect(MAX_FREE_CAPTURES).toBe(10);
+  it('is 100', () => {
+    expect(MAX_FREE_CAPTURES).toBe(100);
   });
 });
 

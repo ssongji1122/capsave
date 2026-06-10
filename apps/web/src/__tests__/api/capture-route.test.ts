@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import { MAX_FREE_CAPTURES } from '@scrave/shared';
 import { UPLOAD_EMPTY_ERROR } from '@/lib/upload-validation';
 
 const mocks = vi.hoisted(() => {
@@ -94,7 +95,7 @@ describe('POST /api/capture', () => {
   });
 
   it('rejects users at the free capture limit before paid analysis and storage upload', async () => {
-    mocks.countUserCaptures.mockResolvedValue(10);
+    mocks.countUserCaptures.mockResolvedValue(MAX_FREE_CAPTURES);
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 

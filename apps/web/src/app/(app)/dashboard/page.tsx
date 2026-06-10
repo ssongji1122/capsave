@@ -8,7 +8,9 @@ import { SearchBar } from '@/components/captures/SearchBar';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
-import { CaptureItem, AnalysisResult, CaptureCategory, PlaceInfo } from '@scrave/shared';
+import { CaptureItem, AnalysisResult, CaptureCategory, PlaceInfo, extractStoragePath } from '@scrave/shared';
+import { findUnusedImagePaths } from '@/lib/batch-save-mapper';
+import { createClient } from '@/lib/supabase/browser';
 import { Camera } from 'lucide-react';
 
 const CONFIDENCE_THRESHOLD = 0.5;
@@ -19,6 +21,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
@@ -51,6 +54,21 @@ export default function HomePage() {
       if (!imageUrl) throw new Error('BATCH_IMAGE_URL_MISSING');
       await saveCapture(results[i], imageUrl);
     }
+
+    // Best-effort cleanup of images that AI merged away (no result references them).
+    // Guests upload base64 data URLs, not storage paths — skip cleanup in that case.
+    if (isAuthenticated) {
+      const orphans = findUnusedImagePaths(results, imageUrls)
+        .map((url) => extractStoragePath(url))
+        .filter((path) => path && !path.startsWith('data:'));
+      if (orphans.length > 0) {
+        const supabase = createClient();
+        await supabase.storage.from('captures').remove(orphans).catch((err: unknown) => {
+          console.warn('[batch-save] orphan cleanup failed:', err);
+        });
+      }
+    }
+
     setBatchFiles(null);
   };
 
@@ -71,6 +89,27 @@ export default function HomePage() {
       prev ? prev.map((capture) => (capture.id === updated.id ? updated : capture)) : prev
     ));
   }, [reclassifyCapture]);
+
+  const handleCleanupOldest = useCallback(async () => {
+    const count = Math.min(5, captures.length);
+    if (count === 0 || isCleaningUp) return;
+    const oldest = [...captures]
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .slice(0, count);
+    const confirmed = window.confirm(
+      `가장 오래된 캡처 ${count}개를 삭제합니다. 되돌릴 수 없습니다.\n\n` +
+        oldest.map((c, i) => `${i + 1}. ${c.title}`).join('\n')
+    );
+    if (!confirmed) return;
+    setIsCleaningUp(true);
+    try {
+      for (const c of oldest) {
+        await deleteCapture(c.id);
+      }
+    } finally {
+      setIsCleaningUp(false);
+    }
+  }, [captures, deleteCapture, isCleaningUp]);
 
   const isSearching = displayCaptures !== null;
   const shown = displayCaptures ?? captures;
@@ -134,7 +173,18 @@ export default function HomePage() {
           />
         </div>
         {isFreeLimitReached && (
-          <p className="text-xs text-error mt-1">한도에 도달했습니다. 더 저장하려면 플랜을 업그레이드하세요.</p>
+          <p className="text-xs text-error mt-1">한도에 도달했습니다. 오래된 캡처를 정리하거나 플랜을 업그레이드하세요.</p>
+        )}
+        {!isSearching && freeRemaining > 0 && freeRemaining <= 20 && captures.length >= 5 && (
+          <button
+            onClick={handleCleanupOldest}
+            disabled={isCleaningUp}
+            className="mt-2 w-full text-left px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary hover:border-primary/40 hover:bg-surface-elevated transition-colors disabled:opacity-50"
+          >
+            {isCleaningUp
+              ? '오래된 캡처 정리 중…'
+              : `${freeRemaining}개 남았습니다. 가장 오래된 ${Math.min(5, captures.length)}개를 정리하기 →`}
+          </button>
         )}
       </div>
 

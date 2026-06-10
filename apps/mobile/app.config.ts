@@ -36,6 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         'tmap',
       ],
     },
+    // 체크인된 ios/ 네이티브 프로젝트(pbxproj)와 일치해야 한다.
+    // com.scrave.app 전환은 Apple Developer 등록 + prebuild 재생성과 함께 진행할 것.
     bundleIdentifier: 'com.anonymous.scrave',
   },
   android: {
@@ -45,7 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
-    permissions: ['android.permission.RECORD_AUDIO'],
+    permissions: [],
   },
   web: {
     bundler: 'metro',

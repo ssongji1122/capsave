@@ -10,6 +10,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CapturesProvider } from '@/contexts/CapturesContext';
+import { UserPreferencesProvider } from '@/contexts/UserPreferencesContext';
 
 export {
   ErrorBoundary,
@@ -87,8 +88,9 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : ScraveDarkTheme}>
-      <CapturesProvider>
-        <Stack>
+      <UserPreferencesProvider>
+        <CapturesProvider>
+          <Stack>
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -99,8 +101,9 @@ function RootLayoutNav() {
               animation: 'slide_from_bottom',
             }}
           />
-        </Stack>
-      </CapturesProvider>
+          </Stack>
+        </CapturesProvider>
+      </UserPreferencesProvider>
     </ThemeProvider>
   );
 }
