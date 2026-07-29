@@ -26,6 +26,7 @@ import type {
 } from '@/lib/public-guides';
 import {
   getGuideMapLinks,
+  getGuidePlaceImageReference,
   getGuideReferencePreviewImagePath,
 } from '@/lib/public-guides';
 import { ShareGuideButton } from './ShareGuideButton';
@@ -417,8 +418,8 @@ export function PublicGuideExperience({
 
             <div className={styles.placeList}>
               {guide.places.map((place) => {
-                const CategoryIcon = getCategoryIcon(place.category);
                 const mapLink = getGuideMapLinks(place)[0];
+                const imageReference = getGuidePlaceImageReference(place);
                 const isActive = activePlaceId === place.id;
 
                 return (
@@ -430,17 +431,33 @@ export function PublicGuideExperience({
                     }`}
                     onMouseEnter={() => setActivePlaceId(place.id)}
                   >
-                    <div className={styles.placeVisual} data-category={place.category}>
+                    <a
+                      className={styles.placeVisual}
+                      data-category={place.category}
+                      href={imageReference.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${place.localName} 사진 출처: ${imageReference.publisher}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getGuideReferencePreviewImagePath(imageReference)}
+                        alt={`${place.localName} 장소 사진`}
+                        loading={place.sequence === 1 ? 'eager' : 'lazy'}
+                      />
                       <div className={styles.placeNumber}>
                         {String(place.sequence).padStart(2, '0')}
                       </div>
-                      <CategoryIcon size={34} aria-hidden="true" />
+                      <span className={styles.photoCredit}>
+                        사진 출처 · {imageReference.publisher}
+                        <ExternalLink size={12} aria-hidden="true" />
+                      </span>
                       <div className={styles.visualCoordinates}>
                         {Math.abs(place.coordinates.latitude).toFixed(3)}° S
                         <br />
                         {place.coordinates.longitude.toFixed(3)}° E
                       </div>
-                    </div>
+                    </a>
 
                     <div className={styles.placeContent}>
                       <div className={styles.placeTitleRow}>

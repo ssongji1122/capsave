@@ -17,6 +17,11 @@ test.describe('공개 여행 가이드', () => {
     await expect(
       page.getByRole('heading', { name: 'Single Fin', exact: true })
     ).toBeVisible();
+    await expect(page.locator('img[alt$="장소 사진"]')).toHaveCount(3);
+    await expect(
+      page.getByRole('img', { name: 'Pantai Padang Padang 장소 사진' })
+    ).toBeVisible();
+    await expect(page.locator('a[aria-label*="사진 출처"]')).toHaveCount(3);
     await expect(page.locator('img[alt$="미리보기"]')).toHaveCount(6);
     await expect(page.getByAltText('Single Fin Bali 절벽 바 미리보기')).toBeVisible();
     await expect(page.locator('a[href*="google.com/maps"]')).toHaveCount(3);

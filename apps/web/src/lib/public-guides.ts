@@ -57,6 +57,10 @@ export interface PublicGuide {
 
 const REFERENCE_CHECKED_AT = '2026-07-29';
 const INDONESIA_COUNTRY_CODE = 'ID';
+const VERIFIED_IMAGE_REFERENCE_KINDS: GuideReferenceKind[] = [
+  'government',
+  'official',
+];
 
 export const ULUWATU_GUIDE: PublicGuide = {
   slug: 'uluwatu-afterglow',
@@ -257,6 +261,20 @@ export function getGuideReferencePreviewImagePath(
   reference: GuideReference,
 ): string {
   return `/api/guide-preview-image?src=${encodeURIComponent(reference.preview.imageUrl)}`;
+}
+
+export function getGuidePlaceImageReference(
+  place: GuidePlace,
+): GuideReference {
+  const reference = place.references.find(({ kind }) =>
+    VERIFIED_IMAGE_REFERENCE_KINDS.includes(kind)
+  );
+
+  if (!reference) {
+    throw new Error(`Missing verified image reference for ${place.id}`);
+  }
+
+  return reference;
 }
 
 export function getGuideMapLinks(place: GuidePlace): MapLink[] {
