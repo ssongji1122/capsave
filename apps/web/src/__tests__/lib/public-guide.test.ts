@@ -3,6 +3,7 @@ import {
   ULUWATU_GUIDE,
   findPublicGuide,
   getGuideMapLinks,
+  getGuidePlaceImageReference,
   getGuideReferencePreviewImagePath,
   isGuideReferencePreviewImageUrl,
 } from '@/lib/public-guides';
@@ -64,5 +65,15 @@ describe('ULUWATU_GUIDE', () => {
     expect(getGuideReferencePreviewImagePath(reference)).toBe(
       `/api/guide-preview-image?src=${encodeURIComponent(reference.preview.imageUrl)}`
     );
+  });
+
+  it('selects a verified source image for every place card', () => {
+    for (const place of ULUWATU_GUIDE.places) {
+      const reference = getGuidePlaceImageReference(place);
+
+      expect(['government', 'official']).toContain(reference.kind);
+      expect(reference.preview.imageUrl).toMatch(/^https:\/\//);
+      expect(reference.preview.imageAlt.length).toBeGreaterThan(10);
+    }
   });
 });
