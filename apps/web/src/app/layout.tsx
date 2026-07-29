@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { SITE_ORIGIN } from '@/lib/site-config';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://scrave.app'),
+  metadataBase: new URL(SITE_ORIGIN),
   title: 'Scrave — AI 캡처 오거나이저',
   description: '스크린샷을 AI가 자동 분석·분류·정리해주는 캡처 오거나이저',
 };

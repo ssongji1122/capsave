@@ -59,7 +59,7 @@ test.describe('공개 여행 가이드', () => {
 
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      'https://scrave.app/g/uluwatu-afterglow'
+      'https://scrave.vercel.app/g/uluwatu-afterglow'
     );
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
       'content',

@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ShareGuideButton } from '@/components/guides/ShareGuideButton';
 
-const CANONICAL_URL = 'https://scrave.app/g/uluwatu-afterglow';
+const CANONICAL_URL = 'https://scrave.vercel.app/g/uluwatu-afterglow';
 
 afterEach(() => {
   cleanup();

@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PublicGuideExperience } from '@/components/guides/PublicGuideExperience';
 import { findPublicGuide, ULUWATU_GUIDE } from '@/lib/public-guides';
-
-const SITE_ORIGIN = 'https://scrave.app';
+import { SITE_ORIGIN } from '@/lib/site-config';
 
 interface GuidePageProps {
   params: Promise<{ slug: string }>;
