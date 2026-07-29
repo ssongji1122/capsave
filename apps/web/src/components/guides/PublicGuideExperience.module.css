@@ -823,7 +823,7 @@
 .evidenceCard {
   display: flex;
   min-height: 210px;
-  padding: 24px;
+  overflow: hidden;
   flex-direction: column;
   border: 1px solid var(--guide-line);
   border-radius: 18px;
@@ -842,8 +842,31 @@
   transform: translateY(-4px);
 }
 
+.evidencePreview {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid var(--guide-line);
+  background:
+    radial-gradient(circle at 24% 22%, rgba(125, 211, 252, 0.16), transparent 34%),
+    #111118;
+}
+
+.evidencePreview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 350ms ease;
+}
+
+.evidenceCard:hover .evidencePreview img {
+  transform: scale(1.035);
+}
+
 .referenceType {
   display: flex;
+  margin: 20px 22px 0;
   align-items: center;
   gap: 7px;
   color: #72cfae;
@@ -853,21 +876,34 @@
 }
 
 .evidenceCard h3 {
-  margin: 18px 0 0;
+  margin: 14px 22px 0;
   color: #d9cbb5;
   font-size: 16px;
 }
 
+.referenceLabel {
+  display: block;
+  margin: 7px 22px 0;
+  color: #f4a286;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .evidenceCard p {
-  margin: 10px 0 22px;
+  margin: 10px 22px 0;
   color: #7e7a74;
   font-size: 11px;
   line-height: 1.65;
 }
 
+.previewDescription {
+  color: #aaa49a !important;
+}
+
 .evidenceCard > div:last-child {
   display: flex;
   margin-top: auto;
+  padding: 22px;
   justify-content: space-between;
   gap: 10px;
   color: #5e5b57;
@@ -1190,7 +1226,8 @@
   .shareButton,
   .shareButtonLarge,
   .primaryAction,
-  .evidenceCard {
+  .evidenceCard,
+  .evidencePreview img {
     transition: none;
   }
 }
