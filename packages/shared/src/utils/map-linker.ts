@@ -6,6 +6,14 @@ export interface MapLink {
   webUrl: string;
 }
 
+export interface MapLinkOptions {
+  countryCode?: string | null;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  } | null;
+}
+
 export type ReviewProvider = 'naver' | 'google' | 'kakao';
 
 export interface ReviewLink {
@@ -18,7 +26,35 @@ function encodeQuery(query: string): string {
   return encodeURIComponent(query);
 }
 
-export function getMapLinks(placeName: string, address?: string | null): MapLink[] {
+const SOUTH_KOREA_COUNTRY_CODE = 'KR';
+
+export function getMapLinks(
+  placeName: string,
+  address?: string | null,
+  options: MapLinkOptions = {}
+): MapLink[] {
+  const normalizedCountryCode = options.countryCode?.trim().toUpperCase();
+  const isInternational = Boolean(
+    normalizedCountryCode && normalizedCountryCode !== SOUTH_KOREA_COUNTRY_CODE
+  );
+  const coordinateQuery = options.coordinates
+    ? `${options.coordinates.latitude},${options.coordinates.longitude}`
+    : null;
+
+  if (isInternational) {
+    const query = coordinateQuery
+      ? `${placeName} ${coordinateQuery}`
+      : address
+        ? `${placeName} ${address}`
+        : placeName;
+
+    return [{
+      provider: 'google',
+      label: 'Google Maps',
+      webUrl: `https://www.google.com/maps/search/?api=1&query=${encodeQuery(query)}`,
+    }];
+  }
+
   const query = address ? `${placeName} ${address}` : placeName;
   const encoded = encodeQuery(query);
 
