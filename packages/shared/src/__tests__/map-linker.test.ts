@@ -86,6 +86,32 @@ describe('getMapLinks', () => {
       expect(() => new URL(link.webUrl)).not.toThrow();
     }
   });
+
+  it('returns only Google Maps for an international place', () => {
+    const links = getMapLinks(
+      'Single Fin Bali',
+      'Pantai Suluban, Pecatu, Bali',
+      {
+        countryCode: 'ID',
+        coordinates: { latitude: -8.814972, longitude: 115.088896 },
+      }
+    );
+
+    expect(links).toHaveLength(1);
+    expect(links[0]?.provider).toBe('google');
+    expect(links[0]?.webUrl).toContain(encodeURIComponent('-8.814972,115.088896'));
+  });
+
+  it('keeps all Korean providers when country is South Korea', () => {
+    const links = getMapLinks('서울시청', '서울 중구', { countryCode: 'KR' });
+
+    expect(links.map((link) => link.provider)).toEqual([
+      'tmap',
+      'naver',
+      'google',
+      'kakao',
+    ]);
+  });
 });
 
 describe('getReviewLinks', () => {

@@ -17,7 +17,14 @@ export type { ColorScheme, ThemeColors } from './tokens/colors';
 // Utilities
 export { isUrlSafe, sanitizeUrl, MOBILE_DEEP_LINK_SCHEMES } from './utils/url-validator';
 export { getMapLinks, getReviewLinks, getMobileMapLinks } from './utils/map-linker';
-export type { MapProvider, MapLink, ReviewProvider, ReviewLink, MobileMapLink } from './utils/map-linker';
+export type {
+  MapProvider,
+  MapLink,
+  MapLinkOptions,
+  ReviewProvider,
+  ReviewLink,
+  MobileMapLink,
+} from './utils/map-linker';
 export { safeJsonParse } from './utils/json';
 export { extractBearerToken } from './utils/auth';
 export { getDayBoundaries } from './utils/date';

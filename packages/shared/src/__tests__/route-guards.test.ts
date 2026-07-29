@@ -20,6 +20,14 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/api/cron/dau')).toBe(true);
   });
 
+  it('returns true for public guide routes', () => {
+    expect(isPublicRoute('/g/uluwatu-afterglow')).toBe(true);
+  });
+
+  it('does not treat unrelated routes beginning with g as public guides', () => {
+    expect(isPublicRoute('/garage')).toBe(false);
+  });
+
   it('returns false for /dashboard', () => {
     expect(isPublicRoute('/dashboard')).toBe(false);
   });
@@ -94,5 +102,9 @@ describe('shouldRedirectToLogin', () => {
 
   it('returns false when unauthenticated user visits /api/*', () => {
     expect(shouldRedirectToLogin('/api/analyze', false)).toBe(false);
+  });
+
+  it('returns false when unauthenticated user visits a public guide', () => {
+    expect(shouldRedirectToLogin('/g/uluwatu-afterglow', false)).toBe(false);
   });
 });
