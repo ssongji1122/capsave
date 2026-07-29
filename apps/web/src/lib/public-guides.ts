@@ -10,6 +10,14 @@ export interface GuideReference {
   url: string;
   checkedAt: string;
   note: string;
+  preview: GuideReferencePreview;
+}
+
+export interface GuideReferencePreview {
+  title: string;
+  description: string;
+  imageUrl: string;
+  imageAlt: string;
 }
 
 export interface GuideCoordinates {
@@ -91,6 +99,14 @@ export const ULUWATU_GUIDE: PublicGuide = {
           url: 'https://www.indonesia.travel/gb/en/destination/bali-nusa-tenggara/bali/pantai-padang-padang',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '지형, 계단 접근, 해변과 서핑 환경 확인',
+          preview: {
+            title: 'Pantai Padang-Padang',
+            description:
+              'Indonesia Travel의 Padang Padang Beach 소개 페이지 미리보기입니다.',
+            imageUrl:
+              'https://www.indonesia.travel/contentassets/0e96a63832d241d2a1d7e1ef7e185802/pantai-padang-padang.jpg',
+            imageAlt: 'Padang Padang Beach 절벽과 바다 미리보기',
+          },
         },
         {
           kind: 'editorial',
@@ -99,6 +115,14 @@ export const ULUWATU_GUIDE: PublicGuide = {
           url: 'https://www.stephmylifetravel.com/uluwatu-travel-guide/',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '지역 간 이동과 체류 구역을 판단하는 참고 자료',
+          preview: {
+            title: 'Uluwatu Travel Guide 2025',
+            description:
+              'Bukit Peninsula의 해변, 선셋 포인트, 체류 구역을 정리한 지역 가이드입니다.',
+            imageUrl:
+              'https://www.stephmylifetravel.com/wp-content/uploads/2025/05/Facetune_17-07-2018-21-15-42-1024x838.jpg',
+            imageAlt: 'Uluwatu 해안 여행 가이드 미리보기',
+          },
         },
       ],
     },
@@ -127,6 +151,14 @@ export const ULUWATU_GUIDE: PublicGuide = {
           url: 'https://disparda.baliprov.go.id/en/uluwatu-clip/2020/04/',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '위치, 절벽 전망, 케착 공연 정보 확인',
+          preview: {
+            title: 'Uluwatu Temple',
+            description:
+              'Bali Government Tourism Office의 Uluwatu Temple 안내 페이지입니다.',
+            imageUrl:
+              'https://disparda.baliprov.go.id/wp-content/uploads/2020/04/uluwatu2.jpg',
+            imageAlt: 'Uluwatu Temple 절벽 전망 미리보기',
+          },
         },
         {
           kind: 'video',
@@ -135,6 +167,13 @@ export const ULUWATU_GUIDE: PublicGuide = {
           url: 'https://www.youtube.com/watch?v=1dtDz7cO2I0',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '2025 게시 영상의 제목, 설명, 게시 시점 확인',
+          preview: {
+            title: 'The BEST of ULUWATU 2025',
+            description:
+              '해변, 음식, 현지 팁을 영상으로 확인하는 Uluwatu 여행 참고 자료입니다.',
+            imageUrl: 'https://i.ytimg.com/vi/1dtDz7cO2I0/maxresdefault.jpg',
+            imageAlt: 'Uluwatu 2025 여행 영상 미리보기',
+          },
         },
       ],
     },
@@ -167,6 +206,14 @@ export const ULUWATU_GUIDE: PublicGuide = {
           url: 'https://www.singlefinbali.com/contact/',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '주소, 연락처, 요일별 영업시간 확인',
+          preview: {
+            title: 'Single Fin Contact',
+            description:
+              'Single Fin Bali의 주소, 연락처, 예약 경로를 확인하는 공식 페이지입니다.',
+            imageUrl:
+              'https://www.singlefinbali.com/wp-content/uploads/2024/06/contact-hero.webp',
+            imageAlt: 'Single Fin Bali 절벽 바 미리보기',
+          },
         },
         {
           kind: 'video',
@@ -175,6 +222,13 @@ export const ULUWATU_GUIDE: PublicGuide = {
           url: 'https://www.youtube.com/watch?v=cHAfb0SmKaA',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '2026 게시 영상의 제목, 설명, 게시 시점 확인',
+          preview: {
+            title: 'How is ULUWATU Bali in 2026?',
+            description:
+              'Uluwatu의 숙소, 해변, 식음료 비용을 최근 여행 영상으로 확인합니다.',
+            imageUrl: 'https://i.ytimg.com/vi/cHAfb0SmKaA/maxresdefault.jpg',
+            imageAlt: 'Uluwatu Bali 2026 여행 영상 미리보기',
+          },
         },
       ],
     },
@@ -185,8 +239,24 @@ const PUBLISHED_GUIDES = new Map<string, PublicGuide>([
   [ULUWATU_GUIDE.slug, ULUWATU_GUIDE],
 ]);
 
+const GUIDE_REFERENCE_PREVIEW_IMAGE_URLS = new Set(
+  ULUWATU_GUIDE.places.flatMap((place) =>
+    place.references.map((reference) => reference.preview.imageUrl)
+  )
+);
+
 export function findPublicGuide(slug: string): PublicGuide | null {
   return PUBLISHED_GUIDES.get(slug) ?? null;
+}
+
+export function isGuideReferencePreviewImageUrl(url: string): boolean {
+  return GUIDE_REFERENCE_PREVIEW_IMAGE_URLS.has(url);
+}
+
+export function getGuideReferencePreviewImagePath(
+  reference: GuideReference,
+): string {
+  return `/api/guide-preview-image?src=${encodeURIComponent(reference.preview.imageUrl)}`;
 }
 
 export function getGuideMapLinks(place: GuidePlace): MapLink[] {

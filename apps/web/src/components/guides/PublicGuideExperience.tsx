@@ -24,7 +24,10 @@ import type {
   GuideReferenceKind,
   PublicGuide,
 } from '@/lib/public-guides';
-import { getGuideMapLinks } from '@/lib/public-guides';
+import {
+  getGuideMapLinks,
+  getGuideReferencePreviewImagePath,
+} from '@/lib/public-guides';
 import { ShareGuideButton } from './ShareGuideButton';
 import styles from './PublicGuideExperience.module.css';
 
@@ -537,12 +540,26 @@ export function PublicGuideExperience({
                     rel="noreferrer"
                     className={styles.evidenceCard}
                   >
+                    <div className={styles.evidencePreview}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getGuideReferencePreviewImagePath(reference)}
+                        alt={reference.preview.imageAlt}
+                        loading="lazy"
+                      />
+                    </div>
                     <div className={styles.referenceType}>
                       <ReferenceIcon size={17} aria-hidden="true" />
                       {REFERENCE_LABELS[reference.kind]}
                     </div>
-                    <h3>{reference.label}</h3>
+                    <h3>{reference.preview.title}</h3>
+                    <strong className={styles.referenceLabel}>
+                      {reference.label}
+                    </strong>
                     <p>{reference.note}</p>
+                    <p className={styles.previewDescription}>
+                      {reference.preview.description}
+                    </p>
                     <div>
                       <span>{reference.publisher}</span>
                       <span>

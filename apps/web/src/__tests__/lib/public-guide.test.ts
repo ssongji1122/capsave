@@ -3,6 +3,8 @@ import {
   ULUWATU_GUIDE,
   findPublicGuide,
   getGuideMapLinks,
+  getGuideReferencePreviewImagePath,
+  isGuideReferencePreviewImageUrl,
 } from '@/lib/public-guides';
 
 describe('ULUWATU_GUIDE', () => {
@@ -28,6 +30,9 @@ describe('ULUWATU_GUIDE', () => {
       for (const reference of place.references) {
         expect(reference.url).toMatch(/^https:\/\//);
         expect(reference.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(reference.preview.imageUrl).toMatch(/^https:\/\//);
+        expect(reference.preview.imageAlt.length).toBeGreaterThan(10);
+        expect(reference.preview.title.length).toBeGreaterThan(5);
       }
     }
   });
@@ -44,5 +49,20 @@ describe('ULUWATU_GUIDE', () => {
       expect(links[0]?.provider).toBe('google');
       expect(links[0]?.webUrl).toContain('google.com/maps');
     }
+  });
+
+  it('builds allowlisted preview image proxy paths', () => {
+    const reference = ULUWATU_GUIDE.places[0]?.references[0];
+
+    expect(reference).toBeDefined();
+    if (!reference) {
+      throw new Error('Missing guide reference fixture');
+    }
+
+    expect(isGuideReferencePreviewImageUrl(reference.preview.imageUrl)).toBe(true);
+    expect(isGuideReferencePreviewImageUrl('https://example.com/image.jpg')).toBe(false);
+    expect(getGuideReferencePreviewImagePath(reference)).toBe(
+      `/api/guide-preview-image?src=${encodeURIComponent(reference.preview.imageUrl)}`
+    );
   });
 });

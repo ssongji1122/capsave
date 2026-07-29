@@ -14,7 +14,11 @@ test.describe('공개 여행 가이드', () => {
     ).toBeVisible();
     await expect(page.getByText('3곳', { exact: true })).toBeVisible();
     await expect(page.getByText('6개', { exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Single Fin' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Single Fin', exact: true })
+    ).toBeVisible();
+    await expect(page.locator('img[alt$="미리보기"]')).toHaveCount(6);
+    await expect(page.getByAltText('Single Fin Bali 절벽 바 미리보기')).toBeVisible();
     await expect(page.locator('a[href*="google.com/maps"]')).toHaveCount(3);
     await expect(page.locator('a[href*="map.kakao.com"]')).toHaveCount(0);
     await expect(page.locator('a[href*="map.naver.com"]')).toHaveCount(0);
