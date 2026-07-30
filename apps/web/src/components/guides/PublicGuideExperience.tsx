@@ -443,7 +443,7 @@ export function PublicGuideExperience({
                       <img
                         src={getGuideReferencePreviewImagePath(imageReference)}
                         alt={`${place.localName} 장소 사진`}
-                        loading={place.sequence === 1 ? 'eager' : 'lazy'}
+                        loading="eager"
                       />
                       <div className={styles.placeNumber}>
                         {String(place.sequence).padStart(2, '0')}

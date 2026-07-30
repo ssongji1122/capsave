@@ -18,6 +18,11 @@ test.describe('공개 여행 가이드', () => {
       page.getByRole('heading', { name: 'Single Fin', exact: true })
     ).toBeVisible();
     await expect(page.locator('img[alt$="장소 사진"]')).toHaveCount(3);
+    expect(
+      await page
+        .locator('img[alt$="장소 사진"]')
+        .evaluateAll((images) => images.map((image) => image.getAttribute('loading')))
+    ).toEqual(['eager', 'eager', 'eager']);
     await expect(
       page.getByRole('img', { name: 'Pantai Padang Padang 장소 사진' })
     ).toBeVisible();
