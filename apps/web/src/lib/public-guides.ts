@@ -626,8 +626,11 @@ export function findPublicGuide(slug: string): PublicGuide | null {
   return PUBLISHED_GUIDES.get(slug) ?? null;
 }
 
+// Video references attached to user guides carry YouTube thumbnails.
+const YOUTUBE_THUMBNAIL_PATTERN = /^https:\/\/i\.ytimg\.com\/vi\/[A-Za-z0-9_-]{1,20}\/[a-z0-9]{1,20}\.jpg$/;
+
 export function isGuideReferencePreviewImageUrl(url: string): boolean {
-  return GUIDE_REFERENCE_PREVIEW_IMAGE_URLS.has(url);
+  return GUIDE_REFERENCE_PREVIEW_IMAGE_URLS.has(url) || YOUTUBE_THUMBNAIL_PATTERN.test(url);
 }
 
 export function getGuideReferencePreviewImagePath(

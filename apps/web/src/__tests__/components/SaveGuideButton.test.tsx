@@ -55,6 +55,22 @@ describe('SaveGuideButton', () => {
     );
   });
 
+  it('passes a cover image for a draft guide', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    saveGuideToArchive.mockResolvedValue({ status: 'saved', captureId: 78 });
+
+    render(<SaveGuideButton guide={ULUWATU_CAPTURE_GUIDE} imageUrl="captures/user-1/5.jpg" />);
+    fireEvent.click(await screen.findByRole('button', { name: /내 지도에 저장/ }));
+
+    await screen.findByRole('link', { name: /지도에서 보기/ });
+    expect(saveGuideToArchive).toHaveBeenCalledWith(
+      expect.anything(),
+      ULUWATU_CAPTURE_GUIDE,
+      'user-1',
+      { imageUrl: 'captures/user-1/5.jpg' }
+    );
+  });
+
   it('saves on its own after coming back from login', async () => {
     window.history.replaceState({}, '', '/g/uluwatu-cliff-captures?save=1');
     getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });

@@ -39,7 +39,10 @@ import styles from './PublicGuideExperience.module.css';
 
 interface PublicGuideExperienceProps {
   guide: PublicGuide;
-  canonicalUrl: string;
+  canonicalUrl?: string;
+  // 'draft' previews a guide made from the user's captures before it has a page.
+  mode?: 'public' | 'draft';
+  saveImageUrl?: string;
 }
 
 type AtlasMode = 'globe' | 'local';
@@ -292,8 +295,12 @@ function LocalMapView({
 export function PublicGuideExperience({
   guide,
   canonicalUrl,
+  mode = 'public',
+  saveImageUrl,
 }: PublicGuideExperienceProps) {
-  const [atlasMode, setAtlasMode] = useState<AtlasMode>('globe');
+  const shareUrl = mode === 'public' ? canonicalUrl : undefined;
+  // The globe art is drawn for Seoul → Bali, so drafts from any country use the local map.
+  const [atlasMode, setAtlasMode] = useState<AtlasMode>(mode === 'draft' ? 'local' : 'globe');
   const [activePlaceId, setActivePlaceId] = useState(guide.places[0]?.id ?? '');
   const referenceCount = guide.places.reduce(
     (total, place) => total + place.references.length,
@@ -316,17 +323,23 @@ export function PublicGuideExperience({
           <span className={styles.brandMark}>S</span>
           <span>
             <strong>Scrave</strong>
-            <small>PUBLIC ARCHIVE</small>
+            <small>{mode === 'draft' ? 'MY DRAFT' : 'PUBLIC ARCHIVE'}</small>
           </span>
         </a>
         <div className={styles.headerMeta}>
-          <span className={styles.publicBadge}>PUBLIC</span>
-          <ShareGuideButton
-            title={guide.title}
-            description={guide.description}
-            canonicalUrl={canonicalUrl}
-            className={styles.shareButton}
-          />
+          {mode === 'draft' ? (
+            <span className={styles.draftBadge}>AI 초안</span>
+          ) : (
+            <span className={styles.publicBadge}>PUBLIC</span>
+          )}
+          {shareUrl && (
+            <ShareGuideButton
+              title={guide.title}
+              description={guide.description}
+              canonicalUrl={shareUrl}
+              className={styles.shareButton}
+            />
+          )}
         </div>
       </header>
 
@@ -355,6 +368,7 @@ export function PublicGuideExperience({
             <div className={styles.heroActions}>
               <SaveGuideButton
                 guide={guide}
+                imageUrl={saveImageUrl}
                 className={styles.saveButton}
                 statusClassName={styles.saveStatus}
               />
@@ -371,24 +385,26 @@ export function PublicGuideExperience({
                 <p>TRAVEL ATLAS</p>
                 <span>{guide.location}</span>
               </div>
-              <div className={styles.atlasToggle} aria-label="지도 보기 방식">
-                <button
-                  type="button"
-                  aria-pressed={atlasMode === 'globe'}
-                  onClick={() => setAtlasMode('globe')}
-                >
-                  <Globe2 size={15} aria-hidden="true" />
-                  지구본
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={atlasMode === 'local'}
-                  onClick={() => setAtlasMode('local')}
-                >
-                  <MapIcon size={15} aria-hidden="true" />
-                  현지 지도
-                </button>
-              </div>
+              {mode === 'public' && (
+                <div className={styles.atlasToggle} aria-label="지도 보기 방식">
+                  <button
+                    type="button"
+                    aria-pressed={atlasMode === 'globe'}
+                    onClick={() => setAtlasMode('globe')}
+                  >
+                    <Globe2 size={15} aria-hidden="true" />
+                    지구본
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={atlasMode === 'local'}
+                    onClick={() => setAtlasMode('local')}
+                  >
+                    <MapIcon size={15} aria-hidden="true" />
+                    현지 지도
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className={styles.atlasCanvas}>
@@ -567,7 +583,7 @@ export function PublicGuideExperience({
                             className={styles.primaryAction}
                           >
                             <Navigation size={16} aria-hidden="true" />
-                            Google 지도에서 보기
+                            {mapLink.provider === 'google' ? 'Google 지도' : mapLink.label}에서 보기
                             <ArrowUpRight size={15} aria-hidden="true" />
                           </a>
                         )}
@@ -647,22 +663,24 @@ export function PublicGuideExperience({
           </div>
         </section>
 
-        <section className={styles.shareSection}>
-          <div>
-            <p className={styles.eyebrow}>PASS IT ON</p>
-            <h2>같이 갈 사람에게 이 지도 그대로 보내세요</h2>
-            <p>
-              상대방은 가입하지 않아도 장소 {guide.places.length}곳과 출처,
-              Google 지도 링크를 모두 볼 수 있습니다.
-            </p>
-          </div>
-          <ShareGuideButton
-            title={guide.title}
-            description={guide.description}
-            canonicalUrl={canonicalUrl}
-            className={styles.shareButtonLarge}
-          />
-        </section>
+        {shareUrl && (
+          <section className={styles.shareSection}>
+            <div>
+              <p className={styles.eyebrow}>PASS IT ON</p>
+              <h2>같이 갈 사람에게 이 지도 그대로 보내세요</h2>
+              <p>
+                상대방은 가입하지 않아도 장소 {guide.places.length}곳과 출처,
+                Google 지도 링크를 모두 볼 수 있습니다.
+              </p>
+            </div>
+            <ShareGuideButton
+              title={guide.title}
+              description={guide.description}
+              canonicalUrl={shareUrl}
+              className={styles.shareButtonLarge}
+            />
+          </section>
+        )}
       </main>
 
       <footer className={styles.footer}>
