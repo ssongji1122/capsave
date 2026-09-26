@@ -14,6 +14,8 @@ import { createClient } from '@/lib/supabase/browser';
 
 interface SaveGuideButtonProps {
   guide: PublicGuide;
+  // Cover image for a draft that has no share image yet.
+  imageUrl?: string;
   className?: string;
   statusClassName?: string;
 }
@@ -46,6 +48,7 @@ function consumeSaveQuery(): boolean {
 
 export function SaveGuideButton({
   guide,
+  imageUrl,
   className,
   statusClassName,
 }: SaveGuideButtonProps) {
@@ -57,7 +60,9 @@ export function SaveGuideButton({
     async (id: string) => {
       setState({ status: 'saving' });
       try {
-        const result = await saveGuideToArchive(client, guide, id);
+        const result = imageUrl
+          ? await saveGuideToArchive(client, guide, id, { imageUrl })
+          : await saveGuideToArchive(client, guide, id);
         setState(
           result.status === 'limit'
             ? { status: 'limit' }
@@ -68,7 +73,7 @@ export function SaveGuideButton({
         setState({ status: 'error' });
       }
     },
-    [client, guide]
+    [client, guide, imageUrl]
   );
 
   useEffect(() => {

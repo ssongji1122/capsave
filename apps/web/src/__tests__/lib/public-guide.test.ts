@@ -89,6 +89,27 @@ describe('ULUWATU_GUIDE', () => {
     }
   });
 
+  it('uses the guide country code for map links', () => {
+    const place = ULUWATU_GUIDE.places[0]!;
+    const koreanLinks = getGuideMapLinks(place, 'KR');
+    expect(koreanLinks.map(({ provider }) => provider)).toEqual([
+      'tmap',
+      'naver',
+      'google',
+      'kakao',
+    ]);
+    expect(getGuideMapLinks(place, 'ID')).toEqual(getGuideMapLinks(place));
+  });
+
+  it('allows YouTube thumbnails but no other outside images', () => {
+    expect(isGuideReferencePreviewImageUrl('https://i.ytimg.com/vi/abc_DEF-1/hqdefault.jpg')).toBe(true);
+    expect(isGuideReferencePreviewImageUrl('http://i.ytimg.com/vi/abc/hqdefault.jpg')).toBe(false);
+    expect(isGuideReferencePreviewImageUrl('https://i.ytimg.com.evil.test/vi/abc/hqdefault.jpg')).toBe(false);
+    expect(isGuideReferencePreviewImageUrl('https://user@i.ytimg.com/vi/abc/hqdefault.jpg')).toBe(false);
+    expect(isGuideReferencePreviewImageUrl('https://i.ytimg.com/../etc/passwd')).toBe(false);
+    expect(isGuideReferencePreviewImageUrl('https://example.com/a.jpg')).toBe(false);
+  });
+
   it('builds allowlisted preview image proxy paths', () => {
     const reference = ULUWATU_GUIDE.places[0]?.references[0];
 

@@ -4,7 +4,7 @@ import { buildLoginRedirectPath, buildRootAuthCallbackPath } from '@/lib/auth-re
 import { isRealAuthenticatedUser } from '@/lib/auth-user';
 import { E2E_AUTH_BYPASS_HEADER, shouldBypassAuthForE2E } from '@/lib/e2e-auth-bypass';
 
-const PROTECTED = ['/dashboard', '/places', '/texts', '/map', '/settings'] as const;
+const PROTECTED = ['/dashboard', '/places', '/texts', '/map', '/settings', '/guides'] as const;
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;

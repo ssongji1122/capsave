@@ -1,6 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const GUEST_RATE_LIMIT_MAX_REQUESTS = 5;
+// Guide drafts per signed-in user per UTC day (decision D5, approved 2026-09-26).
+export const GUIDE_DRAFT_DAILY_LIMIT = 5;
 
 let _supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
@@ -50,17 +52,23 @@ export function buildGuestRateLimitKey(ip: string, now: Date = new Date()): stri
   return `${ip}:${today}`;
 }
 
-export async function consumeGuestRateLimitWithClient(
+// Guide drafts reuse the atomic counter from migration 011; the RPC takes any text key.
+export function buildGuideDraftLimitKey(userId: string, now: Date = new Date()): string {
+  return `guide-draft:user:${userId}:${getUtcDay(now)}`;
+}
+
+async function consumeDailyLimitWithClient(
   client: GuestRateLimitRpcClient,
-  ip: string,
-  now: Date = new Date(),
-  cost = 1
+  key: string,
+  maxRequests: number,
+  now: Date,
+  cost: number
 ): Promise<RateLimitResult> {
   const fallbackResetAt = getResetAt(now);
   const { data, error } = await client
     .rpc('consume_guest_rate_limit', {
-      p_ip_key: buildGuestRateLimitKey(ip, now),
-      p_max_requests: GUEST_RATE_LIMIT_MAX_REQUESTS,
+      p_ip_key: key,
+      p_max_requests: maxRequests,
       p_cost: Math.max(1, cost),
     })
     .single();
@@ -81,6 +89,39 @@ export async function consumeGuestRateLimitWithClient(
   };
 }
 
+export function consumeGuestRateLimitWithClient(
+  client: GuestRateLimitRpcClient,
+  ip: string,
+  now: Date = new Date(),
+  cost = 1
+): Promise<RateLimitResult> {
+  return consumeDailyLimitWithClient(
+    client,
+    buildGuestRateLimitKey(ip, now),
+    GUEST_RATE_LIMIT_MAX_REQUESTS,
+    now,
+    cost
+  );
+}
+
+export function consumeGuideDraftLimitWithClient(
+  client: GuestRateLimitRpcClient,
+  userId: string,
+  now: Date = new Date()
+): Promise<RateLimitResult> {
+  return consumeDailyLimitWithClient(
+    client,
+    buildGuideDraftLimitKey(userId, now),
+    GUIDE_DRAFT_DAILY_LIMIT,
+    now,
+    1
+  );
+}
+
 export function consumeGuestRateLimit(ip: string, cost = 1): Promise<RateLimitResult> {
   return consumeGuestRateLimitWithClient(getSupabase() as unknown as GuestRateLimitRpcClient, ip, new Date(), cost);
+}
+
+export function consumeGuideDraftLimit(userId: string): Promise<RateLimitResult> {
+  return consumeGuideDraftLimitWithClient(getSupabase() as unknown as GuestRateLimitRpcClient, userId);
 }
