@@ -64,6 +64,12 @@ export { extractStoragePath, getSignedImageUrl, DEFAULT_SIGNED_URL_EXPIRY } from
 export { AI_MODEL, AI_MODEL_ENDPOINT } from './ai/config';
 export { SYSTEM_PROMPT, BATCH_ANALYSIS_INSTRUCTION } from './ai/prompts';
 export { parseAnalysisResult, parseBatchAnalysisResult } from './ai/parse-result';
+export {
+  GUIDE_PROMPT_VERSION,
+  GUIDE_CAPTURE_NOTE_MAX_LENGTH,
+  buildGuidePrompt,
+} from './ai/guide-prompt';
+export type { GuidePromptPlace, GuidePromptInput } from './ai/guide-prompt';
 
 // Supabase
 export { createSupabaseClient } from './supabase/client';
