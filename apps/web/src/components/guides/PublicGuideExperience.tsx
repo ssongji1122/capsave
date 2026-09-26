@@ -33,6 +33,7 @@ import {
   getGuidePlaceImageReference,
   getGuideReferencePreviewImagePath,
 } from '@/lib/public-guides';
+import { SaveGuideButton } from './SaveGuideButton';
 import { ShareGuideButton } from './ShareGuideButton';
 import styles from './PublicGuideExperience.module.css';
 
@@ -351,10 +352,17 @@ export function PublicGuideExperience({
               </div>
             </dl>
 
-            <a href="#route" className={styles.routeLink}>
-              {formatPlaceCount(guide.places.length)} 따라보기
-              <ArrowDown size={17} aria-hidden="true" />
-            </a>
+            <div className={styles.heroActions}>
+              <SaveGuideButton
+                guide={guide}
+                className={styles.saveButton}
+                statusClassName={styles.saveStatus}
+              />
+              <a href="#route" className={styles.routeLink}>
+                {formatPlaceCount(guide.places.length)} 따라보기
+                <ArrowDown size={17} aria-hidden="true" />
+              </a>
+            </div>
           </div>
 
           <div className={styles.atlasPanel}>

@@ -190,9 +190,53 @@
   font-weight: 600;
 }
 
+.heroActions {
+  display: flex;
+  margin-top: 34px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+}
+
+.saveButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: 12px;
+  background: rgba(52, 211, 153, 0.08);
+  color: #34d399;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  border-color: rgba(52, 211, 153, 0.45);
+  transform: translateY(-2px);
+}
+
+.saveButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.saveStatus {
+  flex-basis: 100%;
+  color: #fbbf24;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
 .routeLink {
   display: inline-flex;
-  margin-top: 34px;
   align-items: center;
   gap: 10px;
   color: #e7d9c3;
