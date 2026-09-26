@@ -138,6 +138,9 @@ describe('getDraftErrorMessage', () => {
       '장소가 12곳을 넘습니다. 캡처를 줄여 다시 골라 주세요.'
     );
     expect(getDraftErrorMessage(401, {})).toBe('로그인한 뒤 가이드를 만들 수 있습니다.');
+    expect(getDraftErrorMessage(429, { error: 'daily-limit', limit: 5, remaining: 0 })).toBe(
+      '오늘 만들 수 있는 가이드 초안 5회를 모두 썼습니다. 내일 다시 시도해 주세요.'
+    );
     expect(getDraftErrorMessage(500, {})).toBe('가이드 초안을 만들지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
   });
 });

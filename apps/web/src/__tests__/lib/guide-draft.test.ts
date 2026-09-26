@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { CaptureItem, PlaceReviewResult } from '@scrave/shared';
 import {
   GUIDE_DRAFT_CURATOR,
@@ -306,6 +306,24 @@ describe('createGuideDraft', () => {
     ]);
     expect(result.unresolved).toEqual([{ name: '좌표 없음', captureId: 2 }]);
     expect(prompts).toHaveLength(1);
+  });
+
+  it('asks the limit gate only once the places are usable, and stops when it says no', async () => {
+    const callModel = vi.fn();
+    const beforeGenerate = vi.fn().mockResolvedValue(false);
+
+    const limited = await createGuideDraft(captures, { ...options, callModel, beforeGenerate });
+    expect(limited).toEqual({ status: 'limited' });
+    expect(callModel).not.toHaveBeenCalled();
+
+    beforeGenerate.mockClear();
+    const tooFew = await createGuideDraft([capture({ id: 3, places: [BEACH] })], {
+      ...options,
+      callModel,
+      beforeGenerate,
+    });
+    expect(tooFew.status).toBe('not-enough-places');
+    expect(beforeGenerate).not.toHaveBeenCalled();
   });
 
   it('retries once, then falls back to distance order', async () => {

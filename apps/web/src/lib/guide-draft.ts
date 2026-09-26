@@ -94,13 +94,16 @@ export type GuideDraftInput =
 export type GuideDraftResult =
   | { status: 'ok'; guide: PublicGuide; fallback: boolean; unresolved: UnresolvedPlace[] }
   | { status: 'not-enough-places'; unresolved: UnresolvedPlace[] }
-  | { status: 'too-many-places' };
+  | { status: 'too-many-places' }
+  | { status: 'limited' };
 
 export interface CreateGuideDraftOptions {
   nights: number;
   slug: string;
   now: Date;
   callModel: ((prompt: string) => Promise<string | null>) | null;
+  // Runs once the places are usable and before any model call; false stops the draft.
+  beforeGenerate?: () => Promise<boolean>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -392,11 +395,12 @@ export function assembleGuideDraft(
 
 export async function createGuideDraft(
   captures: CaptureItem[],
-  { nights, slug, now, callModel }: CreateGuideDraftOptions,
+  { nights, slug, now, callModel, beforeGenerate }: CreateGuideDraftOptions,
 ): Promise<GuideDraftResult> {
   const { candidates, unresolved, tooMany } = collectGuideCandidates(captures);
   if (tooMany) return { status: 'too-many-places' };
   if (candidates.length < 2) return { status: 'not-enough-places', unresolved };
+  if (beforeGenerate && !(await beforeGenerate())) return { status: 'limited' };
 
   const ids = candidates.map(({ id }) => id);
   let plan: GuidePlan | null = null;

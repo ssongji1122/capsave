@@ -143,9 +143,14 @@ export function getDraftErrorMessage(status: number, body: unknown): string {
   const data = (typeof body === 'object' && body !== null ? body : {}) as {
     error?: string;
     unresolved?: UnresolvedPlace[];
+    limit?: number;
   };
 
   if (status === 401) return '로그인한 뒤 가이드를 만들 수 있습니다.';
+  if (status === 429) {
+    const count = typeof data.limit === 'number' ? ` ${data.limit}회` : '';
+    return `오늘 만들 수 있는 가이드 초안${count}를 모두 썼습니다. 내일 다시 시도해 주세요.`;
+  }
   if (data.error === 'not-enough-places') {
     const names = (data.unresolved ?? []).map(({ name }) => name).join(', ');
     return `위치를 아는 장소가 두 곳 이상 필요합니다.${names ? ` 위치를 찾지 못한 장소: ${names}` : ''}`;

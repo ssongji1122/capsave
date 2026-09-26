@@ -378,7 +378,7 @@ JSON 하나로만 답합니다:
 
 입력 검증 규칙(순수 함수 `validateGuideDraftInput`): 캡처 ID는 양의 정수·중복 없음·2~10개, 모두 본인의 `category = 'place'` 캡처, `nights`는 0~7 정수.
 
-사용자별 하루 생성 한도: 기존 `rate-limit.ts`는 게스트 IP용이므로, 같은 원자적 RPC 패턴(migration 011)을 사용자 ID 키로 쓰는 방식을 4단계에서 검토합니다. 3단계에서는 DB 없이 쓸 수 있도록 **캡처 선택 수·장소 수 상한과 인증만** 적용하고, 한도는 결정 D5 이후 붙입니다.
+사용자별 하루 생성 한도: 사용자당 UTC 하루 5회(`GUIDE_DRAFT_DAILY_LIMIT`, D5). 새 테이블·RPC 없이 migration 011의 원자적 RPC `consume_guest_rate_limit`를 키 `guide-draft:user:<userId>:<UTC 날짜>`로 재사용합니다(`rate-limit.ts`의 `consumeGuideDraftLimit`). 한도를 넘으면 429 `{ error: 'daily-limit', limit, remaining, resetAt }`를 돌려줍니다.
 
 ---
 
@@ -442,7 +442,7 @@ JSON 하나로만 답합니다:
 |------|------------|------|-------------|------|
 | 1 | refactor: share guide types and take country code in map links | 가이드 타입을 `packages/shared`로 이동, `status` 확장, `sourceCaptureIds?`, `getGuideMapLinks` 국가 코드 인자화. 동작 변화 없음(회귀 테스트). | 없음 | 없음 |
 | 2 | feat: guide draft builder (pure logic + prompt) | `guide-draft.ts`, `guide-prompt.ts`, `toGuideReferences`, `buildGuideSlug`, 테스트. 라우트·UI 없음. | 없음 | 없음 |
-| 3 | feat: make a guide draft from selected captures (web) | `POST /api/guides/draft`, 웹 선택 모드, 초안 화면(`PublicGuideExperience` + 편집 패널), 「내 지도에 저장」 대표 이미지 인자화, 장소별 후기·영상 붙이기. 초안은 `sessionStorage`에 한 건만 임시 보관(안 C). | 없음 | **[!] 유료 생성(Gemini 호출)을 사용자에게 여는 시점** — D5 |
+| 3 | feat: make a guide draft from selected captures (web) | `POST /api/guides/draft`, 웹 선택 모드, 초안 화면(`PublicGuideExperience` + 편집 패널), 「내 지도에 저장」 대표 이미지 인자화, 장소별 후기·영상 붙이기. 초안은 `sessionStorage`에 한 건만 임시 보관(안 C). | 없음 | 유료 생성(Gemini 호출) 공개 — D5 승인(2026-09-26, 사용자별 하루 5회) |
 | 4 | feat: save guides (guides table) | `014_create_guides.sql`, shared 쿼리(`saveGuide`, `listMyGuides`, `updateGuide`, `softDeleteGuide`), `/api/guides` CRUD, `/guides` 목록, 사용자별 생성 한도. | **014** | **[!] 새 테이블·데이터 마이그레이션** — D1, D2 |
 | 5 | feat: share a guide by link | `unlisted` 전환, `get_shared_guide` 사용, `/g/[slug]` DB 대체 조회·OG 이미지·`noindex`, 미리보기 이미지 호스트 허용 목록. | 없음(014에 포함) | **[!] 제품 방향(공개 범위)** — D3, D4 |
 | 6 | feat(mobile): make a guide from captures | 다중 선택, `services/guides.ts`, 초안·저장 화면, 공유 시트. | 없음 | D8 |
@@ -479,11 +479,11 @@ JSON 하나로만 답합니다:
 
 - **좌표 보강 없음**: 3단계에서는 Geocoding을 부르지 않습니다. 좌표가 없는 장소는 초안에서 빼고 "위치를 찾지 못해 뺀 장소"로 알립니다. 추가 호출 비용이 없고, 캡처 저장 때 이미 좌표를 얻은 장소가 대부분이라 먼저 이렇게 둡니다.
 - **웹 쿠키 인증만**: 라우트는 웹 세션(쿠키)으로 캡처를 읽습니다. 모바일(Bearer 토큰)은 6단계에서 붙입니다.
-- **생성 한도 없음**: D5 결정 전이라 사용자별 하루 한도는 아직 없습니다. 입력 상한(캡처 2~10장, 장소 12곳)과 로그인만 적용합니다. 운영에서 Gemini 호출을 사용자에게 여는 것은 D5 결재 항목입니다.
+- **생성 한도: 사용자별 하루 5회**(D5, 2026-09-26 승인): `POST /api/guides/draft`는 입력 검증·로그인·캡처 소유 확인·장소 수(2~12곳) 확인을 모두 통과한 요청만, Gemini 호출 직전에 1회로 셉니다. 한도 숫자는 `rate-limit.ts`의 `GUIDE_DRAFT_DAILY_LIMIT` 하나입니다. 새 테이블·RPC 없이 migration 011의 `consume_guest_rate_limit`를 사용자 키(`guide-draft:user:<userId>:<UTC 날짜>`)로 재사용하고, 초기화는 UTC 자정(한국 시간 오전 9시)입니다. 넘으면 429와 `limit`·`remaining`·`resetAt`을 돌려주고, 선택 화면은 "오늘 만들 수 있는 가이드 초안 5회를 모두 썼습니다. 내일 다시 시도해 주세요."를 보여 줍니다. 카운터를 읽지 못하면 게스트 한도와 같이 막는 쪽(429)으로 둡니다. 모델 키가 없어 거리순으로 만드는 경우도 1회로 셉니다.
 - **지구본 대신 현지 지도**: 기존 지구본 그림은 서울→발리로 고정돼 있어, 초안에서는 좌표로 그리는 현지 지도만 보여 줍니다. 지도 버튼 문구도 링크가 여는 앱 이름을 따릅니다(국내 장소는 T map).
 - **YouTube 썸네일 허용**: 미리보기 이미지 프록시가 `https://i.ytimg.com/vi/<id>/<name>.jpg` 형식만 추가로 받습니다.
 
-검증: shared 194개, web 335개(3개 skip은 기존) 테스트 통과, `tsc --noEmit`·`next build` 통과. 빌드한 앱을 켜서 `/guides/new`를 데스크톱(1280px)과 모바일(390px)에서 열어 순서 바꾸기가 동작하고 가로 넘침·페이지 오류가 없는 것을 확인했습니다. `/places` 선택 모드와 실제 Gemini 호출은 Supabase·Gemini 키가 없는 환경이라 컴포넌트·라우트 테스트로만 확인했습니다.
+검증: shared 194개, web 345개(3개 skip은 기존, 생성 한도 반영 후) 테스트 통과, `tsc --noEmit`·`next build` 통과. 빌드한 앱을 켜서 `/guides/new`를 데스크톱(1280px)과 모바일(390px)에서 열어 순서 바꾸기가 동작하고 가로 넘침·페이지 오류가 없는 것을 확인했습니다. `/places` 선택 모드와 실제 Gemini 호출은 Supabase·Gemini 키가 없는 환경이라 컴포넌트·라우트 테스트로만 확인했습니다.
 
 ## 결정 필요
 
@@ -493,7 +493,7 @@ JSON 하나로만 답합니다:
 | D2 | 마이그레이션 `014_create_guides.sql` 추가·실행 | 3.4절 초안 그대로 / 수정 후 / 보류 | 3.4절 초안으로 4단계 PR에 포함, 실행은 머지 후 대표가 직접 | **[!] 대표** (데이터 마이그레이션) |
 | D3 | v1 공개 범위 | 비공개만 / 비공개 + 링크 공개 / 검색 노출 공개까지 | **비공개 + 링크 공개(`unlisted`, noindex)** | **[!] 대표** (제품 방향) |
 | D4 | 공유 가이드에 원본 캡처 사진 노출 | 노출 / 비노출 / 가이드별 선택 | **비노출** (SNS 캡처에 타인 계정·개인 정보가 섞일 수 있음) | **[!] 대표** (제품 방향) |
-| D5 | Gemini 생성 한도 | 무제한 / 사용자별 하루 N회 / 유료 전용 | **사용자별 하루 5회**, 가이드 최대 20편, 캡처 2~10장·장소 12곳 | **[!] 대표** (유료 생성) |
+| D5 | Gemini 생성 한도 | 무제한 / 사용자별 하루 N회 / 유료 전용 | **사용자별 하루 5회, 2026-09-26 승인**, 가이드 최대 20편, 캡처 2~10장·장소 12곳 | 대표 승인 완료 (2026-09-26) |
 | D6 | 후기·영상 붙이는 시점 | 생성 때 전 장소 자동 / 소유자가 장소별 요청 | **장소별 요청 시만**, 공유 시 붙인 결과를 스냅샷으로 저장 | 제품 담당 |
 | D7 | 사용자 가이드의 `curator` 표기 | 실명·닉네임 / 고정 문구 / 표기 안 함 | **고정 문구 "Scrave 사용자 노트"** | 제품 담당 |
 | D8 | 모바일 v1 범위 | 선택·생성·간단 편집·공유 / 웹과 동일 / 웹 링크로 열기만 | **선택·생성·간단 편집·공유** (지도 미리보기·문장 편집은 웹) | 제품 담당 |

@@ -8,10 +8,15 @@ const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   getUserCapturesByIds: vi.fn(),
   createGuideModelCaller: vi.fn(),
+  consumeGuideDraftLimit: vi.fn(),
 }));
 
 vi.mock('@/lib/api-auth', () => ({ getAuthUserAndTouch: mocks.getAuthUserAndTouch }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }));
+vi.mock('@/lib/rate-limit', () => ({
+  GUIDE_DRAFT_DAILY_LIMIT: 5,
+  consumeGuideDraftLimit: mocks.consumeGuideDraftLimit,
+}));
 vi.mock('@/lib/guide-draft-sources', () => ({
   getUserCapturesByIds: mocks.getUserCapturesByIds,
   createGuideModelCaller: mocks.createGuideModelCaller,
@@ -59,6 +64,11 @@ describe('POST /api/guides/draft', () => {
     mocks.getAuthUserAndTouch.mockResolvedValue({ id: 'user-1' });
     mocks.getUserCapturesByIds.mockResolvedValue(CAPTURES);
     mocks.createGuideModelCaller.mockReturnValue(null);
+    mocks.consumeGuideDraftLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 4,
+      resetAt: new Date('2026-09-26T23:59:59.999Z'),
+    });
   });
 
   it('rejects bad input before auth', async () => {
@@ -138,5 +148,58 @@ describe('POST /api/guides/draft', () => {
     const { POST } = await import('@/app/api/guides/draft/route');
     const response = await POST(draftRequest({ captureIds: [1, 2] }));
     expect(response.status).toBe(500);
+  });
+
+  it('returns 429 with what is left and when it resets once the daily limit is used up', async () => {
+    const model = vi.fn();
+    mocks.createGuideModelCaller.mockReturnValue(model);
+    mocks.consumeGuideDraftLimit.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date('2026-09-26T23:59:59.999Z'),
+    });
+    const { POST } = await import('@/app/api/guides/draft/route');
+    const response = await POST(draftRequest({ captureIds: [1, 2] }));
+
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({
+      error: 'daily-limit',
+      limit: 5,
+      remaining: 0,
+      resetAt: '2026-09-26T23:59:59.999Z',
+    });
+    expect(mocks.consumeGuideDraftLimit).toHaveBeenCalledWith('user-1');
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it('counts a draft against the limit before the model is called', async () => {
+    const order: string[] = [];
+    mocks.consumeGuideDraftLimit.mockImplementation(async () => {
+      order.push('limit');
+      return { allowed: true, remaining: 4, resetAt: new Date('2026-09-26T23:59:59.999Z') };
+    });
+    mocks.createGuideModelCaller.mockReturnValue(async () => {
+      order.push('model');
+      return null;
+    });
+    const { POST } = await import('@/app/api/guides/draft/route');
+    const response = await POST(draftRequest({ captureIds: [1, 2] }));
+
+    expect(response.status).toBe(200);
+    expect(order).toEqual(['limit', 'model', 'model']);
+  });
+
+  it('does not count requests that fail input checks', async () => {
+    const { POST } = await import('@/app/api/guides/draft/route');
+
+    await POST(draftRequest({ captureIds: [1] }));
+    mocks.getUserCapturesByIds.mockResolvedValueOnce([CAPTURES[0]]);
+    await POST(draftRequest({ captureIds: [1, 99] }));
+    mocks.getUserCapturesByIds.mockResolvedValueOnce([CAPTURES[0], capture(2, [{ name: '좌표 없음' }])]);
+    await POST(draftRequest({ captureIds: [1, 2] }));
+    mocks.getAuthUserAndTouch.mockResolvedValueOnce(null);
+    await POST(draftRequest({ captureIds: [1, 2] }));
+
+    expect(mocks.consumeGuideDraftLimit).not.toHaveBeenCalled();
   });
 });
