@@ -9,6 +9,14 @@ export type {
   ImageAnalyzer,
   PaginatedResult,
 } from './types/capture';
+export type {
+  ReviewSourceStatus,
+  CuratedNaverPost,
+  CuratedVideo,
+  DroppedVideo,
+  PlaceReviewVideo,
+  PlaceReviewResult,
+} from './types/place-reviews';
 
 // Design tokens
 export { Colors } from './tokens/colors';

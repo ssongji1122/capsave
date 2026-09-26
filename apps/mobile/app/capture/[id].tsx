@@ -19,6 +19,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { getMapLinks, openMap, openUrl, sortByPreferredProvider } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
+import { PlaceReviews } from '@/components/PlaceReviews';
 import { runCaptureDetailDeleteFlow } from '@/services/capture-delete-flow';
 import { useSignedImage } from '@/hooks/useSignedImage';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
@@ -231,6 +232,9 @@ export default function CaptureDetailScreen() {
                     placeName={place.name}
                     address={place.address}
                   />
+
+                  {/* 협찬·AI 음성·얼굴 위주를 거른 후기와 영상 */}
+                  <PlaceReviews placeName={place.name} />
 
                   {/* 장소별 연관링크 */}
                   {place.links && place.links.length > 0 && (

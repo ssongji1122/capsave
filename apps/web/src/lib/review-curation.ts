@@ -2,6 +2,10 @@
 // (projects/scrave/preferences.json). Titles are never used to judge AI voices;
 // only channel statistics and description templates are.
 
+import type { CuratedNaverPost, CuratedVideo, DroppedVideo } from '@scrave/shared';
+
+export type { CuratedNaverPost, CuratedVideo, DroppedVideo };
+
 export const NAVER_REVIEW_RULES = {
   sponsorWords: ['협찬', '원고료', '소정의', '제공받아', '제공 받아', '지원받아', '체험단', '업체로부터'],
   preferWithinYears: 2,
@@ -42,16 +46,6 @@ export interface NaverBlogItem {
   postdate: string;
 }
 
-export interface CuratedNaverPost {
-  title: string;
-  url: string;
-  blogger: string;
-  date: string | null;
-  excerpt: string;
-  score: number;
-  reasons: string[];
-}
-
 export interface ChannelStats {
   videoCount: number;
   subscriberCount: number | null;
@@ -66,26 +60,6 @@ export interface YoutubeVideoInput {
   duration: string;
   viewCount: number;
   channel: ChannelStats;
-}
-
-export interface CuratedVideo {
-  id: string;
-  title: string;
-  channelTitle: string;
-  published: string;
-  length: string;
-  viewCount: number;
-  score: number;
-  url: string;
-  thumbnailUrl: string;
-}
-
-export interface DroppedVideo {
-  id: string;
-  title: string;
-  channelTitle: string;
-  url: string;
-  reasons: string[];
 }
 
 export function getPlaceMatchKeys(name: string): string[] {
