@@ -146,3 +146,24 @@ describe('saveGuideToArchive', () => {
     });
   });
 });
+
+describe('saving a guide draft made from captures', () => {
+  const draft = {
+    ...ULUWATU_CAPTURE_GUIDE,
+    slug: 'my-guide-abcdefghij',
+    status: 'draft' as const,
+  };
+
+  it('does not link to a guide page that does not exist yet', () => {
+    const analysis = buildGuideCaptureAnalysis(draft);
+    expect(analysis.links).toEqual([]);
+    expect(analysis.tags).toEqual([getGuideCaptureTag(draft.slug)]);
+  });
+
+  it('uses the given cover image instead of the share image', async () => {
+    const { client, calls } = fakeClient({ count: 3 });
+
+    await saveGuideToArchive(client, draft, USER_ID, { imageUrl: 'captures/user-1/5.jpg' });
+    expect(calls.inserted).toMatchObject({ image_url: 'captures/user-1/5.jpg' });
+  });
+});

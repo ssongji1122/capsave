@@ -55,7 +55,7 @@ export function buildGuideCaptureAnalysis(guide: PublicGuide): AnalysisResult {
           `${String(place.sequence).padStart(2, '0')} ${place.localName} · ${place.visitWindow}\n${place.practicalNote}`
       )
       .join('\n\n'),
-    links: [`${SITE_ORIGIN}/g/${guide.slug}`],
+    links: guide.status === 'published' ? [`${SITE_ORIGIN}/g/${guide.slug}`] : [],
     tags: [getGuideCaptureTag(guide.slug)],
     source: 'other',
     confidence: 1,
@@ -80,10 +80,16 @@ async function findSavedGuideCapture(
   return (data as { id: number }[] | null)?.[0]?.id ?? null;
 }
 
+export interface GuideSaveOptions {
+  // Cover image for the saved capture. Drafts have no share image yet.
+  imageUrl?: string;
+}
+
 export async function saveGuideToArchive(
   client: SupabaseClient,
   guide: PublicGuide,
   userId: string,
+  { imageUrl = getGuideCaptureImageUrl(guide) }: GuideSaveOptions = {},
 ): Promise<GuideSaveResult> {
   const existingId = await findSavedGuideCapture(client, userId, guide.slug);
   if (existingId !== null) {
@@ -97,7 +103,7 @@ export async function saveGuideToArchive(
   const capture = await saveCapture(
     client,
     buildGuideCaptureAnalysis(guide),
-    getGuideCaptureImageUrl(guide),
+    imageUrl,
     userId,
   );
   return { status: 'saved', captureId: capture.id };
