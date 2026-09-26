@@ -1,4 +1,8 @@
-import { AI_MODEL_ENDPOINT } from '@scrave/shared';
+import {
+  AI_MODEL_ENDPOINT,
+  type PlaceReviewResult,
+  type PlaceReviewVideo,
+} from '@scrave/shared';
 import { extractGeminiText } from '@/lib/gemini';
 import {
   NAVER_REVIEW_RULES,
@@ -14,30 +18,15 @@ import {
   type YoutubeVideoInput,
 } from '@/lib/review-curation';
 
-type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+export type { PlaceReviewResult, PlaceReviewVideo };
 
-export type ReviewSourceStatus = 'ok' | 'no-key' | 'error';
+type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export interface PlaceReviewKeys {
   naverClientId?: string;
   naverClientSecret?: string;
   youtubeApiKey?: string;
   geminiApiKey?: string;
-}
-
-export interface PlaceReviewVideo extends CuratedVideo {
-  sceneCheck: 'checked' | 'unchecked';
-  scenes?: string[];
-}
-
-export interface PlaceReviewResult {
-  naver: { status: ReviewSourceStatus; posts: CuratedNaverPost[]; searchUrl: string };
-  youtube: {
-    status: ReviewSourceStatus;
-    videos: PlaceReviewVideo[];
-    dropped: DroppedVideo[];
-    searchUrl: string;
-  };
 }
 
 const NAVER_BLOG_API = 'https://openapi.naver.com/v1/search/blog.json';
