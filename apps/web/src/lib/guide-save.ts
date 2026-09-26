@@ -37,7 +37,7 @@ export function buildGuideCaptureAnalysis(guide: PublicGuide): AnalysisResult {
       const officialReference = place.references.find(({ kind }) =>
         ['government', 'official'].includes(kind)
       );
-      const mapLink = getGuideMapLinks(place)[0];
+      const mapLink = getGuideMapLinks(place, guide.countryCode)[0];
 
       return {
         name: place.localName,

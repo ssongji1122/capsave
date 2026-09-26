@@ -440,7 +440,7 @@ export function PublicGuideExperience({
 
             <div className={styles.placeList}>
               {guide.places.map((place) => {
-                const mapLink = getGuideMapLinks(place)[0];
+                const mapLink = getGuideMapLinks(place, guide.countryCode)[0];
                 const imageReference = getGuidePlaceImageReference(place);
                 const CategoryIcon = getCategoryIcon(place.category);
                 const isActive = activePlaceId === place.id;

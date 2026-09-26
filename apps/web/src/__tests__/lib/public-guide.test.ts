@@ -55,6 +55,18 @@ describe('ULUWATU_GUIDE', () => {
     }
   });
 
+  it('uses the guide country code for map links', () => {
+    const place = ULUWATU_GUIDE.places[0]!;
+    const koreanLinks = getGuideMapLinks(place, 'KR');
+    expect(koreanLinks.map(({ provider }) => provider)).toEqual([
+      'tmap',
+      'naver',
+      'google',
+      'kakao',
+    ]);
+    expect(getGuideMapLinks(place, 'ID')).toEqual(getGuideMapLinks(place));
+  });
+
   it('builds allowlisted preview image proxy paths', () => {
     const reference = ULUWATU_GUIDE.places[0]?.references[0];
 

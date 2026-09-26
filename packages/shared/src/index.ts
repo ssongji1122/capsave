@@ -17,6 +17,16 @@ export type {
   PlaceReviewVideo,
   PlaceReviewResult,
 } from './types/place-reviews';
+export type {
+  GuideReferenceKind,
+  GuidePlaceCategory,
+  GuideStatus,
+  GuideReferencePreview,
+  GuideReference,
+  GuideCoordinates,
+  GuidePlace,
+  PublicGuide,
+} from './types/guide';
 
 // Design tokens
 export { Colors } from './tokens/colors';

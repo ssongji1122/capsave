@@ -1,70 +1,26 @@
-import { getMapLinks, type MapLink } from '@scrave/shared';
+import {
+  getMapLinks,
+  type GuideCoordinates,
+  type GuidePlace,
+  type GuidePlaceCategory,
+  type GuideReference,
+  type GuideReferenceKind,
+  type GuideReferencePreview,
+  type GuideStatus,
+  type MapLink,
+  type PublicGuide,
+} from '@scrave/shared';
 
-export type GuideReferenceKind =
-  | 'government'
-  | 'official'
-  | 'editorial'
-  | 'review'
-  | 'video';
-export type GuidePlaceCategory = 'culture' | 'beach' | 'food' | 'stay' | 'activity';
-
-export interface GuideReference {
-  kind: GuideReferenceKind;
-  label: string;
-  publisher: string;
-  url: string;
-  checkedAt: string;
-  note: string;
-  preview: GuideReferencePreview;
-}
-
-export interface GuideReferencePreview {
-  title: string;
-  description: string;
-  imageUrl?: string;
-  imageAlt?: string;
-}
-
-export interface GuideCoordinates {
-  latitude: number;
-  longitude: number;
-}
-
-export interface GuidePlace {
-  id: string;
-  sequence: number;
-  name: string;
-  localName: string;
-  category: GuidePlaceCategory;
-  address: string;
-  coordinates: GuideCoordinates;
-  scene: string;
-  summary: string;
-  visitWindow: string;
-  practicalNote: string;
-  hours?: string[];
-  hoursLabel?: string;
-  references: GuideReference[];
-}
-
-export interface PublicGuide {
-  slug: string;
-  status: 'published';
-  title: string;
-  eyebrow: string;
-  description: string;
-  location: string;
-  countryCode: string;
-  center: GuideCoordinates;
-  updatedAt: string;
-  curator: string;
-  routeEyebrow: string;
-  routeTitle: string;
-  mapLabel: string;
-  connectRoute: boolean;
-  shareTitleLines: string[];
-  places: GuidePlace[];
-}
+export type {
+  GuideReferenceKind,
+  GuidePlaceCategory,
+  GuideStatus,
+  GuideReferencePreview,
+  GuideReference,
+  GuideCoordinates,
+  GuidePlace,
+  PublicGuide,
+};
 
 const REFERENCE_CHECKED_AT = '2026-07-29';
 const INDONESIA_COUNTRY_CODE = 'ID';
@@ -695,9 +651,12 @@ export function getGuidePlaceImageReference(
   );
 }
 
-export function getGuideMapLinks(place: GuidePlace): MapLink[] {
+export function getGuideMapLinks(
+  place: GuidePlace,
+  countryCode: string = INDONESIA_COUNTRY_CODE,
+): MapLink[] {
   return getMapLinks(place.name, place.address, {
-    countryCode: INDONESIA_COUNTRY_CODE,
+    countryCode,
     coordinates: place.coordinates,
   });
 }
