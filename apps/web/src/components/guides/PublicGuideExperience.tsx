@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import {
   ArrowDown,
   ArrowUpRight,
+  BedDouble,
   BookOpenCheck,
   CalendarCheck,
   CheckCircle2,
@@ -13,8 +14,10 @@ import {
   Landmark,
   Map as MapIcon,
   MapPin,
+  MessageSquareText,
   Navigation,
   PlayCircle,
+  Sparkles,
   Utensils,
   Waves,
 } from 'lucide-react';
@@ -25,6 +28,7 @@ import type {
   PublicGuide,
 } from '@/lib/public-guides';
 import {
+  formatPlaceCount,
   getGuideMapLinks,
   getGuidePlaceImageReference,
   getGuideReferencePreviewImagePath,
@@ -43,12 +47,15 @@ const CATEGORY_LABELS: Record<GuidePlaceCategory, string> = {
   beach: 'BEACH',
   culture: 'CULTURE',
   food: 'FOOD & DRINK',
+  stay: 'STAY',
+  activity: 'ACTIVITY',
 };
 
 const REFERENCE_LABELS: Record<GuideReferenceKind, string> = {
   government: '관광청',
   official: '공식',
   editorial: '지역 가이드',
+  review: '후기',
   video: '영상',
 };
 
@@ -58,11 +65,14 @@ const MAP_DRAWING_PERCENT = 76;
 function getCategoryIcon(category: GuidePlaceCategory) {
   if (category === 'beach') return Waves;
   if (category === 'culture') return Landmark;
+  if (category === 'stay') return BedDouble;
+  if (category === 'activity') return Sparkles;
   return Utensils;
 }
 
 function getReferenceIcon(kind: GuideReferenceKind) {
   if (kind === 'video') return PlayCircle;
+  if (kind === 'review') return MessageSquareText;
   if (kind === 'official' || kind === 'government') return CheckCircle2;
   return BookOpenCheck;
 }
@@ -192,7 +202,7 @@ function LocalMapView({
   return (
     <div className={styles.localMap}>
       <div className={styles.mapCaption}>
-        <span>PECATU COAST</span>
+        <span>{guide.mapLabel}</span>
         <span>좌표 기준 위치 개요</span>
       </div>
       <svg
@@ -235,14 +245,16 @@ function LocalMapView({
           <circle cx="18" cy="76" r="19" />
           <circle cx="18" cy="76" r="28" />
         </g>
-        <polyline
-          points={routePoints}
-          fill="none"
-          stroke="#F4845F"
-          strokeWidth="0.9"
-          strokeDasharray="2.2 2.2"
-          filter="url(#routeGlow)"
-        />
+        {guide.connectRoute && (
+          <polyline
+            points={routePoints}
+            fill="none"
+            stroke="#F4845F"
+            strokeWidth="0.9"
+            strokeDasharray="2.2 2.2"
+            filter="url(#routeGlow)"
+          />
+        )}
       </svg>
 
       {guide.places.map((place) => {
@@ -266,10 +278,12 @@ function LocalMapView({
         );
       })}
 
-      <div className={styles.mapLegend}>
-        <span className={styles.routeLine} />
-        추천 순서
-      </div>
+      {guide.connectRoute && (
+        <div className={styles.mapLegend}>
+          <span className={styles.routeLine} />
+          추천 순서
+        </div>
+      )}
     </div>
   );
 }
@@ -338,7 +352,7 @@ export function PublicGuideExperience({
             </dl>
 
             <a href="#route" className={styles.routeLink}>
-              세 곳 따라보기
+              {formatPlaceCount(guide.places.length)} 따라보기
               <ArrowDown size={17} aria-hidden="true" />
             </a>
           </div>
@@ -386,8 +400,8 @@ export function PublicGuideExperience({
         <section id="route" className={styles.routeSection}>
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}>ONE DAY · THREE SCENES</p>
-              <h2>낮에서 밤으로 이어지는 순서</h2>
+              <p className={styles.eyebrow}>{guide.routeEyebrow}</p>
+              <h2>{guide.routeTitle}</h2>
             </div>
             <p>
               장소 이름만 모으지 않고, 언제 가면 좋은지와 무엇을 다시 확인해야
@@ -420,6 +434,7 @@ export function PublicGuideExperience({
               {guide.places.map((place) => {
                 const mapLink = getGuideMapLinks(place)[0];
                 const imageReference = getGuidePlaceImageReference(place);
+                const CategoryIcon = getCategoryIcon(place.category);
                 const isActive = activePlaceId === place.id;
 
                 return (
@@ -431,33 +446,58 @@ export function PublicGuideExperience({
                     }`}
                     onMouseEnter={() => setActivePlaceId(place.id)}
                   >
-                    <a
-                      className={styles.placeVisual}
-                      data-category={place.category}
-                      href={imageReference.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${place.localName} 사진 출처: ${imageReference.publisher}`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={getGuideReferencePreviewImagePath(imageReference)}
-                        alt={`${place.localName} 장소 사진`}
-                        loading="eager"
-                      />
-                      <div className={styles.placeNumber}>
-                        {String(place.sequence).padStart(2, '0')}
+                    {imageReference ? (
+                      <a
+                        className={styles.placeVisual}
+                        data-category={place.category}
+                        href={imageReference.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`${place.localName} 사진 출처: ${imageReference.publisher}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getGuideReferencePreviewImagePath(imageReference) ?? ''}
+                          alt={`${place.localName} 장소 사진`}
+                          loading="eager"
+                        />
+                        <div className={styles.placeNumber}>
+                          {String(place.sequence).padStart(2, '0')}
+                        </div>
+                        <span className={styles.photoCredit}>
+                          사진 출처 · {imageReference.publisher}
+                          <ExternalLink size={12} aria-hidden="true" />
+                        </span>
+                        <div className={styles.visualCoordinates}>
+                          {Math.abs(place.coordinates.latitude).toFixed(3)}° S
+                          <br />
+                          {place.coordinates.longitude.toFixed(3)}° E
+                        </div>
+                      </a>
+                    ) : (
+                      <div
+                        className={`${styles.placeVisual} ${styles.placeVisualEmpty}`}
+                        data-category={place.category}
+                      >
+                        <CategoryIcon
+                          className={styles.placeVisualIcon}
+                          size={44}
+                          strokeWidth={1.4}
+                          aria-hidden="true"
+                        />
+                        <div className={styles.placeNumber}>
+                          {String(place.sequence).padStart(2, '0')}
+                        </div>
+                        <span className={styles.photoCredit}>
+                          공식 사진 없음 · 아래 자료에서 확인
+                        </span>
+                        <div className={styles.visualCoordinates}>
+                          {Math.abs(place.coordinates.latitude).toFixed(3)}° S
+                          <br />
+                          {place.coordinates.longitude.toFixed(3)}° E
+                        </div>
                       </div>
-                      <span className={styles.photoCredit}>
-                        사진 출처 · {imageReference.publisher}
-                        <ExternalLink size={12} aria-hidden="true" />
-                      </span>
-                      <div className={styles.visualCoordinates}>
-                        {Math.abs(place.coordinates.latitude).toFixed(3)}° S
-                        <br />
-                        {place.coordinates.longitude.toFixed(3)}° E
-                      </div>
-                    </a>
+                    )}
 
                     <div className={styles.placeContent}>
                       <div className={styles.placeTitleRow}>
@@ -497,7 +537,7 @@ export function PublicGuideExperience({
                         <div className={styles.hoursBox}>
                           <CalendarCheck size={17} aria-hidden="true" />
                           <div>
-                            <small>공식 사이트 표기 영업시간</small>
+                            <small>{place.hoursLabel ?? '공식 사이트 표기 영업시간'}</small>
                             {place.hours.map((hours) => (
                               <span key={hours}>{hours}</span>
                             ))}
@@ -549,6 +589,7 @@ export function PublicGuideExperience({
             {guide.places.flatMap((place) =>
               place.references.map((reference) => {
                 const ReferenceIcon = getReferenceIcon(reference.kind);
+                const previewPath = getGuideReferencePreviewImagePath(reference);
                 return (
                   <a
                     key={`${place.id}-${reference.url}`}
@@ -558,12 +599,19 @@ export function PublicGuideExperience({
                     className={styles.evidenceCard}
                   >
                     <div className={styles.evidencePreview}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={getGuideReferencePreviewImagePath(reference)}
-                        alt={reference.preview.imageAlt}
-                        loading="lazy"
-                      />
+                      {previewPath ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={previewPath}
+                          alt={reference.preview.imageAlt ?? reference.preview.title}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className={styles.evidencePreviewEmpty}>
+                          <ReferenceIcon size={28} strokeWidth={1.4} aria-hidden="true" />
+                          <span>{reference.publisher}</span>
+                        </div>
+                      )}
                     </div>
                     <div className={styles.referenceType}>
                       <ReferenceIcon size={17} aria-hidden="true" />
@@ -596,8 +644,8 @@ export function PublicGuideExperience({
             <p className={styles.eyebrow}>PASS IT ON</p>
             <h2>같이 갈 사람에게 이 지도 그대로 보내세요</h2>
             <p>
-              상대방은 가입하지 않아도 세 장소와 출처, Google 지도 링크를 모두
-              볼 수 있습니다.
+              상대방은 가입하지 않아도 장소 {guide.places.length}곳과 출처,
+              Google 지도 링크를 모두 볼 수 있습니다.
             </p>
           </div>
           <ShareGuideButton

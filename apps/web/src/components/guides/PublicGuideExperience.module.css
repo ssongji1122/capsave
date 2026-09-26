@@ -598,6 +598,28 @@
   color: #a78bfa;
 }
 
+.placeVisual[data-category='stay'] {
+  color: #34d399;
+}
+
+.placeVisual[data-category='activity'] {
+  color: #f69e80;
+}
+
+.placeVisualEmpty {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(52, 211, 153, 0.08), transparent 55%),
+    #0d0d12;
+}
+
+.placeVisualIcon {
+  position: relative;
+  z-index: 2;
+  opacity: 0.72;
+}
+
 .placeVisual:focus-visible {
   outline: 2px solid var(--guide-accent);
   outline-offset: -4px;
@@ -878,6 +900,18 @@
   height: 100%;
   object-fit: cover;
   transition: transform 350ms ease;
+}
+
+.evidencePreviewEmpty {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--guide-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
 }
 
 .evidenceCard:hover .evidencePreview img {
