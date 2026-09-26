@@ -1,13 +1,31 @@
 import { ImageResponse } from 'next/og';
+import { notFound } from 'next/navigation';
+import { findPublicGuide } from '@/lib/public-guides';
 
-export const alt = '울루와뚜, 하루의 끝을 따라가는 세 곳';
+export const alt = 'Scrave 공개 여행 가이드 미리보기';
 export const size = {
   width: 1200,
   height: 630,
 };
 export const contentType = 'image/png';
 
-export default function OpenGraphImage() {
+interface OpenGraphImageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default async function OpenGraphImage({ params }: OpenGraphImageProps) {
+  const { slug } = await params;
+  const guide = findPublicGuide(slug);
+
+  if (!guide) {
+    notFound();
+  }
+
+  const referenceCount = guide.places.reduce(
+    (total, place) => total + place.references.length,
+    0
+  );
+
   return new ImageResponse(
     (
       <div
@@ -60,9 +78,11 @@ export default function OpenGraphImage() {
               lineHeight: 1.05,
             }}
           >
-            <div style={{ display: 'flex' }}>울루와뚜,</div>
-            <div style={{ display: 'flex' }}>하루의 끝을 따라가는</div>
-            <div style={{ display: 'flex' }}>세 곳</div>
+            {guide.shareTitleLines.map((line) => (
+              <div key={line} style={{ display: 'flex' }}>
+                {line}
+              </div>
+            ))}
           </div>
           <div
             style={{
@@ -72,7 +92,7 @@ export default function OpenGraphImage() {
               fontSize: 24,
             }}
           >
-            장소 3곳 · 확인한 자료 6개 · Google 지도
+            {`장소 ${guide.places.length}곳 · 확인한 자료 ${referenceCount}개 · Google 지도`}
           </div>
         </div>
 

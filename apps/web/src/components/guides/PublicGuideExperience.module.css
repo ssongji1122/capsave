@@ -190,9 +190,53 @@
   font-weight: 600;
 }
 
+.heroActions {
+  display: flex;
+  margin-top: 34px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+}
+
+.saveButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: 12px;
+  background: rgba(52, 211, 153, 0.08);
+  color: #34d399;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  border-color: rgba(52, 211, 153, 0.45);
+  transform: translateY(-2px);
+}
+
+.saveButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.saveStatus {
+  flex-basis: 100%;
+  color: #fbbf24;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
 .routeLink {
   display: inline-flex;
-  margin-top: 34px;
   align-items: center;
   gap: 10px;
   color: #e7d9c3;
@@ -598,6 +642,28 @@
   color: #a78bfa;
 }
 
+.placeVisual[data-category='stay'] {
+  color: #34d399;
+}
+
+.placeVisual[data-category='activity'] {
+  color: #f69e80;
+}
+
+.placeVisualEmpty {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(52, 211, 153, 0.08), transparent 55%),
+    #0d0d12;
+}
+
+.placeVisualIcon {
+  position: relative;
+  z-index: 2;
+  opacity: 0.72;
+}
+
 .placeVisual:focus-visible {
   outline: 2px solid var(--guide-accent);
   outline-offset: -4px;
@@ -878,6 +944,18 @@
   height: 100%;
   object-fit: cover;
   transition: transform 350ms ease;
+}
+
+.evidencePreviewEmpty {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--guide-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
 }
 
 .evidenceCard:hover .evidencePreview img {

@@ -7,6 +7,7 @@ import { AlertTriangle, Map, MapPin } from 'lucide-react';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
+import { pickDefaultMapProvider } from '@/lib/map-provider';
 
 export interface MapPlace {
   name: string;
@@ -103,6 +104,7 @@ export function MapView() {
   const captureFilter = searchParams.get('capture');
 
   const [provider, setProvider] = useState<MapProvider>('naver');
+  const providerPickedRef = useRef(false);
 
   const naverReady = useNaverMaps();
   const googleReady = useGoogleMaps();
@@ -200,6 +202,16 @@ export function MapView() {
   const filteredPlaces = captureFilter
     ? places.filter((p) => p.captureId === Number(captureFilter))
     : places;
+
+  useEffect(() => {
+    if (providerPickedRef.current) return;
+    setProvider(pickDefaultMapProvider(filteredPlaces));
+  }, [filteredPlaces]);
+
+  const chooseProvider = (next: MapProvider) => {
+    providerPickedRef.current = true;
+    setProvider(next);
+  };
 
   // --- Naver Map init ---
   useEffect(() => {
@@ -322,14 +334,14 @@ export function MapView() {
         {/* Provider toggle */}
         <div className="flex gap-1 p-1 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10">
           <button
-            onClick={() => setProvider('naver')}
+            onClick={() => chooseProvider('naver')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-place-accent mr-1" aria-hidden="true" />
             네이버
           </button>
           <button
-            onClick={() => setProvider('google')}
+            onClick={() => chooseProvider('google')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'google' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-text-accent mr-1" aria-hidden="true" />

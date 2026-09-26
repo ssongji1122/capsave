@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PublicGuideExperience } from '@/components/guides/PublicGuideExperience';
-import { findPublicGuide, ULUWATU_GUIDE } from '@/lib/public-guides';
+import { findPublicGuide, PUBLIC_GUIDES } from '@/lib/public-guides';
 import { SITE_ORIGIN } from '@/lib/site-config';
 
 interface GuidePageProps {
@@ -9,7 +9,7 @@ interface GuidePageProps {
 }
 
 export function generateStaticParams() {
-  return [{ slug: ULUWATU_GUIDE.slug }];
+  return PUBLIC_GUIDES.map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({
