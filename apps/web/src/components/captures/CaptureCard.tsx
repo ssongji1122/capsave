@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, NotebookText, Play, Search as SearchIcon, X, Zap } from 'lucide-react';
 import { CaptureItem, PlaceInfo, getReviewLinks, extractStoragePath } from '@scrave/shared';
 import { isDataUri } from '@/lib/image-utils';
+import { PlaceReviews } from './PlaceReviews';
 
 interface CaptureCardProps {
   item: CaptureItem;
@@ -196,6 +197,9 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
                             {rl.label}
                           </a>
                         ))}
+                      </div>
+                      <div className="ml-8">
+                        <PlaceReviews placeName={place.name} />
                       </div>
                     </div>
                   );
