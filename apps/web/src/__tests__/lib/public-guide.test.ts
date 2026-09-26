@@ -34,11 +34,45 @@ describe('ULUWATU_GUIDE', () => {
       for (const reference of place.references) {
         expect(reference.url).toMatch(/^https:\/\//);
         expect(reference.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-        expect(reference.preview.imageUrl).toMatch(/^https:\/\//);
-        expect(reference.preview.imageAlt?.length).toBeGreaterThan(10);
+        if (reference.preview.imageUrl) {
+          expect(reference.preview.imageUrl).toMatch(/^https:\/\//);
+          expect(reference.preview.imageAlt?.length).toBeGreaterThan(10);
+        } else {
+          expect(reference.preview.imageAlt).toBeUndefined();
+        }
         expect(reference.preview.title.length).toBeGreaterThan(5);
       }
     }
+  });
+
+  it('keeps preview images off sources the server-side proxy cannot fetch', () => {
+    // 2026-09: the old disparda WordPress uploads path is 404 and
+    // stephmylifetravel.com answers server requests with a bot-check page.
+    const unreachableImageSources = [
+      'disparda.baliprov.go.id/wp-content/',
+      'stephmylifetravel.com',
+    ];
+    const imageUrls = ULUWATU_GUIDE.places.flatMap((place) =>
+      place.references.flatMap((reference) =>
+        reference.preview.imageUrl ? [reference.preview.imageUrl] : []
+      )
+    );
+
+    for (const imageUrl of imageUrls) {
+      for (const source of unreachableImageSources) {
+        expect(imageUrl).not.toContain(source);
+      }
+    }
+  });
+
+  it('points the Uluwatu Temple tourism-office card at the migrated page and photo', () => {
+    const temple = ULUWATU_GUIDE.places.find((place) => place.id === 'uluwatu-temple');
+    const reference = temple?.references.find((item) => item.kind === 'government');
+
+    expect(reference?.url).toBe('https://disparda.baliprov.go.id/uluwatu-clip');
+    expect(reference?.preview.imageUrl).toBe(
+      'https://cloud-ng.baliprov.go.id/disparda/2020/04/uluwatu2.jpg'
+    );
   });
 
   it('finds only the published guide by slug', () => {

@@ -95,9 +95,6 @@ export const ULUWATU_GUIDE: PublicGuide = {
             title: 'Uluwatu Travel Guide 2025',
             description:
               'Bukit Peninsula의 해변, 선셋 포인트, 체류 구역을 정리한 지역 가이드입니다.',
-            imageUrl:
-              'https://www.stephmylifetravel.com/wp-content/uploads/2025/05/Facetune_17-07-2018-21-15-42-1024x838.jpg',
-            imageAlt: 'Uluwatu 해안 여행 가이드 미리보기',
           },
         },
       ],
@@ -124,7 +121,7 @@ export const ULUWATU_GUIDE: PublicGuide = {
           kind: 'government',
           label: '관광청 공식 안내',
           publisher: 'Bali Government Tourism Office',
-          url: 'https://disparda.baliprov.go.id/en/uluwatu-clip/2020/04/',
+          url: 'https://disparda.baliprov.go.id/uluwatu-clip',
           checkedAt: REFERENCE_CHECKED_AT,
           note: '위치, 절벽 전망, 케착 공연 정보 확인',
           preview: {
@@ -132,7 +129,7 @@ export const ULUWATU_GUIDE: PublicGuide = {
             description:
               'Bali Government Tourism Office의 Uluwatu Temple 안내 페이지입니다.',
             imageUrl:
-              'https://disparda.baliprov.go.id/wp-content/uploads/2020/04/uluwatu2.jpg',
+              'https://cloud-ng.baliprov.go.id/disparda/2020/04/uluwatu2.jpg',
             imageAlt: 'Uluwatu Temple 절벽 전망 미리보기',
           },
         },
