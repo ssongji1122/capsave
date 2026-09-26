@@ -35,6 +35,49 @@ test.describe('인증 사용자 핵심 플로우', () => {
     await expect(page.getByAltText('AI 저장 테스트 장소 - AI 테스트 카페')).toBeVisible();
   });
 
+  test('장소마다 협찬·AI 음성·얼굴 위주를 거른 후기와 영상을 불러온다', async ({ page }) => {
+    await mockAuthenticatedBackend(page, createCaptureRows());
+    let requestedName: unknown = null;
+    await page.route('**/api/place-reviews', async (route) => {
+      requestedName = route.request().postDataJSON().name;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          naver: {
+            status: 'ok',
+            searchUrl: 'https://search.naver.com/search.naver?query=test',
+            posts: [
+              {
+                title: '성수 테스트 카페 내돈내산 후기',
+                url: 'https://blog.naver.com/e2e/1',
+                blogger: 'e2e',
+                date: '2026-08-01',
+                excerpt: '둘이 가서 커피 두 잔 1만 원',
+                score: 8,
+                reasons: ['2026년 8월 작성', '내돈내산', '가격'],
+              },
+            ],
+          },
+          youtube: {
+            status: 'no-key',
+            searchUrl: 'https://www.youtube.com/results?search_query=test',
+            videos: [],
+            dropped: [],
+          },
+        }),
+      });
+    });
+
+    await page.goto('/places');
+    await page.getByText('성수 카페 저장').click();
+    await page.getByRole('button', { name: /골라 둔 후기·영상/ }).first().click();
+
+    await expect(page.getByRole('link', { name: '성수 테스트 카페 내돈내산 후기' })).toBeVisible();
+    await expect(page.getByText('YouTube API 키가 아직 없어 골라 드리지 못했습니다.')).toBeVisible();
+    expect(requestedName).toBe('성수 테스트 카페');
+  });
+
   test('저장된 장소가 지도에 표시되고 지도 공급자 전환과 장소 팝업이 동작한다', async ({ page }) => {
     let geocodeCalled = false;
     await installMapSdkMocks(page);
