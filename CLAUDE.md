@@ -18,7 +18,11 @@ All new features and bug fixes follow Red-Green-Refactor:
 
 Rules:
 - No production code without a failing test
-- Pure logic in testable modules (shared/src/utils/ or web/src/lib/), not inline in routes/components
+- Pure logic in testable modules (packages/shared/src/utils/ or apps/web/src/lib/), not inline in routes/components
 - API routes call extracted pure functions
 - Test files: `__tests__/<module>.test.ts` colocated with source
 - Test runner: vitest (shared, web), jest (mobile)
+
+## 공통 프로젝트 규칙
+
+@AGENTS.md

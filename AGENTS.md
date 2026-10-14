@@ -27,14 +27,14 @@ All new features and bug fixes follow Red-Green-Refactor:
 
 Rules:
 - No production code without a failing test
-- Pure logic in testable modules (`shared/src/utils/` or `web/src/lib/`), not inline in routes/components
+- Pure logic in testable modules (`packages/shared/src/utils/` or `apps/web/src/lib/`), not inline in routes/components
 - API routes call extracted pure functions
 - Test files: `__tests__/<module>.test.ts` colocated with source
 - Test runner: vitest (shared, web), jest (mobile)
 
 ## Project Overview
 
-<!-- TODO: 1~3줄. 무엇·누구를·왜. 도메인 설명 + 운영자 + 목표. -->
+스크린샷·이미지·링크를 저장하고 다시 찾아 활용하는 개인 아카이브 앱입니다. 현재 문제 정의는 [DECISIONS.md](DECISIONS.md)에서 확인하고, 작업 배정은 해당 작업의 브리프를 확인합니다.
 
 ## 링크 하나만 들어왔을 때
 
@@ -51,42 +51,27 @@ Rules:
 
 ## Stack
 
-<!-- TODO: 핵심 기술 (Backend / Frontend / Infra / DB 등) -->
+npm workspaces와 Turborepo를 사용합니다. 웹은 `apps/web`, 모바일은 `apps/mobile`, 공통 코드는 `packages/shared`에 있습니다. 의존성과 버전은 각 폴더의 `package.json`을 확인합니다.
 
 ## Dev Servers
 
-<!-- TODO: 로컬 실행 URL/포트 표. 필요 없으면 섹션 삭제. -->
-
-| Role | URL | 실행 |
-|------|-----|------|
-| (예시) | http://localhost:XXXX | (명령) |
+웹은 `npm run dev:web`, 모바일은 `npm run dev:mobile`로 실행합니다. 실제 접속 주소는 실행 로그에서 확인합니다.
 
 ## Commands
 
-<!-- TODO: 자주 쓰는 명령 -->
-
-```bash
-# 개발
-# 빌드
-# 테스트
-# 배포
-```
+루트에서 빌드는 `npm run build`, 타입 검사는 `npm run typecheck`를 사용합니다. 공통 코드 테스트는 `npm run test --workspace=@scrave/shared`, 모바일 테스트는 `npm run test --workspace=@scrave/mobile -- --runInBand`를 사용합니다. 명령 등록 여부는 각 `package.json`에서 확인했습니다. 이 안내 작성 과정에서 앱 빌드와 테스트를 실행한 것은 아닙니다.
 
 ## Quality Gates
 
-<!-- TODO: 변경 trigger 별 검증 -->
-
-| Trigger | Command |
-|---------|---------|
-| (예시) | (명령) |
+변경한 영역의 기존 테스트와 타입 검사를 실행합니다. 루트에 단일 `test` 명령은 없으므로 위의 작업공간별 명령을 사용합니다. 웹의 `package.json`에는 테스트 명령이 없어 변경 기능에 맞는 기존 검증 절차를 먼저 확인합니다.
 
 ## Protected Files
 
-<!-- TODO: 수정 전 사용자 승인 필요한 파일 (secrets, OAuth, migrations 등) -->
+위 Universal Rules의 `.env*` 수정 제한과 전역 보호 파일·인증·데이터 변경 승인 경계를 따릅니다. 보호 여부가 불명확하면 수정 전에 확인합니다.
 
 ## Conventions
 
-<!-- TODO: 코딩·네이밍·import·커밋 컨벤션 -->
+수정할 폴더의 기존 코드와 설정을 따릅니다. 공통 모듈 경로는 `packages/shared/src/`, 웹 코드는 `apps/web/src/`, 모바일 코드는 `apps/mobile/`에서 확인합니다.
 
 ## 코딩 행동 원칙 (Karpathy 4원칙)
 
@@ -113,3 +98,7 @@ Rules:
 <!-- auto-generated: scripts/sync-wiki.sh이 memory/decision_log.md에서 최근 5개 끌어옴 -->
 <!-- BEGIN:DECISIONS -->
 <!-- END:DECISIONS -->
+
+## 작업 시작과 컨텍스트 복구
+
+[작업 시작과 복구 안내](docs/context-start.md)를 읽고 현재 작업의 근거와 상태 기록 위치를 확인합니다.
