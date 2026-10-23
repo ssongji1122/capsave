@@ -59,6 +59,13 @@ export type { GuestCapture } from './utils/guest-captures';
 export { base64ToBlob, buildMigrationPayload } from './utils/guest-migration';
 export type { MigrationPayload } from './utils/guest-migration';
 export { extractStoragePath, getSignedImageUrl, DEFAULT_SIGNED_URL_EXPIRY } from './utils/storage';
+export { findRouteCandidates, DEFAULT_MAX_EXTRA_MINUTES } from './utils/route-candidates';
+export type {
+  LatLng,
+  RouteCandidate,
+  RouteCandidateCapture,
+  RouteCandidateInput,
+} from './utils/route-candidates';
 
 // AI
 export { AI_MODEL, AI_MODEL_ENDPOINT } from './ai/config';
