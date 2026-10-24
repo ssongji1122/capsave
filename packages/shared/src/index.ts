@@ -43,6 +43,14 @@ export type {
   ReviewLink,
   MobileMapLink,
 } from './utils/map-linker';
+export {
+  GEOCODE_CACHE_DAYS,
+  needsGeocoding,
+  hasFreshCoordinates,
+  applyGeocodeResult,
+  expireGeocodedPlaces,
+} from './utils/place-geocoding';
+export type { PlaceGeocodeResult } from './utils/place-geocoding';
 export { safeJsonParse } from './utils/json';
 export { extractBearerToken } from './utils/auth';
 export { getDayBoundaries } from './utils/date';
