@@ -8,6 +8,8 @@ import { useCaptures } from '@/contexts/CapturesContext';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 import { pickDefaultMapProvider } from '@/lib/map-provider';
+import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
+import { hasFreshCoordinates, needsGeocoding } from '@scrave/shared';
 
 export interface MapPlace {
   name: string;
@@ -137,40 +139,34 @@ export function MapView() {
       setGeocodeError(false);
 
       type Entry = { place: typeof placeCaptures[0]['places'][0]; capture: typeof placeCaptures[0]; index: number };
-      const withCoords: MapPlace[] = [];
-      const toGeocode: Entry[] = [];
+      const now = new Date();
 
-      for (const capture of placeCaptures) {
-        for (let i = 0; i < capture.places.length; i++) {
-          const place = capture.places[i];
-          if (place.lat && place.lng) {
-            withCoords.push({ name: place.name, address: place.address, date: place.date, lat: place.lat, lng: place.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: i });
-          } else {
-            toGeocode.push({ place, capture, index: i });
-          }
-        }
-      }
-
-      // Phase 1: Google Geocoding (server-side)
-      const googleResults = await Promise.allSettled(
-        toGeocode.map(({ place }) =>
-          fetch('/api/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: place.name, address: place.address }) }).then((r) => r.json())
-        )
+      // Phase 1: ask the server to geocode (Google) and store coordinates for captures
+      // that have places without fresh coordinates. Stored results are reused for 30 days.
+      const capturesToRefresh = placeCaptures.filter((capture) =>
+        capture.places.some((place) => needsGeocoding(place, now))
+      );
+      const refreshed = await Promise.all(
+        capturesToRefresh.map(async (capture) => [capture.id, await requestCaptureCoordinates(capture.id)] as const)
       );
 
       if (cancelled) return;
 
+      // globalThis.Map: the lucide `Map` icon import shadows the built-in here.
+      const refreshedPlaces = new globalThis.Map(refreshed);
       const geocoded: MapPlace[] = [];
       const failedEntries: Entry[] = [];
 
-      googleResults.forEach((result, i) => {
-        if (result.status === 'fulfilled' && result.value.lat && result.value.lng) {
-          const { place, capture, index } = toGeocode[i];
-          geocoded.push({ name: place.name, address: place.address || result.value.formattedAddress, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
-        } else {
-          failedEntries.push(toGeocode[i]);
-        }
-      });
+      for (const capture of placeCaptures) {
+        const capturePlaces = refreshedPlaces.get(capture.id) ?? capture.places;
+        capturePlaces.forEach((place, index) => {
+          if (hasFreshCoordinates(place, now)) {
+            geocoded.push({ name: place.name, address: place.address, date: place.date, lat: place.lat!, lng: place.lng!, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
+          } else {
+            failedEntries.push({ place, capture, index });
+          }
+        });
+      }
 
       // Phase 2: Naver Geocoding fallback (client-side) for places Google couldn't resolve
       if (failedEntries.length > 0 && window.naver?.maps?.Service) {
@@ -190,8 +186,8 @@ export function MapView() {
         });
       }
 
-      const allPlaces = [...withCoords, ...geocoded];
-      if (allPlaces.length === 0 && toGeocode.length > 0) setGeocodeError(true);
+      const allPlaces = geocoded;
+      if (allPlaces.length === 0 && failedEntries.length > 0) setGeocodeError(true);
       setPlaces(allPlaces);
       setIsLoading(false);
     };

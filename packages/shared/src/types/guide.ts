@@ -49,6 +49,8 @@ export interface GuidePlace {
   references: GuideReference[];
   // Captures this place came from. Kept only on the owner's copy of a guide.
   sourceCaptureIds?: number[];
+  // When the coordinates came from Google Geocoding (kept for 30 days). Owner's copy only.
+  geocodedAt?: string;
 }
 
 export interface PublicGuide {

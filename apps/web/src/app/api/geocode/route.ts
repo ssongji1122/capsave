@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateGeocodingInput, buildGeocodingQuery, parseGoogleGeocodeResponse } from '@/lib/geocoding';
+import { validateGeocodingInput, buildGeocodingQuery, parseGoogleGeocodeResponse, buildGoogleGeocodeUrl } from '@/lib/geocoding';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
 import { getJsonRecord, parseJsonBody } from '@/lib/http-json';
 
@@ -34,8 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Google Maps API key not configured' }, { status: 500 });
     }
 
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&language=ko`;
-    const res = await fetch(url);
+    const res = await fetch(buildGoogleGeocodeUrl(query, apiKey));
     if (!res.ok) throw new Error(`Geocoding API returned ${res.status}`);
     const data = await res.json();
 

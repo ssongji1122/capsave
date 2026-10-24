@@ -139,6 +139,18 @@ describe('collectGuideCandidates', () => {
     expect(result.candidates[0]?.links).toEqual(['https://example.com/beach']);
   });
 
+  it('keeps the geocoding time of the place its coordinates came from', () => {
+    const result = collectGuideCandidates([
+      capture({ id: 10, places: [{ ...BEACH, geocodedAt: '2026-10-10T00:00:00.000Z' }] }),
+      capture({ id: 11, places: [{ ...BEACH, geocodedAt: '2026-10-01T00:00:00.000Z' }] }),
+      capture({ id: 12, places: [TEMPLE] }),
+    ]);
+    expect(result.candidates.map(({ geocodedAt }) => geocodedAt)).toEqual([
+      '2026-10-10T00:00:00.000Z',
+      undefined,
+    ]);
+  });
+
   it('reports too many places', () => {
     const places = Array.from({ length: MAX_GUIDE_PLACES + 1 }, (_, i) => ({
       name: `장소 ${i}`,
@@ -234,6 +246,17 @@ describe('assembleGuideDraft', () => {
       expect(place.hours).toBeUndefined();
       expect(place.sourceCaptureIds?.length).toBe(1);
     }
+  });
+
+  it('carries the geocoding time so saved coordinates still expire', () => {
+    const geocoded = { ...CANDIDATES[0]!, geocodedAt: '2026-10-10T00:00:00.000Z' };
+    const draft = assembleGuideDraft([geocoded, ...CANDIDATES.slice(1)], plan, {
+      slug: 'my-guide-abc',
+      nights: 0,
+      now: new Date('2026-09-26T09:00:00Z'),
+    });
+    expect(draft.places.find(({ id }) => id === 'p1')?.geocodedAt).toBe('2026-10-10T00:00:00.000Z');
+    expect(draft.places.find(({ id }) => id === 'p2')?.geocodedAt).toBeUndefined();
   });
 
   it('connects the route on a one-day trip and centers the map on the places', () => {

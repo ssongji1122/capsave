@@ -44,6 +44,7 @@ export function buildGuideCaptureAnalysis(guide: PublicGuide): AnalysisResult {
         address: place.address,
         lat: place.coordinates.latitude,
         lng: place.coordinates.longitude,
+        ...(place.geocodedAt ? { geocodedAt: place.geocodedAt } : {}),
         links: [mapLink?.webUrl, officialReference?.url].filter(
           (link): link is string => Boolean(link)
         ),

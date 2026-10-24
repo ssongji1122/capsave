@@ -18,6 +18,7 @@ import {
 } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 import { showErrorToast } from '@/lib/notifications';
+import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
 import { getRealUserId } from '@/lib/auth-user';
 import {
   applyRealtimeCaptureDelete,
@@ -219,6 +220,13 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
       };
       setCaptures((prev) => [enriched, ...prev]);
+      // Best-effort: store coordinates now so the map and route checks can reuse them.
+      if (newCapture.category === 'place' && newCapture.places.length > 0) {
+        void requestCaptureCoordinates(newCapture.id).then((places) => {
+          if (!places) return;
+          setCaptures((prev) => prev.map((c) => (c.id === newCapture.id ? { ...c, places } : c)));
+        });
+      }
     } catch (error) {
       console.error('Failed to save capture:', error);
       showErrorToast('저장에 실패했습니다. 다시 시도해주세요.');
