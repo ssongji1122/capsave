@@ -53,7 +53,35 @@ test.describe('라우트 및 네비게이션', () => {
     await expect(page.getByRole('status').filter({ hasText: '네이버 지도를 불러오지 못해' })).toBeVisible({ timeout: 8000 });
     await expect(page.getByText('ARCHIVE MAP')).toBeVisible();
     await expect(page.getByRole('button', { name: '오브젝트 성수 선택' })).toBeVisible();
+    // 보이는 지도와 선택 버튼 강조가 같아야 합니다.
+    await expect(page.getByRole('button', { name: '아카이브', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: '네이버', exact: true })).toHaveAttribute('aria-pressed', 'false');
   });
+
+  for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 }]) {
+    test(`${viewport.width}px 정적 지도 안내 상자가 상단 막대와 겹치지 않는다`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.route(/openapi\.map\.naver\.com|maps\.googleapis\.com/, (route) => route.abort());
+      await page.goto('/map');
+      await expect(page.getByRole('button', { name: '오브젝트 성수 선택' })).toBeVisible({ timeout: 8000 });
+
+      const infoBox = await page.getByText('ARCHIVE MAP').locator('..').boundingBox();
+      if (infoBox === null) return;
+      const topBarParts = [
+        page.locator('form').filter({ has: page.getByRole('searchbox', { name: '지도 장소 검색' }) }),
+        page.getByRole('button', { name: '구글', exact: true }),
+      ];
+      for (const part of topBarParts) {
+        const box = await part.boundingBox();
+        expect(box).not.toBeNull();
+        if (box === null) continue;
+        const overlaps =
+          infoBox.x < box.x + box.width && box.x < infoBox.x + infoBox.width &&
+          infoBox.y < box.y + box.height && box.y < infoBox.y + infoBox.height;
+        expect(overlaps).toBe(false);
+      }
+    });
+  }
 
   test('장소 카드 → 지도 링크 클릭 시 해당 핀이 선택된다', async ({ page }) => {
     await page.goto('/places');

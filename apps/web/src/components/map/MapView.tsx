@@ -161,6 +161,8 @@ export function MapView() {
   const googleLoaded = useGoogleMaps(provider === 'google');
   const naverReady = naverLoaded && !failedProviders.has('naver');
   const googleReady = googleLoaded && !failedProviders.has('google');
+  // Derived in render so the highlighted button and the visible map never disagree while provider state catches up.
+  const activeProvider = resolveMapProvider(provider, failedProviders);
 
   useEffect(() => {
     setProvider((current) => resolveMapProvider(current, failedProviders));
@@ -402,13 +404,13 @@ export function MapView() {
     setSelectedPlace(place);
     const naverMap = naverMapRef.current;
     const googleMap = googleMapRef.current;
-    if (provider === 'naver' && naverReady && naverMap && window.naver) {
+    if (activeProvider === 'naver' && naverReady && naverMap && window.naver) {
       callMapSdk(() => naverMap.panTo(new window.naver.maps.LatLng(place.lat, place.lng)));
     }
-    if (provider === 'google' && googleReady && googleMap) {
+    if (activeProvider === 'google' && googleReady && googleMap) {
       callMapSdk(() => googleMap.panTo({ lat: place.lat, lng: place.lng }));
     }
-  }, [provider, naverReady, googleReady]);
+  }, [activeProvider, naverReady, googleReady]);
 
   if (contextLoading || isLoading) {
     return (
@@ -504,21 +506,24 @@ export function MapView() {
         <div className="flex gap-1 self-end p-1 bg-surface/95 backdrop-blur-xl rounded-xl border border-border md:self-start">
           <button
             onClick={() => chooseProvider('archive')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'archive' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
+            aria-pressed={activeProvider === 'archive'}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${activeProvider === 'archive' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-1" aria-hidden="true" />
             아카이브
           </button>
           <button
             onClick={() => chooseProvider('naver')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
+            aria-pressed={activeProvider === 'naver'}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${activeProvider === 'naver' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-place-accent mr-1" aria-hidden="true" />
             네이버
           </button>
           <button
             onClick={() => chooseProvider('google')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'google' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
+            aria-pressed={activeProvider === 'google'}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${activeProvider === 'google' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-text-accent mr-1" aria-hidden="true" />
             구글
@@ -528,13 +533,13 @@ export function MapView() {
 
       {/* Separate containers per SDK — never share a DOM node between map SDKs.
           After an auth failure the SDK keeps drawing into its container, so it stays mounted and laid out under the static map. */}
-      {(provider === 'naver' && naverReady) || (naverLoaded && failedProviders.has('naver')) ? (
+      {(activeProvider === 'naver' && naverReady) || (naverLoaded && failedProviders.has('naver')) ? (
         <div ref={naverContainerRef} className="h-full w-full" />
       ) : null}
-      {(provider === 'google' && googleReady) || (googleLoaded && failedProviders.has('google')) ? (
+      {(activeProvider === 'google' && googleReady) || (googleLoaded && failedProviders.has('google')) ? (
         <div ref={googleContainerRef} className="h-full w-full" />
       ) : null}
-      {(provider === 'archive' || (provider === 'naver' && !naverReady) || (provider === 'google' && !googleReady)) && (
+      {(activeProvider === 'archive' || (activeProvider === 'naver' && !naverReady) || (activeProvider === 'google' && !googleReady)) && (
         <div className="absolute inset-0">
           <StaticArchiveMap
             places={filteredPlaces}
