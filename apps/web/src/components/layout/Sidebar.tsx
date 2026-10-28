@@ -5,8 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
 import { Home, MapPin, FileText, Map, Compass, Settings, LogOut } from 'lucide-react';
 
-const BRAND_MARK_COLOR = '#F2622E';
-
 const navItems = [
   { href: '/dashboard', label: '홈', icon: Home, description: '전체 캡처' },
   { href: '/places', label: '장소', icon: MapPin, description: '맛집·카페·여행지' },
@@ -31,15 +29,8 @@ export function Sidebar() {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-surface border-r border-border">
         <div className="p-6">
-          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-text-primary">
-            <svg width="22" height="22" viewBox="0 0 100 100" aria-hidden="true">
-              <path fill={BRAND_MARK_COLOR} d="M28 22c10-12 30-12 38 0 14-6 28 6 24 22 10 10 6 30-10 34-4 12-22 16-32 8-12 8-30 2-32-12C2 66 0 46 12 40c-2-8 6-16 16-18z" />
-              <ellipse cx="44" cy="46" rx="3.5" ry="4.5" fill="currentColor" />
-              <ellipse cx="56" cy="46" rx="3.5" ry="4.5" fill="currentColor" />
-            </svg>
-            scrave
-          </h1>
-          <p className="text-xs text-text-secondary mt-1.5">scrap, save your crave</p>
+          <h1 className="text-2xl font-extrabold text-primary">Scrave</h1>
+          <p className="text-sm text-text-secondary mt-1">AI 캡처 오거나이저</p>
         </div>
         <nav className="flex-1 px-3">
           {navItems.map((item) => {

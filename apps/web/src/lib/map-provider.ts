@@ -1,13 +1,4 @@
 export type WebMapProvider = 'naver' | 'google';
-export type MapProviderChoice = WebMapProvider | 'archive';
-
-// An SDK that rejected its key (unregistered domain, revoked key) renders an error grid instead of a map.
-export function resolveMapProvider(
-  requested: MapProviderChoice,
-  failed: ReadonlySet<WebMapProvider>,
-): MapProviderChoice {
-  return requested !== 'archive' && failed.has(requested) ? 'archive' : requested;
-}
 
 interface LatLng {
   lat: number;
