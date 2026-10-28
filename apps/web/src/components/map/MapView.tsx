@@ -11,9 +11,9 @@ import { getVisibleArchiveCaptures } from '@/lib/sample-captures';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 import { StaticArchiveMap } from './StaticArchiveMap';
-import { pickDefaultMapProvider } from '@/lib/map-provider';
+import { pickDefaultMapProvider, resolveMapProvider, type MapProviderChoice, type WebMapProvider } from '@/lib/map-provider';
 import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
-import { hasFreshCoordinates, needsGeocoding } from '@scrave/shared';
+import { ARCHIVE_APPEARANCE, hasFreshCoordinates, needsGeocoding } from '@scrave/shared';
 
 export interface MapPlace {
   name: string;
@@ -27,15 +27,20 @@ export interface MapPlace {
   placeIndex: number;
 }
 
-type MapProvider = 'archive' | 'naver' | 'google';
+type MapProvider = MapProviderChoice;
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 } as const;
 const NAVER_MAP_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const PIN_FILL = ARCHIVE_APPEARANCE.places.color;
+const PIN_STROKE = '#F3EFE6';
+const PIN_LABEL = '#FFFFFF';
 
 // --- SDK loaders ---
 
 declare global {
   interface Window {
+    navermap_authFailure?: () => void;
+    gm_authFailure?: () => void;
     google: typeof google;
     naver: {
       maps: {
@@ -96,6 +101,33 @@ function useGoogleMaps(enabled: boolean) {
   return loaded;
 }
 
+// Both SDKs report a rejected key through these fixed global callbacks.
+function useMapAuthFailures(): readonly [ReadonlySet<WebMapProvider>, (provider: WebMapProvider) => void] {
+  const [failed, setFailed] = useState<ReadonlySet<WebMapProvider>>(() => new Set());
+  const markFailed = useCallback((provider: WebMapProvider) => {
+    setFailed((prev) => (prev.has(provider) ? prev : new Set([...prev, provider])));
+  }, []);
+  useEffect(() => {
+    window.navermap_authFailure = () => markFailed('naver');
+    window.gm_authFailure = () => markFailed('google');
+    return () => {
+      delete window.navermap_authFailure;
+      delete window.gm_authFailure;
+    };
+  }, [markFailed]);
+  return [failed, markFailed] as const;
+}
+
+// Once an SDK has rejected its key its map and marker methods throw; an exception inside an effect would take down the page.
+function callMapSdk(action: () => void): boolean {
+  try {
+    action();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Naver client-side geocoding (uses the Maps JS SDK geocoder submodule)
 function naverGeocode(query: string): Promise<{ lat: number; lng: number; address?: string } | null> {
   return new Promise((resolve) => {
@@ -124,8 +156,15 @@ export function MapView() {
   const [searchValue, setSearchValue] = useState(queryFilter);
   const providerPickedRef = useRef(false);
 
-  const naverReady = useNaverMaps(provider === 'naver');
-  const googleReady = useGoogleMaps(provider === 'google');
+  const [failedProviders, markProviderFailed] = useMapAuthFailures();
+  const naverLoaded = useNaverMaps(provider === 'naver');
+  const googleLoaded = useGoogleMaps(provider === 'google');
+  const naverReady = naverLoaded && !failedProviders.has('naver');
+  const googleReady = googleLoaded && !failedProviders.has('google');
+
+  useEffect(() => {
+    setProvider((current) => resolveMapProvider(current, failedProviders));
+  }, [failedProviders]);
 
   const naverContainerRef = useRef<HTMLDivElement>(null);
   const googleContainerRef = useRef<HTMLDivElement>(null);
@@ -285,12 +324,12 @@ export function MapView() {
 
   useEffect(() => {
     if (providerPickedRef.current) return;
-    setProvider(pickDefaultMapProvider(filteredPlaces));
-  }, [filteredPlaces]);
+    setProvider(resolveMapProvider(pickDefaultMapProvider(filteredPlaces), failedProviders));
+  }, [filteredPlaces, failedProviders]);
 
   const chooseProvider = (next: MapProvider) => {
     providerPickedRef.current = true;
-    setProvider(next);
+    setProvider(resolveMapProvider(next, failedProviders));
   };
 
   // --- Naver Map init ---
@@ -298,76 +337,78 @@ export function MapView() {
     if (provider !== 'naver' || !naverReady || !naverContainerRef.current || filteredPlaces.length === 0) return;
 
     const { naver } = window;
-    const center = new naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng);
     const container = naverContainerRef.current;
     if (!container) return;
-    const map = new naver.maps.Map(container, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
-    naverMapRef.current = map;
-
-    const lats = filteredPlaces.map((p) => p.lat);
-    const lngs = filteredPlaces.map((p) => p.lng);
-    const sw = new naver.maps.LatLng(Math.min(...lats), Math.min(...lngs));
-    const ne = new naver.maps.LatLng(Math.max(...lats), Math.max(...lngs));
-    map.fitBounds(new naver.maps.LatLngBounds(sw, ne), { top: 60, right: 40, bottom: 180, left: 40 });
-
     const newMarkers: NaverMarker[] = [];
-    filteredPlaces.forEach((place, idx) => {
-      const content = `<div style="width:32px;height:32px;border-radius:50%;background:#34D399;color:#050508;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.4);border:2px solid #050508;cursor:pointer;">${idx + 1}</div>`;
-      const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new window.naver.maps.Point(16, 16) } });
-      naver.maps.Event.addListener(marker, 'click', () => setSelectedPlace(place));
-      newMarkers.push(marker);
-    });
-    naverMarkersRef.current = newMarkers;
+    const initialized = callMapSdk(() => {
+      const center = new naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng);
+      const map = new naver.maps.Map(container, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
+      naverMapRef.current = map;
 
-    return () => { newMarkers.forEach((m) => m.setMap(null)); };
-  }, [provider, naverReady, filteredPlaces]);
+      const lats = filteredPlaces.map((p) => p.lat);
+      const lngs = filteredPlaces.map((p) => p.lng);
+      const sw = new naver.maps.LatLng(Math.min(...lats), Math.min(...lngs));
+      const ne = new naver.maps.LatLng(Math.max(...lats), Math.max(...lngs));
+      map.fitBounds(new naver.maps.LatLngBounds(sw, ne), { top: 60, right: 40, bottom: 180, left: 40 });
+
+      filteredPlaces.forEach((place, idx) => {
+        const content = `<div style="width:32px;height:32px;border-radius:50%;background:${PIN_FILL};color:${PIN_LABEL};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(22,21,19,0.25);border:2px solid ${PIN_STROKE};cursor:pointer;">${idx + 1}</div>`;
+        const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new window.naver.maps.Point(16, 16) } });
+        naver.maps.Event.addListener(marker, 'click', () => setSelectedPlace(place));
+        newMarkers.push(marker);
+      });
+      naverMarkersRef.current = newMarkers;
+    });
+    if (!initialized) markProviderFailed('naver');
+
+    return () => { newMarkers.forEach((m) => callMapSdk(() => m.setMap(null))); };
+  }, [provider, naverReady, filteredPlaces, markProviderFailed]);
 
   // --- Google Map init ---
   useEffect(() => {
     if (provider !== 'google' || !googleReady || !googleContainerRef.current || filteredPlaces.length === 0) return;
 
-    const map = new google.maps.Map(googleContainerRef.current, {
-      center: SEOUL_CENTER, zoom: 12,
-      disableDefaultUI: true, zoomControl: true,
-      styles: [
-        { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
-        { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a2e' }] },
-        { elementType: 'labels.text.fill', stylers: [{ color: '#8a8a95' }] },
-        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2a3e' }] },
-        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e0e1a' }] },
-        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-      ],
-    });
-    googleMapRef.current = map;
-
-    const bounds = new google.maps.LatLngBounds();
-    filteredPlaces.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
-    map.fitBounds(bounds, { top: 60, right: 40, bottom: 180, left: 40 });
-
+    const googleContainer = googleContainerRef.current;
     const newMarkers: google.maps.Marker[] = [];
-    filteredPlaces.forEach((place, idx) => {
-      const marker = new google.maps.Marker({
-        map, position: { lat: place.lat, lng: place.lng },
-        label: { text: String(idx + 1), color: '#050508', fontSize: '12px', fontWeight: '700' },
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: '#34D399', fillOpacity: 1, strokeColor: '#050508', strokeWeight: 2 },
+    const initialized = callMapSdk(() => {
+      const map = new google.maps.Map(googleContainer, {
+        center: SEOUL_CENTER, zoom: 12,
+        disableDefaultUI: true, zoomControl: true,
+        styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }],
       });
-      marker.addListener('click', () => setSelectedPlace(place));
-      newMarkers.push(marker);
-    });
-    googleMarkersRef.current = newMarkers;
+      googleMapRef.current = map;
 
-    return () => { newMarkers.forEach((m) => m.setMap(null)); };
-  }, [provider, googleReady, filteredPlaces]);
+      const bounds = new google.maps.LatLngBounds();
+      filteredPlaces.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+      map.fitBounds(bounds, { top: 60, right: 40, bottom: 180, left: 40 });
+
+      filteredPlaces.forEach((place, idx) => {
+        const marker = new google.maps.Marker({
+          map, position: { lat: place.lat, lng: place.lng },
+          label: { text: String(idx + 1), color: PIN_LABEL, fontSize: '12px', fontWeight: '700' },
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: PIN_FILL, fillOpacity: 1, strokeColor: PIN_STROKE, strokeWeight: 2 },
+        });
+        marker.addListener('click', () => setSelectedPlace(place));
+        newMarkers.push(marker);
+      });
+      googleMarkersRef.current = newMarkers;
+    });
+    if (!initialized) markProviderFailed('google');
+
+    return () => { newMarkers.forEach((m) => callMapSdk(() => m.setMap(null))); };
+  }, [provider, googleReady, filteredPlaces, markProviderFailed]);
 
   const handlePlaceSelect = useCallback((place: MapPlace) => {
     setSelectedPlace(place);
-    if (provider === 'naver' && naverMapRef.current && window.naver) {
-      naverMapRef.current.panTo(new window.naver.maps.LatLng(place.lat, place.lng));
+    const naverMap = naverMapRef.current;
+    const googleMap = googleMapRef.current;
+    if (provider === 'naver' && naverReady && naverMap && window.naver) {
+      callMapSdk(() => naverMap.panTo(new window.naver.maps.LatLng(place.lat, place.lng)));
     }
-    if (provider === 'google' && googleMapRef.current) {
-      googleMapRef.current.panTo({ lat: place.lat, lng: place.lng });
+    if (provider === 'google' && googleReady && googleMap) {
+      callMapSdk(() => googleMap.panTo({ lat: place.lat, lng: place.lng }));
     }
-  }, [provider]);
+  }, [provider, naverReady, googleReady]);
 
   if (contextLoading || isLoading) {
     return (
@@ -409,14 +450,20 @@ export function MapView() {
       {/* Top bar */}
       <div className="absolute top-3 left-3 right-3 z-10 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div className="flex w-full flex-col gap-2 md:max-w-sm">
-          <div className="flex w-fit items-center gap-1.5 px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
-            <MapPin size={13} aria-hidden="true" />
+          <div className="flex w-fit items-center gap-1.5 px-3 py-2 bg-surface/95 backdrop-blur-xl rounded-xl border border-border text-xs text-text-primary font-semibold">
+            <MapPin size={13} style={{ color: PIN_FILL }} aria-hidden="true" />
             {filteredPlaces.length}개 장소
           </div>
 
+          {failedProviders.size > 0 && (
+            <p role="status" className="w-fit rounded-xl border border-border bg-surface/95 px-3 py-2 text-xs text-text-secondary backdrop-blur-xl">
+              {failedProviders.has('naver') ? '네이버' : '구글'} 지도를 불러오지 못해 기본 지도로 보여 드립니다.
+            </p>
+          )}
+
           <form
             onSubmit={handleSearchSubmit}
-            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/75 px-3 py-2 backdrop-blur-xl"
+            className="flex items-center gap-2 rounded-2xl border border-border bg-surface/95 px-3 py-2 backdrop-blur-xl"
           >
             <Search size={14} className="flex-shrink-0 text-text-tertiary" aria-hidden="true" />
             <input
@@ -439,7 +486,7 @@ export function MapView() {
             )}
             <button
               type="submit"
-              className="min-h-8 rounded-xl bg-place-accent px-3 text-xs font-semibold text-background transition-colors hover:bg-success"
+              className="min-h-8 rounded-full bg-text-primary px-3 text-xs font-semibold text-background transition-opacity hover:opacity-85"
             >
               검색
             </button>
@@ -454,24 +501,24 @@ export function MapView() {
         </div>
 
         {/* Provider toggle */}
-        <div className="flex gap-1 self-end p-1 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 md:self-start">
+        <div className="flex gap-1 self-end p-1 bg-surface/95 backdrop-blur-xl rounded-xl border border-border md:self-start">
           <button
             onClick={() => chooseProvider('archive')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'archive' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'archive' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-1" aria-hidden="true" />
             아카이브
           </button>
           <button
             onClick={() => chooseProvider('naver')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-place-accent mr-1" aria-hidden="true" />
             네이버
           </button>
           <button
             onClick={() => chooseProvider('google')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'google' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'google' ? 'bg-text-primary text-background' : 'text-text-secondary hover:text-text-primary'}`}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-text-accent mr-1" aria-hidden="true" />
             구글
@@ -479,19 +526,22 @@ export function MapView() {
         </div>
       </div>
 
-      {/* Separate containers per SDK — never share a DOM node between map SDKs */}
-      {provider === 'naver' && naverReady ? (
+      {/* Separate containers per SDK — never share a DOM node between map SDKs.
+          After an auth failure the SDK keeps drawing into its container, so it stays mounted and laid out under the static map. */}
+      {(provider === 'naver' && naverReady) || (naverLoaded && failedProviders.has('naver')) ? (
         <div ref={naverContainerRef} className="h-full w-full" />
       ) : null}
-      {provider === 'google' && googleReady ? (
+      {(provider === 'google' && googleReady) || (googleLoaded && failedProviders.has('google')) ? (
         <div ref={googleContainerRef} className="h-full w-full" />
       ) : null}
       {(provider === 'archive' || (provider === 'naver' && !naverReady) || (provider === 'google' && !googleReady)) && (
-        <StaticArchiveMap
-          places={filteredPlaces}
-          selectedPlace={selectedPlace}
-          onPlaceSelect={handlePlaceSelect}
-        />
+        <div className="absolute inset-0">
+          <StaticArchiveMap
+            places={filteredPlaces}
+            selectedPlace={selectedPlace}
+            onPlaceSelect={handlePlaceSelect}
+          />
+        </div>
       )}
 
       {selectedPlace && (

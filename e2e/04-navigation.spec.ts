@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { installMapSdkMocks } from './helpers/authenticated-flow';
 
 /**
  * Flow 4: 앱 내 네비게이션
@@ -27,6 +28,31 @@ test.describe('라우트 및 네비게이션', () => {
     await page.goto('/map');
     await expect(page.getByText('ARCHIVE MAP')).toBeVisible({ timeout: 8000 });
     await expect(page.getByText('오브젝트 성수')).toBeVisible();
+  });
+
+  test('네이버 지도 인증이 실패하면 정적 지도로 바꾸고 이유를 알린다', async ({ page }) => {
+    await installMapSdkMocks(page);
+    // 실제 SDK처럼 키를 거부한 뒤에는 지도·마커 메서드가 예외를 던집니다.
+    await page.addInitScript(() => {
+      let rejected = false;
+      const reject = () => { throw new TypeError("Cannot read properties of null (reading 'capitalize')"); };
+      const OriginalMap = window.naver.maps.Map;
+      const OriginalMarker = window.naver.maps.Marker;
+      window.naver.maps.Map = class extends OriginalMap {
+        constructor(...args: ConstructorParameters<typeof OriginalMap>) {
+          super(...args);
+          setTimeout(() => { rejected = true; window.navermap_authFailure?.(); }, 0);
+        }
+        panTo() { if (rejected) reject(); }
+      };
+      window.naver.maps.Marker = class extends OriginalMarker {
+        setMap() { if (rejected) reject(); }
+      };
+    });
+    await page.goto('/map');
+    await expect(page.getByRole('status').filter({ hasText: '네이버 지도를 불러오지 못해' })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText('ARCHIVE MAP')).toBeVisible();
+    await expect(page.getByRole('button', { name: '오브젝트 성수 선택' })).toBeVisible();
   });
 
   test('장소 카드 → 지도 링크 클릭 시 해당 핀이 선택된다', async ({ page }) => {
