@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickDefaultMapProvider } from '@/lib/map-provider';
+import { pickDefaultMapProvider, resolveMapProvider } from '@/lib/map-provider';
 
 const SEOUL = { lat: 37.5665, lng: 126.978 };
 const JEJU = { lat: 33.4996, lng: 126.5312 };
@@ -19,5 +19,18 @@ describe('pickDefaultMapProvider', () => {
   it('switches to Google when every pin is abroad', () => {
     expect(pickDefaultMapProvider([ULUWATU])).toBe('google');
     expect(pickDefaultMapProvider([ULUWATU, TOKYO])).toBe('google');
+  });
+});
+
+describe('resolveMapProvider', () => {
+  it('keeps the requested provider while its SDK has not failed', () => {
+    expect(resolveMapProvider('naver', new Set())).toBe('naver');
+    expect(resolveMapProvider('google', new Set(['naver']))).toBe('google');
+    expect(resolveMapProvider('archive', new Set(['naver', 'google']))).toBe('archive');
+  });
+
+  it('falls back to the archive map when the requested provider failed to authenticate', () => {
+    expect(resolveMapProvider('naver', new Set(['naver']))).toBe('archive');
+    expect(resolveMapProvider('google', new Set(['google']))).toBe('archive');
   });
 });
