@@ -102,19 +102,30 @@ function useGoogleMaps(enabled: boolean) {
 }
 
 // Both SDKs report a rejected key through these fixed global callbacks.
-function useMapAuthFailures(): ReadonlySet<WebMapProvider> {
+function useMapAuthFailures(): readonly [ReadonlySet<WebMapProvider>, (provider: WebMapProvider) => void] {
   const [failed, setFailed] = useState<ReadonlySet<WebMapProvider>>(() => new Set());
+  const markFailed = useCallback((provider: WebMapProvider) => {
+    setFailed((prev) => (prev.has(provider) ? prev : new Set([...prev, provider])));
+  }, []);
   useEffect(() => {
-    const markFailed = (provider: WebMapProvider) => () =>
-      setFailed((prev) => (prev.has(provider) ? prev : new Set([...prev, provider])));
-    window.navermap_authFailure = markFailed('naver');
-    window.gm_authFailure = markFailed('google');
+    window.navermap_authFailure = () => markFailed('naver');
+    window.gm_authFailure = () => markFailed('google');
     return () => {
       delete window.navermap_authFailure;
       delete window.gm_authFailure;
     };
-  }, []);
-  return failed;
+  }, [markFailed]);
+  return [failed, markFailed] as const;
+}
+
+// Once an SDK has rejected its key its map and marker methods throw; an exception inside an effect would take down the page.
+function callMapSdk(action: () => void): boolean {
+  try {
+    action();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Naver client-side geocoding (uses the Maps JS SDK geocoder submodule)
@@ -145,7 +156,7 @@ export function MapView() {
   const [searchValue, setSearchValue] = useState(queryFilter);
   const providerPickedRef = useRef(false);
 
-  const failedProviders = useMapAuthFailures();
+  const [failedProviders, markProviderFailed] = useMapAuthFailures();
   const naverLoaded = useNaverMaps(provider === 'naver');
   const googleLoaded = useGoogleMaps(provider === 'google');
   const naverReady = naverLoaded && !failedProviders.has('naver');
@@ -326,69 +337,78 @@ export function MapView() {
     if (provider !== 'naver' || !naverReady || !naverContainerRef.current || filteredPlaces.length === 0) return;
 
     const { naver } = window;
-    const center = new naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng);
     const container = naverContainerRef.current;
     if (!container) return;
-    const map = new naver.maps.Map(container, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
-    naverMapRef.current = map;
-
-    const lats = filteredPlaces.map((p) => p.lat);
-    const lngs = filteredPlaces.map((p) => p.lng);
-    const sw = new naver.maps.LatLng(Math.min(...lats), Math.min(...lngs));
-    const ne = new naver.maps.LatLng(Math.max(...lats), Math.max(...lngs));
-    map.fitBounds(new naver.maps.LatLngBounds(sw, ne), { top: 60, right: 40, bottom: 180, left: 40 });
-
     const newMarkers: NaverMarker[] = [];
-    filteredPlaces.forEach((place, idx) => {
-      const content = `<div style="width:32px;height:32px;border-radius:50%;background:${PIN_FILL};color:${PIN_LABEL};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(22,21,19,0.25);border:2px solid ${PIN_STROKE};cursor:pointer;">${idx + 1}</div>`;
-      const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new window.naver.maps.Point(16, 16) } });
-      naver.maps.Event.addListener(marker, 'click', () => setSelectedPlace(place));
-      newMarkers.push(marker);
-    });
-    naverMarkersRef.current = newMarkers;
+    const initialized = callMapSdk(() => {
+      const center = new naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng);
+      const map = new naver.maps.Map(container, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
+      naverMapRef.current = map;
 
-    return () => { newMarkers.forEach((m) => m.setMap(null)); };
-  }, [provider, naverReady, filteredPlaces]);
+      const lats = filteredPlaces.map((p) => p.lat);
+      const lngs = filteredPlaces.map((p) => p.lng);
+      const sw = new naver.maps.LatLng(Math.min(...lats), Math.min(...lngs));
+      const ne = new naver.maps.LatLng(Math.max(...lats), Math.max(...lngs));
+      map.fitBounds(new naver.maps.LatLngBounds(sw, ne), { top: 60, right: 40, bottom: 180, left: 40 });
+
+      filteredPlaces.forEach((place, idx) => {
+        const content = `<div style="width:32px;height:32px;border-radius:50%;background:${PIN_FILL};color:${PIN_LABEL};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(22,21,19,0.25);border:2px solid ${PIN_STROKE};cursor:pointer;">${idx + 1}</div>`;
+        const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new window.naver.maps.Point(16, 16) } });
+        naver.maps.Event.addListener(marker, 'click', () => setSelectedPlace(place));
+        newMarkers.push(marker);
+      });
+      naverMarkersRef.current = newMarkers;
+    });
+    if (!initialized) markProviderFailed('naver');
+
+    return () => { newMarkers.forEach((m) => callMapSdk(() => m.setMap(null))); };
+  }, [provider, naverReady, filteredPlaces, markProviderFailed]);
 
   // --- Google Map init ---
   useEffect(() => {
     if (provider !== 'google' || !googleReady || !googleContainerRef.current || filteredPlaces.length === 0) return;
 
-    const map = new google.maps.Map(googleContainerRef.current, {
-      center: SEOUL_CENTER, zoom: 12,
-      disableDefaultUI: true, zoomControl: true,
-      styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }],
-    });
-    googleMapRef.current = map;
-
-    const bounds = new google.maps.LatLngBounds();
-    filteredPlaces.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
-    map.fitBounds(bounds, { top: 60, right: 40, bottom: 180, left: 40 });
-
+    const googleContainer = googleContainerRef.current;
     const newMarkers: google.maps.Marker[] = [];
-    filteredPlaces.forEach((place, idx) => {
-      const marker = new google.maps.Marker({
-        map, position: { lat: place.lat, lng: place.lng },
-        label: { text: String(idx + 1), color: PIN_LABEL, fontSize: '12px', fontWeight: '700' },
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: PIN_FILL, fillOpacity: 1, strokeColor: PIN_STROKE, strokeWeight: 2 },
+    const initialized = callMapSdk(() => {
+      const map = new google.maps.Map(googleContainer, {
+        center: SEOUL_CENTER, zoom: 12,
+        disableDefaultUI: true, zoomControl: true,
+        styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }],
       });
-      marker.addListener('click', () => setSelectedPlace(place));
-      newMarkers.push(marker);
-    });
-    googleMarkersRef.current = newMarkers;
+      googleMapRef.current = map;
 
-    return () => { newMarkers.forEach((m) => m.setMap(null)); };
-  }, [provider, googleReady, filteredPlaces]);
+      const bounds = new google.maps.LatLngBounds();
+      filteredPlaces.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+      map.fitBounds(bounds, { top: 60, right: 40, bottom: 180, left: 40 });
+
+      filteredPlaces.forEach((place, idx) => {
+        const marker = new google.maps.Marker({
+          map, position: { lat: place.lat, lng: place.lng },
+          label: { text: String(idx + 1), color: PIN_LABEL, fontSize: '12px', fontWeight: '700' },
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 16, fillColor: PIN_FILL, fillOpacity: 1, strokeColor: PIN_STROKE, strokeWeight: 2 },
+        });
+        marker.addListener('click', () => setSelectedPlace(place));
+        newMarkers.push(marker);
+      });
+      googleMarkersRef.current = newMarkers;
+    });
+    if (!initialized) markProviderFailed('google');
+
+    return () => { newMarkers.forEach((m) => callMapSdk(() => m.setMap(null))); };
+  }, [provider, googleReady, filteredPlaces, markProviderFailed]);
 
   const handlePlaceSelect = useCallback((place: MapPlace) => {
     setSelectedPlace(place);
-    if (provider === 'naver' && naverMapRef.current && window.naver) {
-      naverMapRef.current.panTo(new window.naver.maps.LatLng(place.lat, place.lng));
+    const naverMap = naverMapRef.current;
+    const googleMap = googleMapRef.current;
+    if (provider === 'naver' && naverReady && naverMap && window.naver) {
+      callMapSdk(() => naverMap.panTo(new window.naver.maps.LatLng(place.lat, place.lng)));
     }
-    if (provider === 'google' && googleMapRef.current) {
-      googleMapRef.current.panTo({ lat: place.lat, lng: place.lng });
+    if (provider === 'google' && googleReady && googleMap) {
+      callMapSdk(() => googleMap.panTo({ lat: place.lat, lng: place.lng }));
     }
-  }, [provider]);
+  }, [provider, naverReady, googleReady]);
 
   if (contextLoading || isLoading) {
     return (
@@ -507,19 +527,21 @@ export function MapView() {
       </div>
 
       {/* Separate containers per SDK — never share a DOM node between map SDKs.
-          After an auth failure the SDK keeps drawing into its container, so it stays mounted but hidden. */}
+          After an auth failure the SDK keeps drawing into its container, so it stays mounted and laid out under the static map. */}
       {(provider === 'naver' && naverReady) || (naverLoaded && failedProviders.has('naver')) ? (
-        <div ref={naverContainerRef} className={provider === 'naver' && naverReady ? 'h-full w-full' : 'hidden'} />
+        <div ref={naverContainerRef} className="h-full w-full" />
       ) : null}
       {(provider === 'google' && googleReady) || (googleLoaded && failedProviders.has('google')) ? (
-        <div ref={googleContainerRef} className={provider === 'google' && googleReady ? 'h-full w-full' : 'hidden'} />
+        <div ref={googleContainerRef} className="h-full w-full" />
       ) : null}
       {(provider === 'archive' || (provider === 'naver' && !naverReady) || (provider === 'google' && !googleReady)) && (
-        <StaticArchiveMap
-          places={filteredPlaces}
-          selectedPlace={selectedPlace}
-          onPlaceSelect={handlePlaceSelect}
-        />
+        <div className="absolute inset-0">
+          <StaticArchiveMap
+            places={filteredPlaces}
+            selectedPlace={selectedPlace}
+            onPlaceSelect={handlePlaceSelect}
+          />
+        </div>
       )}
 
       {selectedPlace && (

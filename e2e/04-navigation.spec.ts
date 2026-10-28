@@ -32,13 +32,21 @@ test.describe('라우트 및 네비게이션', () => {
 
   test('네이버 지도 인증이 실패하면 정적 지도로 바꾸고 이유를 알린다', async ({ page }) => {
     await installMapSdkMocks(page);
+    // 실제 SDK처럼 키를 거부한 뒤에는 지도·마커 메서드가 예외를 던집니다.
     await page.addInitScript(() => {
+      let rejected = false;
+      const reject = () => { throw new TypeError("Cannot read properties of null (reading 'capitalize')"); };
       const OriginalMap = window.naver.maps.Map;
+      const OriginalMarker = window.naver.maps.Marker;
       window.naver.maps.Map = class extends OriginalMap {
         constructor(...args: ConstructorParameters<typeof OriginalMap>) {
           super(...args);
-          setTimeout(() => window.navermap_authFailure?.(), 0);
+          setTimeout(() => { rejected = true; window.navermap_authFailure?.(); }, 0);
         }
+        panTo() { if (rejected) reject(); }
+      };
+      window.naver.maps.Marker = class extends OriginalMarker {
+        setMap() { if (rejected) reject(); }
       };
     });
     await page.goto('/map');
