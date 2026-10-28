@@ -6,11 +6,16 @@ import HomePage from '@/app/(app)/dashboard/page';
 
 const mocks = vi.hoisted(() => ({
   useCaptures: vi.fn(),
+  useGuestCaptures: vi.fn(),
 }));
 
 vi.mock('@/contexts/CapturesContext', () => ({
   MAX_FREE_CAPTURES: 10,
   useCaptures: mocks.useCaptures,
+}));
+
+vi.mock('@/contexts/GuestCapturesContext', () => ({
+  useGuestCaptures: mocks.useGuestCaptures,
 }));
 
 function capture(
@@ -44,6 +49,15 @@ describe('dashboard search results', () => {
     vi.useRealTimers();
     vi.clearAllMocks();
     vi.stubGlobal('confirm', vi.fn(() => true));
+    mocks.useGuestCaptures.mockReturnValue({
+      guestCaptures: [],
+      remainingSlots: 3,
+      isGuestFull: false,
+      addCapture: vi.fn(),
+      deleteCapture: vi.fn(),
+      reclassifyCapture: vi.fn(),
+      clearCaptures: vi.fn(),
+    });
   });
 
   afterEach(() => {
@@ -86,6 +100,61 @@ describe('dashboard search results', () => {
     await waitFor(() => expect(deleteCapture).toHaveBeenCalledWith(1));
     await waitFor(() => {
       expect(screen.queryByText('삭제할 검색 결과')).toBeNull();
+    });
+  });
+
+  it('shows read-only samples when there are no saved captures yet', () => {
+    mocks.useCaptures.mockReturnValue({
+      captures: [],
+      isLoading: false,
+      hasMore: false,
+      isLoadingMore: false,
+      loadMore: vi.fn(),
+      deleteCapture: vi.fn(),
+      searchCaptures: vi.fn(),
+      reclassifyCapture: vi.fn(),
+      saveCapture: vi.fn(),
+      isFreeLimitReached: false,
+      freeRemaining: 10,
+      isAuthenticated: false,
+      isAuthReady: true,
+    });
+
+    render(React.createElement(HomePage));
+
+    expect(screen.getByText('성수 브런치 저장 샘플')).toBeTruthy();
+    expect(screen.getByText('오브젝트 성수')).toBeTruthy();
+    expect(screen.getByText('여행 준비 메모 샘플')).toBeTruthy();
+    expect(screen.getByText(/제주 동쪽 여행 준비/)).toBeTruthy();
+    expect(screen.getAllByText('샘플').length).toBeGreaterThan(0);
+  });
+
+  it('searches the sample captures before the user saves anything', async () => {
+    mocks.useCaptures.mockReturnValue({
+      captures: [],
+      isLoading: false,
+      hasMore: false,
+      isLoadingMore: false,
+      loadMore: vi.fn(),
+      deleteCapture: vi.fn(),
+      searchCaptures: vi.fn(),
+      reclassifyCapture: vi.fn(),
+      saveCapture: vi.fn(),
+      isFreeLimitReached: false,
+      freeRemaining: 10,
+      isAuthenticated: false,
+      isAuthReady: true,
+    });
+
+    render(React.createElement(HomePage));
+
+    fireEvent.change(screen.getByRole('searchbox', { name: '캡처 검색' }), {
+      target: { value: '우도' },
+    });
+
+    await screen.findByText('여행 준비 메모 샘플');
+    await waitFor(() => {
+      expect(screen.queryByText('성수 브런치 저장 샘플')).toBeNull();
     });
   });
 
@@ -170,5 +239,48 @@ describe('dashboard search results', () => {
       expect(screen.queryByText('확인 필요')).toBeNull();
     });
     expect(screen.getAllByText('장소 1개').length).toBeGreaterThan(0);
+  });
+
+  it('finds guest captures with the same dashboard search box', async () => {
+    const guestCapture = capture(-1, '게스트 성수 카페', {
+      category: 'place',
+      places: [{ name: '오브젝트 성수', address: '서울 성동구 연무장길' }],
+      userId: null,
+    });
+    const searchCaptures = vi.fn().mockResolvedValue([]);
+
+    mocks.useCaptures.mockReturnValue({
+      captures: [],
+      isLoading: false,
+      hasMore: false,
+      isLoadingMore: false,
+      loadMore: vi.fn(),
+      deleteCapture: vi.fn(),
+      searchCaptures,
+      reclassifyCapture: vi.fn(),
+      saveCapture: vi.fn(),
+      isFreeLimitReached: false,
+      freeRemaining: 10,
+      isAuthenticated: false,
+      isAuthReady: true,
+    });
+    mocks.useGuestCaptures.mockReturnValue({
+      guestCaptures: [guestCapture],
+      remainingSlots: 2,
+      isGuestFull: false,
+      addCapture: vi.fn(),
+      deleteCapture: vi.fn(),
+      reclassifyCapture: vi.fn(),
+      clearCaptures: vi.fn(),
+    });
+
+    render(React.createElement(HomePage));
+
+    fireEvent.change(screen.getByRole('searchbox', { name: '캡처 검색' }), {
+      target: { value: '연무장길' },
+    });
+
+    await screen.findByText('게스트 성수 카페');
+    expect(searchCaptures).not.toHaveBeenCalled();
   });
 });

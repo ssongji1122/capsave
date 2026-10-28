@@ -7,6 +7,7 @@ import Constants from 'expo-constants';
 import { supabase } from '../services/supabase';
 import { signOutAndClearLocalCaptures } from '../services/auth-session';
 import { clearAllCaptures } from '../services/database';
+import { completeGoogleSignIn } from '../services/google-sign-in';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const googleWebClientId = Constants.expoConfig?.extra?.googleClientId ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
   const googleIosClientId = Constants.expoConfig?.extra?.googleIosClientId ?? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
-  const [, response, promptAsync] = Google.useIdTokenAuthRequest({
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     iosClientId: googleIosClientId,
     clientId: googleWebClientId,
   });
@@ -51,22 +52,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params;
-      supabase.auth.signInWithIdToken({
-        provider: 'google',
-        token: id_token,
-      }).catch((err) => {
+      completeGoogleSignIn(id_token, (credentials) => supabase.auth.signInWithIdToken(credentials)).catch((err) => {
         Alert.alert('로그인 실패', err.message);
       });
+    } else if (response?.type === 'error') {
+      Alert.alert('Google 인증 실패', response.error?.message ?? 'Google 인증을 완료하지 못했습니다. 다른 인증 방법을 선택해 주십시오.');
     }
   }, [response]);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!request) {
+      Alert.alert('로그인 준비 중', '잠시 후 다시 눌러 주십시오.');
+      return;
+    }
     try {
       await promptAsync();
     } catch (err) {
       Alert.alert('로그인 오류', '다시 시도해주세요.');
     }
-  }, [promptAsync]);
+  }, [request, promptAsync]);
 
   const signOut = useCallback(async () => {
     await signOutAndClearLocalCaptures({

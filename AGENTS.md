@@ -34,7 +34,7 @@ Rules:
 
 ## Project Overview
 
-스크린샷·이미지·링크를 저장하고 다시 찾아 활용하는 개인 아카이브 앱입니다. 현재 문제 정의는 [DECISIONS.md](DECISIONS.md)에서 확인하고, 작업 배정은 해당 작업의 브리프를 확인합니다.
+스크린샷·이미지·링크를 저장하고 다시 찾아 활용하는 개인 아카이브 앱입니다. 현재 문제 정의와 작업 배정은 [DECISIONS.md](DECISIONS.md)와 [통합 작업판](docs/coordination/2026-10-09_scrave-master-plan.md)을 확인합니다.
 
 ## 링크 하나만 들어왔을 때
 

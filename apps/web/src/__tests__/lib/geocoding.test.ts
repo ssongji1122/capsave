@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   validateGeocodingInput,
   buildGeocodingQuery,
   parseGoogleGeocodeResponse,
+  buildGoogleGeocodeUrl,
+  requestGoogleGeocode,
 } from '@/lib/geocoding';
 
 describe('validateGeocodingInput', () => {
@@ -87,5 +89,67 @@ describe('parseGoogleGeocodeResponse', () => {
       results: [{ formatted_address: '서울' }],
     };
     expect(parseGoogleGeocodeResponse(data)).toBeNull();
+  });
+});
+
+describe('parseGoogleGeocodeResponse place id', () => {
+  it('keeps the Google place id so it can be stored', () => {
+    const data = {
+      status: 'OK',
+      results: [
+        {
+          geometry: { location: { lat: 37.5665, lng: 126.978 } },
+          formatted_address: '서울특별시 중구',
+          place_id: 'ChIJ-seoul',
+        },
+      ],
+    };
+    expect(parseGoogleGeocodeResponse(data)?.placeId).toBe('ChIJ-seoul');
+  });
+});
+
+describe('buildGoogleGeocodeUrl', () => {
+  it('encodes the query and asks for Korean results', () => {
+    const url = new URL(buildGoogleGeocodeUrl('블루보틀 성수', 'key-1'));
+    expect(url.origin + url.pathname).toBe('https://maps.googleapis.com/maps/api/geocode/json');
+    expect(url.searchParams.get('address')).toBe('블루보틀 성수');
+    expect(url.searchParams.get('key')).toBe('key-1');
+    expect(url.searchParams.get('language')).toBe('ko');
+  });
+});
+
+describe('requestGoogleGeocode', () => {
+  function respond(body: unknown, init: ResponseInit = { status: 200 }) {
+    return vi.fn().mockResolvedValue(new Response(JSON.stringify(body), init));
+  }
+
+  it('returns coordinates and place id for a found place', async () => {
+    const fetchMock = respond({
+      status: 'OK',
+      results: [{ geometry: { location: { lat: 37.54, lng: 127.05 } }, place_id: 'ChIJ-bb' }],
+    });
+
+    await expect(requestGoogleGeocode('블루보틀 성수', 'key-1', fetchMock)).resolves.toEqual({
+      lat: 37.54,
+      lng: 127.05,
+      formattedAddress: '',
+      placeId: 'ChIJ-bb',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(buildGoogleGeocodeUrl('블루보틀 성수', 'key-1'));
+  });
+
+  it('returns null only when Google finds nothing', async () => {
+    const fetchMock = respond({ status: 'ZERO_RESULTS', results: [] });
+    await expect(requestGoogleGeocode('없는 곳', 'key-1', fetchMock)).resolves.toBeNull();
+  });
+
+  it('throws on quota or key errors so the place is not marked as not found', async () => {
+    const fetchMock = respond({ status: 'OVER_QUERY_LIMIT', results: [] });
+    await expect(requestGoogleGeocode('카페', 'key-1', fetchMock)).rejects.toThrow('OVER_QUERY_LIMIT');
+  });
+
+  it('throws on HTTP errors', async () => {
+    const fetchMock = respond({}, { status: 503 });
+    await expect(requestGoogleGeocode('카페', 'key-1', fetchMock)).rejects.toThrow('503');
   });
 });

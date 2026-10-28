@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 interface PlaceQuickSearchProps {
   placeName: string;
   address?: string | null;
+  reviewQuery?: string;
 }
 
 const SEARCH_ICONS = [
@@ -79,7 +80,7 @@ async function openSearchUrl(
   }
 }
 
-export function PlaceQuickSearch({ placeName, address }: PlaceQuickSearchProps) {
+export function PlaceQuickSearch({ placeName, address, reviewQuery }: PlaceQuickSearchProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
 
@@ -87,11 +88,12 @@ export function PlaceQuickSearch({ placeName, address }: PlaceQuickSearchProps) 
 
   const handleIconPress = useCallback(
     async (icon: (typeof SEARCH_ICONS)[number]) => {
-      const appUrl = icon.appUrl ? icon.appUrl(query) : null;
-      const webUrl = icon.webUrl(query);
+      const searchQuery = (icon.key === 'naverblog' || icon.key === 'youtube') ? reviewQuery ?? query : query;
+      const appUrl = icon.appUrl ? icon.appUrl(searchQuery) : null;
+      const webUrl = icon.webUrl(searchQuery);
       await openSearchUrl(appUrl, webUrl);
     },
-    [query]
+    [query, reviewQuery]
   );
 
   const handleMapOpen = useCallback(() => {

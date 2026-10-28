@@ -6,7 +6,7 @@ import { MapView } from '@/components/map/MapView';
 
 export default function MapPage() {
   return (
-    <div className="h-screen w-full relative">
+    <div className="relative h-[100dvh] w-full">
       <Suspense fallback={
         <div className="flex items-center justify-center h-full">
           <div className="text-center">

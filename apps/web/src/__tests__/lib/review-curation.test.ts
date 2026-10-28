@@ -216,3 +216,10 @@ describe('rankVideoCandidates', () => {
     expect(candidates[0]).toMatchObject({ length: '8:00', published: '2026-03-01' });
   });
 });
+
+it('rejects airport reviews that do not answer the arrival need',()=>{
+ const keys=getPlaceMatchKeys('세부 막탄 공항 심야 도착 공항 이동');
+ const post={title:'세부 막탄 공항 면세점 쇼핑',description:'기념품 구매',link:'https://example.com/post',bloggername:'여행자',postdate:'20260901'};
+ expect(screenNaverPost(post,keys,TODAY)).toBeNull();
+ expect(screenNaverPost({...post,title:'세부 막탄 공항 새벽 도착 택시 이동'},keys,TODAY)).not.toBeNull();
+});

@@ -108,3 +108,19 @@ describe('PlaceReviews', () => {
     expect(await screen.findByRole('button', { name: /다시 불러오기/ })).toBeTruthy();
   });
 });
+
+it('uses the capture need as the review query and explains it',async()=>{
+ const fetchMock=stubFetch(new Response(JSON.stringify(RESULT)));
+ render(<PlaceReviews placeName="세부 막탄 공항" topic={{query:'세부 막탄 공항 심야 도착 공항 이동',label:'도착 후 이동 후기',reason:'심야 도착 일정입니다.'}} />);
+ expect(screen.getByText('심야 도착 일정입니다.')).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:/도착 후 이동 후기/}));
+ await screen.findByText('아난타라 울루와뚜 내돈내산 후기');
+ expect(JSON.parse(fetchMock.mock.calls[0][1].body).name).toContain('심야 도착');
+});
+
+it('explains that picked reviews require login',async()=>{
+ stubFetch(new Response('{}',{status:401}));
+ render(<PlaceReviews placeName="세부 공항" />);
+ fireEvent.click(screen.getByRole('button',{name:/골라 둔 후기/}));
+ expect(await screen.findByRole('link',{name:'로그인하고 후기 보기'})).toBeTruthy();
+});

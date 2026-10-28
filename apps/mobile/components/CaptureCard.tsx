@@ -11,6 +11,7 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ARCHIVE_APPEARANCE, ARCHIVE_SECTIONS, classifyArchiveCapture } from '@scrave/shared';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
@@ -21,9 +22,10 @@ import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 interface CaptureCardProps {
   item: CaptureItem;
   onDelete?: (id: number) => void;
+  compact?: boolean;
 }
 
-export function CaptureCard({ item, onDelete }: CaptureCardProps) {
+export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
@@ -90,9 +92,20 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
     return `${month}/${day} ${hours}:${mins}`;
   };
 
+  if (compact) {
+    const section = classifyArchiveCapture(item);
+    const appearance = ARCHIVE_APPEARANCE[section];
+    const icons = { blob: 'flower', cross: 'add', x: 'close', star: 'star' } as const;
+    return <TouchableOpacity style={styles.photoCard} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
+      {resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]} contentFit="contain" cachePolicy="memory-disk" />}
+      <Text style={[styles.photoTitle, {color: colors.text}]} numberOfLines={2}>{item.title}</Text>
+      <View style={styles.photoMeta}><Ionicons name={icons[appearance.shape]} size={12} color={appearance.color}/><Text style={{color: colors.textSecondary, fontSize: 11}}>{ARCHIVE_SECTIONS.find(s=>s.id===section)?.label}</Text></View>
+    </TouchableOpacity>;
+  }
+
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.surface, borderColor }]}
+      style={[styles.card, { backgroundColor: colors.background, borderColor: colors.borderLight }]}
       onPress={() => router.push(`/capture/${item.id}`)}
       activeOpacity={0.85}
     >
@@ -105,7 +118,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
             color={accentColor}
           />
           <Text style={[styles.categoryText, { color: accentColor }]}>
-            {isPlace ? '장소' : '텍스트'}
+            {ARCHIVE_SECTIONS.find(section=>section.id===classifyArchiveCapture(item))?.label}
           </Text>
         </View>
         <View style={styles.headerRight}>
@@ -123,7 +136,7 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
         <Image
           source={{ uri: resolvedImageUri }}
           style={styles.cardImage}
-          contentFit="cover"
+          contentFit="contain"
           transition={200}
           cachePolicy="memory-disk"
         />
@@ -199,9 +212,13 @@ export function CaptureCard({ item, onDelete }: CaptureCardProps) {
 }
 
 const styles = StyleSheet.create({
+  photoCard: { flex: 1, maxWidth: '48%', minWidth: 0, marginBottom: 20 },
+  photoImage: { width: '100%', height: 220, borderRadius: 14 },
+  photoTitle: { fontSize: 14, fontWeight: '600', marginTop: 10, lineHeight: 20 },
+  photoMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
   card: {
-    borderRadius: 32, // High border radius as requested
-    borderWidth: 1,
+    borderRadius: 0,
+    borderTopWidth: 1,
     marginHorizontal: 16,
     marginBottom: 20,
     overflow: 'hidden',
@@ -239,12 +256,12 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: '100%',
-    height: 180,
+    height: 260,
   },
   cardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    lineHeight: 24,
+    fontSize: 28,
+    fontWeight: '400',
+    lineHeight: 36,
     paddingHorizontal: 16,
     paddingTop: 12,
   },

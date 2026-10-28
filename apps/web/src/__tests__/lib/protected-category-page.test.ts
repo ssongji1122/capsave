@@ -27,30 +27,45 @@ function capture(id: number, title: string): CaptureItem {
 }
 
 describe('getProtectedCategoryPageModel', () => {
-  it('uses database captures even when the database is empty', () => {
+  it('uses guest captures when the database is empty', () => {
+    const guestCapture = capture(-1, '게스트 캡처');
     const model = getProtectedCategoryPageModel({
       dbCaptures: [],
-      guestCaptures: [capture(-1, '게스트 캡처')],
+      guestCaptures: [guestCapture],
       isAuthReady: true,
       isLoading: false,
     });
 
-    expect(model.captures).toEqual([]);
+    expect(model.captures).toEqual([guestCapture]);
   });
 
-  it('does not expose guest captures on protected category pages', () => {
+  it('merges guest captures with database captures for immediate use', () => {
     const dbCapture = capture(1, 'DB 캡처');
+    const guestCapture = capture(-1, '게스트 캡처');
     const model = getProtectedCategoryPageModel({
       dbCaptures: [dbCapture],
-      guestCaptures: [capture(-1, '게스트 캡처')],
+      guestCaptures: [guestCapture],
       isAuthReady: true,
       isLoading: false,
     });
 
-    expect(model.captures).toEqual([dbCapture]);
+    expect(model.captures).toEqual([guestCapture, dbCapture]);
   });
 
-  it('keeps the page loading until auth state is ready', () => {
+  it('does not block guest captures while auth state is loading', () => {
+    const guestCapture = capture(-1, '게스트 캡처');
+    const model = getProtectedCategoryPageModel({
+      dbCaptures: [],
+      guestCaptures: [guestCapture],
+      isAuthReady: false,
+      isLoading: false,
+    });
+
+    expect(model.isLoading).toBe(false);
+    expect(model.captures).toEqual([guestCapture]);
+  });
+
+  it('keeps the page loading when no guest captures exist and auth state is not ready', () => {
     const model = getProtectedCategoryPageModel({
       dbCaptures: [],
       guestCaptures: [],

@@ -102,9 +102,10 @@ export function getMobileMapLinks(placeName: string, address?: string | null): M
   return baseLinks.map((link) => ({ ...link, ...appUrlByProvider[link.provider] }));
 }
 
-export function getReviewLinks(placeName: string, address?: string | null): ReviewLink[] {
+export function getReviewLinks(placeName: string, address?: string | null, reviewQuery?: string): ReviewLink[] {
   const query = address ? `${placeName} ${address}` : placeName;
-  const encoded = encodeQuery(query);
+  const encoded = encodeQuery(reviewQuery ?? query);
+  const mapQuery = encodeQuery(query);
 
   return [
     {
@@ -120,7 +121,7 @@ export function getReviewLinks(placeName: string, address?: string | null): Revi
     {
       provider: 'kakao',
       label: '카카오 리뷰',
-      webUrl: `https://map.kakao.com/?q=${encoded}`,
+      webUrl: `https://map.kakao.com/?q=${mapQuery}`,
     },
   ];
 }

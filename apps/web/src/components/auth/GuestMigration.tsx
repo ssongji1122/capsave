@@ -4,13 +4,15 @@ import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/browser';
 import { migrateGuestCaptures } from '@/lib/migrate-guest-captures';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 
 export function GuestMigration() {
   const migrated = useRef(false);
-  const { refresh } = useCaptures();
+  const { refresh, isAuthReady, isAuthenticated } = useCaptures();
+  const { reloadCaptures } = useGuestCaptures();
 
   useEffect(() => {
-    if (migrated.current) return;
+    if (!isAuthReady || !isAuthenticated || migrated.current) return;
     migrated.current = true;
 
     const run = async () => {
@@ -19,13 +21,14 @@ export function GuestMigration() {
       if (!user) return;
 
       const count = await migrateGuestCaptures(supabase, user.id);
+      reloadCaptures();
       if (count > 0) {
         await refresh();
       }
     };
 
     run().catch(console.error);
-  }, [refresh]);
+  }, [refresh, isAuthReady, isAuthenticated, reloadCaptures]);
 
   return null;
 }

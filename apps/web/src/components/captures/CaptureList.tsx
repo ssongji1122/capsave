@@ -3,12 +3,14 @@
 import type { ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { CaptureItem } from '@scrave/shared';
+import type { CaptureUserMeta } from '@/lib/capture-intent';
 import { CaptureCard } from './CaptureCard';
 
 interface CaptureListProps {
   captures: CaptureItem[];
   isLoading: boolean;
   onDelete: (id: number) => void;
+  onMetaChange?: (captureId: number, meta: CaptureUserMeta) => void;
   emptyIcon: ReactNode;
   emptyTitle: string;
   emptySubtitle: string;
@@ -22,6 +24,7 @@ export function CaptureList({
   captures,
   isLoading,
   onDelete,
+  onMetaChange,
   emptyIcon,
   emptyTitle,
   emptySubtitle,
@@ -72,7 +75,12 @@ export function CaptureList({
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
         {captures.map((item) => (
-          <CaptureCard key={item.id} item={item} onDelete={onDelete} />
+          <CaptureCard
+            key={item.id}
+            item={item}
+            onDelete={onDelete}
+            onMetaChange={onMetaChange}
+          />
         ))}
       </div>
       {hasMore && (

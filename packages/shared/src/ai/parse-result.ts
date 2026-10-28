@@ -1,7 +1,51 @@
-import { AnalysisResult, PlaceInfo, SourceApp } from '../types/capture';
+import { AnalysisResult, CaptureCategory, PlaceInfo, SourceApp } from '../types/capture';
 import { sanitizeUrl } from '../utils/url-validator';
 
+import { TIMESTAMP_ONLY_ADDRESS } from '../utils/capture-archive';
+
 const VALID_SOURCES: SourceApp[] = ['instagram', 'threads', 'naver', 'google', 'youtube', 'other'];
+
+export interface ConfidenceSignals {
+  category: CaptureCategory;
+  title: string;
+  summary: string;
+  extractedText: string;
+  places: PlaceInfo[];
+}
+
+/**
+ * Calibrate raw Gemini confidence against structural quality signals (TODOS F1):
+ * - If category is 'place' but no places were extracted, cap confidence below 0.5 (0.35) so it enters UncertainQueue.
+ * - If category is 'place' and none of the places have an address, apply a 0.15 penalty.
+ * - If both summary and extractedText are empty on a text capture, apply a 0.25 penalty.
+ */
+export function calibrateConfidence(
+  rawConfidence: number,
+  signals: ConfidenceSignals,
+): number {
+  const clamped = Math.max(0, Math.min(1, rawConfidence));
+
+  if (signals.category === 'place') {
+    if (signals.places.length === 0) {
+      return Math.min(clamped, 0.35);
+    }
+    const hasAnyAddress = signals.places.some(
+      (p) => typeof p.address === 'string' && p.address.trim().length > 0,
+    );
+    if (!hasAnyAddress) {
+      return Number(Math.max(0, clamped - 0.15).toFixed(2));
+    }
+    return clamped;
+  }
+
+  const hasText =
+    signals.extractedText.trim().length > 0 || signals.summary.trim().length > 0;
+  if (!hasText && signals.title === '제목 없음') {
+    return Math.min(clamped, 0.4);
+  }
+
+  return clamped;
+}
 
 function validateSource(raw: unknown): SourceApp {
   if (typeof raw === 'string' && VALID_SOURCES.includes(raw as SourceApp)) {
@@ -28,10 +72,11 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
   if (Array.isArray(result.places)) {
     places = result.places.map((p: { name?: string; address?: string; date?: string; links?: string[] }) => {
       const links = sanitizeLinks(p.links);
+      const temporalAddress = typeof p.address === 'string' && TIMESTAMP_ONLY_ADDRESS.test(p.address.trim());
       return {
         name: p.name || '',
-        ...(p.address && { address: p.address }),
-        ...(p.date && { date: p.date }),
+        ...(p.address && !temporalAddress && { address: p.address }),
+        ...((p.date || temporalAddress) && { date: p.date || p.address }),
         ...(links.length > 0 && { links }),
       };
     }).filter((p: PlaceInfo) => p.name);
@@ -41,7 +86,13 @@ function parseSingleResult(result: Record<string, unknown>): AnalysisResult {
 
   // Clamp confidence to 0.0–1.0 (guard against model drift)
   const rawConfidence = typeof result.confidence === 'number' ? result.confidence : 1.0;
-  const confidence = Math.max(0, Math.min(1, rawConfidence));
+  const confidence = calibrateConfidence(rawConfidence, {
+    category: result.category === 'place' ? 'place' : 'text',
+    title: (result.title as string) || '제목 없음',
+    summary: (result.summary as string) || '',
+    extractedText: (result.extractedText as string) || '',
+    places,
+  });
 
   return {
     category: result.category === 'place' ? 'place' : 'text',

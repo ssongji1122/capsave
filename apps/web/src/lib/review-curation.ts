@@ -75,6 +75,18 @@ function matchesPlace(text: string, keys: string[]): boolean {
   return keys.some((key) => lower.includes(key));
 }
 
+const AIRPORT_NEEDS = [
+  { query: /심야 도착/, evidence: /심야|새벽|야간|밤.{0,5}(도착|공항)/ },
+  { query: /출국 체크인/, evidence: /출국|체크인|출발|탑승수속/ },
+  { query: /입국 공항 이동/, evidence: /입국|도착|공항.{0,8}(이동|택시|버스)|픽업/ },
+] as const;
+function matchesCaptureNeed(text: string, keys: string[]): boolean {
+  const query = keys[0] ?? '';
+  if (!/공항|airport/i.test(query)) return true;
+  const need = AIRPORT_NEEDS.find(rule => rule.query.test(query));
+  return !need || need.evidence.test(text);
+}
+
 function cleanNaverText(value: string): string {
   return value
     .replace(/<[^>]+>/g, '')
@@ -100,7 +112,7 @@ export function screenNaverPost(
   const excerpt = cleanNaverText(item.description);
   const text = `${title} ${excerpt}`;
 
-  if (!matchesPlace(text, keys)) return null;
+  if (!matchesPlace(text, keys) || !matchesCaptureNeed(text, keys)) return null;
   if (NAVER_REVIEW_RULES.sponsorWords.some((word) => text.includes(word))) return null;
 
   const postedAt = parsePostDate(item.postdate);
@@ -195,7 +207,7 @@ export function rankVideoCandidates(
   const dropped: DroppedVideo[] = [];
 
   for (const video of videos) {
-    if (!matchesPlace(video.title, keys)) continue;
+    if (!matchesPlace(video.title, keys) || !matchesCaptureNeed(`${video.title} ${video.description}`, keys)) continue;
 
     const seconds = parseIsoDuration(video.duration);
     if (seconds < YOUTUBE_VIDEO_RULES.minSeconds || seconds > YOUTUBE_VIDEO_RULES.maxSeconds) continue;

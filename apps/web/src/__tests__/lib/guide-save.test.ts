@@ -160,6 +160,16 @@ describe('saving a guide draft made from captures', () => {
     expect(analysis.tags).toEqual([getGuideCaptureTag(draft.slug)]);
   });
 
+  it('keeps the geocoding time on saved places so the coordinates still expire', () => {
+    const [first, ...rest] = draft.places;
+    const analysis = buildGuideCaptureAnalysis({
+      ...draft,
+      places: [{ ...first!, geocodedAt: '2026-10-10T00:00:00.000Z' }, ...rest],
+    });
+    expect(analysis.places[0]?.geocodedAt).toBe('2026-10-10T00:00:00.000Z');
+    expect(analysis.places[1]).not.toHaveProperty('geocodedAt');
+  });
+
   it('uses the given cover image instead of the share image', async () => {
     const { client, calls } = fakeClient({ count: 3 });
 

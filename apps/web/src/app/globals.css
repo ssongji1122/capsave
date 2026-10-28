@@ -2,43 +2,43 @@
 
 @theme {
   /* Backgrounds */
-  --color-background: #050508;
-  --color-surface: #0D0D12;
-  --color-surface-elevated: #14141B;
-  --color-border: #1E1E28;
-  --color-border-light: #2A2A35;
+  --color-background: #F3EFE6;
+  --color-surface: #F3EFE6;
+  --color-surface-elevated: #EAE4D7;
+  --color-border: #DDD7CC;
+  --color-border-light: #CCC4B6;
 
   /* Text */
-  --color-text-primary: #E8D5B7;
-  --color-text-secondary: #9B9B9B;
-  --color-text-tertiary: #5A5A65;
+  --color-text-primary: #161513;
+  --color-text-secondary: #6B675E;
+  --color-text-tertiary: #716C62;
 
   /* Primary */
-  --color-primary: #F4845F;
-  --color-primary-light: #F69E80;
-  --color-primary-dark: #C4684A;
-  --color-primary-surface: rgba(244, 132, 95, 0.10);
-  --color-primary-border: rgba(244, 132, 95, 0.25);
+  --color-primary: #A83F20;
+  --color-primary-light: #8D331A;
+  --color-primary-dark: #8D331A;
+  --color-primary-surface: rgba(168, 63, 32, 0.10);
+  --color-primary-border: rgba(168, 63, 32, 0.25);
 
   /* Place accent */
-  --color-place-accent: #34D399;
-  --color-place-surface: rgba(52, 211, 153, 0.08);
-  --color-place-border: rgba(52, 211, 153, 0.20);
+  --color-place-accent: #26715B;
+  --color-place-surface: rgba(38, 113, 91, 0.08);
+  --color-place-border: rgba(38, 113, 91, 0.20);
 
   /* Text accent */
-  --color-text-accent: #7DD3FC;
-  --color-text-surface: rgba(125, 211, 252, 0.08);
-  --color-text-border: rgba(125, 211, 252, 0.20);
+  --color-text-accent: #1D63A6;
+  --color-text-surface: rgba(29, 99, 166, 0.08);
+  --color-text-border: rgba(29, 99, 166, 0.20);
 
   /* AI accent */
-  --color-ai-accent: #A78BFA;
-  --color-ai-surface: rgba(167, 139, 250, 0.08);
+  --color-ai-accent: #68538C;
+  --color-ai-surface: rgba(104, 83, 140, 0.08);
 
   /* Semantic */
-  --color-error: #F87171;
-  --color-success: #34D399;
-  --color-warning: #FBBF24;
-  --color-info: #7DD3FC;
+  --color-error: #B33332;
+  --color-success: #26715B;
+  --color-warning: #86601A;
+  --color-info: #1D63A6;
 
   /* Font families */
   --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -47,14 +47,14 @@
 }
 
 body {
-  background:
-    linear-gradient(180deg, #08080d 0%, var(--color-background) 36%),
-    var(--color-background);
+  background: var(--color-background);
+  color-scheme: light;
+  word-break: keep-all;
   color: var(--color-text-primary);
   font-family: var(--font-sans);
 }
 
-/* Custom scrollbar for dark theme */
+/* Archive scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }

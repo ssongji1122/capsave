@@ -8,6 +8,8 @@ export interface PlaceInfo {
   links?: string[];
   lat?: number;
   lng?: number;
+  placeId?: string;
+  geocodedAt?: string;  // 지오코딩을 시도한 시각(ISO). 받은 좌표는 30일만 보관
 }
 
 export interface AnalysisResult {

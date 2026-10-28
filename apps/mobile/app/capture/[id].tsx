@@ -1,3 +1,4 @@
+import { buildCaptureReviewTopic } from '@scrave/shared';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -10,6 +11,7 @@ import {
   Platform,
   Clipboard,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,6 +21,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { getMapLinks, openMap, openUrl, sortByPreferredProvider } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
+import { ArchiveSources } from '@/components/ArchiveSources';
 import { PlaceReviews } from '@/components/PlaceReviews';
 import { runCaptureDetailDeleteFlow } from '@/services/capture-delete-flow';
 import { useSignedImage } from '@/hooks/useSignedImage';
@@ -33,6 +36,7 @@ export default function CaptureDetailScreen() {
   const { captures, deleteCapture } = useCaptures();
   const item = captures.find((c) => c.id === Number(id));
 
+  const [showOriginal, setShowOriginal] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -112,7 +116,7 @@ export default function CaptureDetailScreen() {
   if (!item) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <View style={styles.navBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -134,7 +138,7 @@ export default function CaptureDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Nav Bar */}
       <View style={styles.navBar}>
@@ -149,18 +153,24 @@ export default function CaptureDetailScreen() {
         </TouchableOpacity>
       </View>
 
+      <Modal visible={showOriginal} transparent onRequestClose={()=>setShowOriginal(false)}>
+        <View style={{flex:1,backgroundColor:colors.background,padding:24,paddingTop:60}}>
+          <TouchableOpacity accessibilityRole="button" onPress={()=>setShowOriginal(false)} style={{minHeight:44}}><Text style={{color:colors.text}}>원본 닫기</Text></TouchableOpacity>
+          {resolvedImageUri ? <Image source={{uri:resolvedImageUri}} style={{flex:1}} contentFit="contain" /> : null}
+        </View>
+      </Modal>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Image */}
         {resolvedImageUri ? (
-          <View style={styles.imageContainer}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="원본 이미지 크게 보기" style={styles.imageContainer} onPress={()=>setShowOriginal(true)}>
             <Image
               source={{ uri: resolvedImageUri }}
               style={styles.image}
-              contentFit="cover"
+              contentFit="contain"
               transition={200}
               cachePolicy="memory-disk"
             />
-          </View>
+          </TouchableOpacity>
         ) : null}
 
         <View style={styles.body}>
@@ -194,6 +204,7 @@ export default function CaptureDetailScreen() {
             <Text style={[styles.summary, { color: colors.textSecondary }]}>{item.summary}</Text>
           ) : null}
 
+          <ArchiveSources capture={item} />
           {/* Places */}
           {isPlace && item.places.length > 0 && (
             <View style={[styles.section, { borderTopColor: colors.border }]}>
@@ -211,9 +222,9 @@ export default function CaptureDetailScreen() {
                     </View>
                     <View style={styles.placeTextGroup}>
                       <Text style={[styles.placeName, { color: colors.text }]}>{place.name}</Text>
-                      {place.address ? (
+                      {place.address || place.date ? (
                         <Text style={[styles.placeAddress, { color: colors.textSecondary }]}>
-                          {place.address}
+                          {[place.address, place.date].filter(Boolean).join(' · ')}
                         </Text>
                       ) : null}
                     </View>
@@ -231,10 +242,11 @@ export default function CaptureDetailScreen() {
                   <PlaceQuickSearch
                     placeName={place.name}
                     address={place.address}
+                    reviewQuery={buildCaptureReviewTopic(item, idx).query}
                   />
 
                   {/* 협찬·AI 음성·얼굴 위주를 거른 후기와 영상 */}
-                  <PlaceReviews placeName={place.name} />
+                  <PlaceReviews placeName={place.name} topic={buildCaptureReviewTopic(item, idx)} />
 
                   {/* 장소별 연관링크 */}
                   {place.links && place.links.length > 0 && (
@@ -435,9 +447,9 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
-    lineHeight: 30,
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 26,
   },
   summary: {
     fontSize: 15,

@@ -2,43 +2,43 @@
 export const Colors = {
   // Primary dark theme
   dark: {
-    background: '#000000', // Pure black like How We Feel
-    surface: '#0F0F0F',
-    surfaceElevated: '#1A1A1A',
-    border: '#262626',
-    borderLight: '#333333',
+    background: '#F3EFE6', // Scrave background
+    surface: '#F3EFE6',
+    surfaceElevated: '#EAE4D7',
+    border: '#DDD7CC',
+    borderLight: '#CCC4B6',
 
-    text: '#FFFFFF',
-    textSecondary: '#A0A0A0',
-    textTertiary: '#666666',
+    text: '#161513',
+    textSecondary: '#6B675E',
+    textTertiary: '#716C62',
 
-    // How We Feel Inspired Accents
-    primary: '#F4845F', // Warm Coral
-    primaryLight: '#F69E80',
-    primaryDark: '#D4623D',
+    // Scrave accents
+    primary: '#A83F20', // Warm Coral
+    primaryLight: '#8D331A',
+    primaryDark: '#8D331A',
 
     // Track colors (Categorization)
-    placeAccent: '#4ADE80', // Mint/Green (Calm/Growth)
+    placeAccent: '#26715B', // Mint/Green (Calm/Growth)
     placeAccentLight: '#86EFAC',
     placeAccentDark: '#166534',
     placeSurface: 'rgba(74, 222, 128, 0.08)',
     placeBorder: 'rgba(74, 222, 128, 0.2)',
 
-    textAccent: '#60A5FA', // Blue (Reflection)
+    textAccent: '#1D63A6', // Blue (Reflection)
     textAccentLight: '#93C5FD',
     textAccentDark: '#1E40AF',
     textSurface: 'rgba(96, 165, 250, 0.08)',
     textBorder: 'rgba(96, 165, 250, 0.2)',
 
     // Status
-    success: '#4ADE80',
+    success: '#34D399',
     warning: '#FFB800',
     error: '#F87171', // Coral/Red
 
     // Tab bar
-    tabBar: '#000000',
-    tabIconDefault: '#666666',
-    tabIconSelected: '#F4845F',
+    tabBar: '#F3EFE6',
+    tabIconDefault: '#6B675E',
+    tabIconSelected: '#161513',
 
     // Gradient
     gradientStart: '#F4845F',
@@ -47,27 +47,27 @@ export const Colors = {
 
   // Keep light mode for future
   light: {
-    background: '#F8F9FA',
-    surface: '#FFFFFF',
-    surfaceElevated: '#FFFFFF',
-    border: '#E5E7EB',
-    borderLight: '#F3F4F6',
+    background: '#F3EFE6',
+    surface: '#F3EFE6',
+    surfaceElevated: '#EAE4D7',
+    border: '#DDD7CC',
+    borderLight: '#CCC4B6',
 
-    text: '#111827',
-    textSecondary: '#6B7280',
-    textTertiary: '#9CA3AF',
+    text: '#161513',
+    textSecondary: '#6B675E',
+    textTertiary: '#716C62',
 
-    primary: '#6C5CE7',
-    primaryLight: '#A29BFE',
-    primaryDark: '#4834D4',
+    primary: '#A83F20',
+    primaryLight: '#8D331A',
+    primaryDark: '#8D331A',
 
-    placeAccent: '#00B894',
+    placeAccent: '#26715B',
     placeAccentLight: '#55EFC4',
     placeAccentDark: '#00A67C',
     placeSurface: 'rgba(0, 184, 148, 0.06)',
     placeBorder: 'rgba(0, 184, 148, 0.15)',
 
-    textAccent: '#0984E3',
+    textAccent: '#1D63A6',
     textAccentLight: '#74B9FF',
     textAccentDark: '#0767B3',
     textSurface: 'rgba(9, 132, 227, 0.06)',
@@ -77,9 +77,9 @@ export const Colors = {
     warning: '#FDCB6E',
     error: '#FF6B6B',
 
-    tabBar: '#FFFFFF',
-    tabIconDefault: '#9CA3AF',
-    tabIconSelected: '#6C5CE7',
+    tabBar: '#F3EFE6',
+    tabIconDefault: '#6B675E',
+    tabIconSelected: '#161513',
 
     gradientStart: '#6C5CE7',
     gradientEnd: '#0984E3',

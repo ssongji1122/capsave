@@ -21,11 +21,17 @@ export type {
   GuideReferenceKind,
   GuidePlaceCategory,
   GuideStatus,
+  GuideVisibility,
   GuideReferencePreview,
   GuideReference,
   GuideCoordinates,
   GuidePlace,
   PublicGuide,
+  SavedGuideRow,
+  SavedGuideRecord,
+  SavedGuideSummary,
+  SaveGuideInput,
+  UpdateGuideInput,
 } from './types/guide';
 
 // Design tokens
@@ -63,7 +69,12 @@ export { extractStoragePath, getSignedImageUrl, DEFAULT_SIGNED_URL_EXPIRY } from
 // AI
 export { AI_MODEL, AI_MODEL_ENDPOINT } from './ai/config';
 export { SYSTEM_PROMPT, BATCH_ANALYSIS_INSTRUCTION } from './ai/prompts';
-export { parseAnalysisResult, parseBatchAnalysisResult } from './ai/parse-result';
+export {
+  parseAnalysisResult,
+  parseBatchAnalysisResult,
+  calibrateConfidence,
+} from './ai/parse-result';
+export type { ConfidenceSignals } from './ai/parse-result';
 export {
   GUIDE_PROMPT_VERSION,
   GUIDE_CAPTURE_NOTE_MAX_LENGTH,
@@ -75,6 +86,7 @@ export type { GuidePromptPlace, GuidePromptInput } from './ai/guide-prompt';
 export { createSupabaseClient } from './supabase/client';
 export {
   MAX_FREE_CAPTURES,
+  MAX_GUIDES_PER_USER,
   getAllCaptures,
   getCapturesByCategory,
   searchCaptures,
@@ -86,5 +98,25 @@ export {
   softDeleteCapture,
   touchUserSeen,
   countUserCaptures,
+  extractGuideSourceCaptureIds,
+  toShareableGuideBody,
+  saveGuide,
+  listMyGuides,
+  getMyGuideById,
+  updateGuide,
+  softDeleteGuide,
+  getSharedGuideBySlug,
 } from './supabase/queries';
 export { mapRowToCapture, mapCaptureToRow } from './supabase/mappers';
+
+export { ARCHIVE_SECTIONS, classifyArchiveCapture, buildArchiveLinks, buildSourceQuery, safeArchiveUrl } from './utils/capture-archive';
+export type { ArchiveSection, ArchiveCapture, ArchiveLink } from './utils/capture-archive';
+
+export { buildCaptureReviewTopic, type CaptureReviewTopic } from './utils/review-context';
+
+export { GEOCODE_CACHE_DAYS, needsGeocoding, hasFreshCoordinates, applyGeocodeResult, expireGeocodedPlaces } from "./utils/place-geocoding";
+export type { PlaceGeocodeResult } from "./utils/place-geocoding";
+export { findRouteCandidates, DEFAULT_MAX_EXTRA_MINUTES } from "./utils/route-candidates";
+export type { LatLng, RouteCandidate, RouteCandidateCapture, RouteCandidateInput } from "./utils/route-candidates";
+
+export { ARCHIVE_APPEARANCE } from './utils/archive-appearance';

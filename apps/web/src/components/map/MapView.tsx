@@ -2,12 +2,18 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { AlertTriangle, Map, MapPin } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { AlertTriangle, Map, MapPin, Search, X } from 'lucide-react';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
+import { filterCapturesByArchiveQuery, mergeArchiveCaptures } from '@/lib/archive-search';
+import { getVisibleArchiveCaptures } from '@/lib/sample-captures';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
+import { StaticArchiveMap } from './StaticArchiveMap';
 import { pickDefaultMapProvider } from '@/lib/map-provider';
+import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
+import { hasFreshCoordinates, needsGeocoding } from '@scrave/shared';
 
 export interface MapPlace {
   name: string;
@@ -21,7 +27,10 @@ export interface MapPlace {
   placeIndex: number;
 }
 
-type MapProvider = 'naver' | 'google';
+type MapProvider = 'archive' | 'naver' | 'google';
+const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 } as const;
+const NAVER_MAP_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // --- SDK loaders ---
 
@@ -34,6 +43,7 @@ declare global {
         Marker: new (opts: object) => NaverMarker;
         LatLng: new (lat: number, lng: number) => NaverLatLng;
         LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverBounds;
+        Point: new (x: number, y: number) => object;
         Event: { addListener: (target: object, type: string, handler: () => void) => void };
         Service: {
           Status: { OK: string };
@@ -50,35 +60,39 @@ interface NaverMap { fitBounds(b: NaverBounds, opts?: object): void; panTo(latln
 interface NaverMarker { setMap(map: NaverMap | null): void; }
 interface NaverGeocodeResponse { v2?: { addresses?: { x: string; y: string; roadAddress?: string }[] } }
 
-function useNaverMaps() {
+function useNaverMaps(enabled: boolean) {
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
+    if (!enabled) return;
     if (typeof window === 'undefined') return;
+    if (!NAVER_MAP_CLIENT_ID) return;
     if (window.naver?.maps) { setLoaded(true); return; }
     const existing = document.querySelector('script[src*="openapi.map.naver.com"]');
     if (existing) { existing.addEventListener('load', () => setLoaded(true)); return; }
     const script = document.createElement('script');
-    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
+    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
     script.async = true;
     script.onload = () => setLoaded(true);
     document.head.appendChild(script);
-  }, []);
+  }, [enabled]);
   return loaded;
 }
 
-function useGoogleMaps() {
+function useGoogleMaps(enabled: boolean) {
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
+    if (!enabled) return;
     if (typeof window === 'undefined') return;
+    if (!GOOGLE_MAPS_API_KEY) return;
     if (window.google?.maps) { setLoaded(true); return; }
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existing) { existing.addEventListener('load', () => setLoaded(true)); return; }
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
     script.async = true;
     script.onload = () => setLoaded(true);
     document.head.appendChild(script);
-  }, []);
+  }, [enabled]);
   return loaded;
 }
 
@@ -97,17 +111,21 @@ function naverGeocode(query: string): Promise<{ lat: number; lng: number; addres
 }
 
 // --- Main component ---
-
 export function MapView() {
-  const { captures, isLoading: contextLoading } = useCaptures();
+  const { captures, isLoading: contextLoading, isAuthenticated } = useCaptures();
+  const { guestCaptures } = useGuestCaptures();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const captureFilter = searchParams.get('capture');
+  const queryFilter = searchParams.get('q') ?? '';
 
-  const [provider, setProvider] = useState<MapProvider>('naver');
+  const [provider, setProvider] = useState<MapProvider>('archive');
+  const [searchValue, setSearchValue] = useState(queryFilter);
   const providerPickedRef = useRef(false);
 
-  const naverReady = useNaverMaps();
-  const googleReady = useGoogleMaps();
+  const naverReady = useNaverMaps(provider === 'naver');
+  const googleReady = useGoogleMaps(provider === 'google');
 
   const naverContainerRef = useRef<HTMLDivElement>(null);
   const googleContainerRef = useRef<HTMLDivElement>(null);
@@ -121,9 +139,21 @@ export function MapView() {
   const [isLoading, setIsLoading] = useState(true);
   const [geocodeError, setGeocodeError] = useState(false);
 
+  const archiveCaptures = useMemo(
+    () => mergeArchiveCaptures(captures, guestCaptures),
+    [captures, guestCaptures]
+  );
+  const visibleArchiveCaptures = useMemo(
+    () => getVisibleArchiveCaptures(archiveCaptures),
+    [archiveCaptures]
+  );
+  const searchedCaptures = useMemo(
+    () => filterCapturesByArchiveQuery(visibleArchiveCaptures, queryFilter),
+    [queryFilter, visibleArchiveCaptures]
+  );
   const placeCaptures = useMemo(
-    () => captures.filter((c) => c.category === 'place' && c.places.length > 0),
-    [captures]
+    () => searchedCaptures.filter((c) => c.category === 'place' && c.places.length > 0),
+    [searchedCaptures]
   );
   const captureIds = placeCaptures.map((c) => c.id).sort().join(',');
 
@@ -137,40 +167,37 @@ export function MapView() {
       setGeocodeError(false);
 
       type Entry = { place: typeof placeCaptures[0]['places'][0]; capture: typeof placeCaptures[0]; index: number };
-      const withCoords: MapPlace[] = [];
-      const toGeocode: Entry[] = [];
+      const now = new Date();
 
-      for (const capture of placeCaptures) {
-        for (let i = 0; i < capture.places.length; i++) {
-          const place = capture.places[i];
-          if (place.lat && place.lng) {
-            withCoords.push({ name: place.name, address: place.address, date: place.date, lat: place.lat, lng: place.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: i });
-          } else {
-            toGeocode.push({ place, capture, index: i });
-          }
-        }
-      }
-
-      // Phase 1: Google Geocoding (server-side)
-      const googleResults = await Promise.allSettled(
-        toGeocode.map(({ place }) =>
-          fetch('/api/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: place.name, address: place.address }) }).then((r) => r.json())
-        )
+      // Phase 1: ask the server to geocode (Google) and store coordinates for captures
+      // that have places without fresh coordinates. Stored results are reused for 30 days.
+      const capturesToRefresh = placeCaptures.filter((capture) =>
+        isAuthenticated &&
+        capture.places.some((place) => needsGeocoding(place, now))
       );
+      const refreshed: Array<readonly [number, Awaited<ReturnType<typeof requestCaptureCoordinates>>]> = [];
+      for (const capture of capturesToRefresh) {
+        if (cancelled) return;
+        refreshed.push([capture.id, await requestCaptureCoordinates(capture.id)]);
+      }
 
       if (cancelled) return;
 
+      // globalThis.Map: the lucide `Map` icon import shadows the built-in here.
+      const refreshedPlaces = new globalThis.Map(refreshed);
       const geocoded: MapPlace[] = [];
       const failedEntries: Entry[] = [];
 
-      googleResults.forEach((result, i) => {
-        if (result.status === 'fulfilled' && result.value.lat && result.value.lng) {
-          const { place, capture, index } = toGeocode[i];
-          geocoded.push({ name: place.name, address: place.address || result.value.formattedAddress, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
-        } else {
-          failedEntries.push(toGeocode[i]);
-        }
-      });
+      for (const capture of placeCaptures) {
+        const capturePlaces = refreshedPlaces.get(capture.id) ?? capture.places;
+        capturePlaces.forEach((place, index) => {
+          if (hasFreshCoordinates(place, now)) {
+            geocoded.push({ name: place.name, address: place.address, date: place.date, lat: place.lat!, lng: place.lng!, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
+          } else {
+            failedEntries.push({ place, capture, index });
+          }
+        });
+      }
 
       // Phase 2: Naver Geocoding fallback (client-side) for places Google couldn't resolve
       if (failedEntries.length > 0 && window.naver?.maps?.Service) {
@@ -184,24 +211,77 @@ export function MapView() {
 
         naverResults.forEach((result, i) => {
           if (result.status === 'fulfilled' && result.value) {
-            const { place, capture, index } = failedEntries[i];
+            const entry = failedEntries[i];
+            if (!entry) return;
+            const { place, capture, index } = entry;
             geocoded.push({ name: place.name, address: place.address || result.value.address, date: place.date, lat: result.value.lat, lng: result.value.lng, captureId: capture.id, captureTitle: capture.title, captureImageUrl: capture.imageUrl, placeIndex: index });
           }
         });
       }
 
-      const allPlaces = [...withCoords, ...geocoded];
-      if (allPlaces.length === 0 && toGeocode.length > 0) setGeocodeError(true);
+      const allPlaces = geocoded;
+      if (allPlaces.length === 0 && failedEntries.length > 0) setGeocodeError(true);
       setPlaces(allPlaces);
       setIsLoading(false);
+
     };
     run();
     return () => { cancelled = true; };
-  }, [captureIds, contextLoading]);
+  }, [captureIds, contextLoading, isAuthenticated]);
 
   const filteredPlaces = captureFilter
     ? places.filter((p) => p.captureId === Number(captureFilter))
     : places;
+  const hasActiveFilter = Boolean(captureFilter || queryFilter.trim());
+
+  useEffect(() => {
+    setSearchValue(queryFilter);
+  }, [queryFilter]);
+
+  const selectedPlaceKey = selectedPlace
+    ? `${selectedPlace.captureId}:${selectedPlace.placeIndex}`
+    : '';
+  const filteredPlaceKey = filteredPlaces
+    .map((place) => `${place.captureId}:${place.placeIndex}`)
+    .join(',');
+
+  useEffect(() => {
+    if (filteredPlaces.length === 0) {
+      if (selectedPlace) setSelectedPlace(null);
+      return;
+    }
+
+    const selectedIsVisible = filteredPlaces.some(
+      (place) =>
+        selectedPlace?.captureId === place.captureId &&
+        selectedPlace.placeIndex === place.placeIndex,
+    );
+    if (selectedIsVisible) return;
+    if (hasActiveFilter) setSelectedPlace(filteredPlaces[0] ?? null);
+  }, [filteredPlaceKey, hasActiveFilter, selectedPlaceKey]);
+
+  const updateMapQuery = useCallback((nextQuery: string) => {
+    const trimmed = nextQuery.trim();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('capture');
+    if (trimmed) {
+      params.set('q', trimmed);
+    } else {
+      params.delete('q');
+    }
+    const nextSearch = params.toString();
+    router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  const handleSearchSubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    updateMapQuery(searchValue);
+  }, [searchValue, updateMapQuery]);
+
+  const clearMapFilters = useCallback(() => {
+    setSearchValue('');
+    router.replace(pathname, { scroll: false });
+  }, [pathname, router]);
 
   useEffect(() => {
     if (providerPickedRef.current) return;
@@ -218,8 +298,10 @@ export function MapView() {
     if (provider !== 'naver' || !naverReady || !naverContainerRef.current || filteredPlaces.length === 0) return;
 
     const { naver } = window;
-    const center = new naver.maps.LatLng(37.5665, 126.978);
-    const map = new naver.maps.Map(naverContainerRef.current!, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
+    const center = new naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng);
+    const container = naverContainerRef.current;
+    if (!container) return;
+    const map = new naver.maps.Map(container, { center, zoom: 12, mapTypeControl: false, zoomControl: false, scaleControl: false, logoControl: false, mapDataControl: false });
     naverMapRef.current = map;
 
     const lats = filteredPlaces.map((p) => p.lat);
@@ -231,7 +313,7 @@ export function MapView() {
     const newMarkers: NaverMarker[] = [];
     filteredPlaces.forEach((place, idx) => {
       const content = `<div style="width:32px;height:32px;border-radius:50%;background:#34D399;color:#050508;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.4);border:2px solid #050508;cursor:pointer;">${idx + 1}</div>`;
-      const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new (window as any).naver.maps.Point(16, 16) } });
+      const marker = new naver.maps.Marker({ position: new naver.maps.LatLng(place.lat, place.lng), map, icon: { content, anchor: new window.naver.maps.Point(16, 16) } });
       naver.maps.Event.addListener(marker, 'click', () => setSelectedPlace(place));
       newMarkers.push(marker);
     });
@@ -245,7 +327,7 @@ export function MapView() {
     if (provider !== 'google' || !googleReady || !googleContainerRef.current || filteredPlaces.length === 0) return;
 
     const map = new google.maps.Map(googleContainerRef.current, {
-      center: { lat: 37.5665, lng: 126.978 }, zoom: 12,
+      center: SEOUL_CENTER, zoom: 12,
       disableDefaultUI: true, zoomControl: true,
       styles: [
         { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
@@ -325,14 +407,61 @@ export function MapView() {
   return (
     <div className="relative h-full">
       {/* Top bar */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center">
-        <div className="flex items-center gap-1.5 px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
-          <MapPin size={13} aria-hidden="true" />
-          {filteredPlaces.length}개 장소
+      <div className="absolute top-3 left-3 right-3 z-10 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div className="flex w-full flex-col gap-2 md:max-w-sm">
+          <div className="flex w-fit items-center gap-1.5 px-3 py-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 text-xs text-place-accent font-semibold">
+            <MapPin size={13} aria-hidden="true" />
+            {filteredPlaces.length}개 장소
+          </div>
+
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/75 px-3 py-2 backdrop-blur-xl"
+          >
+            <Search size={14} className="flex-shrink-0 text-text-tertiary" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder="지도에서 검색"
+              aria-label="지도 장소 검색"
+              className="min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-tertiary"
+            />
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={clearMapFilters}
+                aria-label="지도 필터 지우기"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-surface hover:text-text-primary"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            )}
+            <button
+              type="submit"
+              className="min-h-8 rounded-xl bg-place-accent px-3 text-xs font-semibold text-background transition-colors hover:bg-success"
+            >
+              검색
+            </button>
+          </form>
+
+          {hasActiveFilter && filteredPlaces.length > 0 && selectedPlace && (
+            <div className="rounded-xl border border-place-border bg-place-surface px-3 py-2 text-xs text-text-secondary backdrop-blur-xl">
+              <span className="font-semibold text-place-accent">{selectedPlace.name}</span>
+              <span> 핀이 선택되었습니다</span>
+            </div>
+          )}
         </div>
 
         {/* Provider toggle */}
-        <div className="flex gap-1 p-1 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10">
+        <div className="flex gap-1 self-end p-1 bg-black/75 backdrop-blur-xl rounded-xl border border-white/10 md:self-start">
+          <button
+            onClick={() => chooseProvider('archive')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'archive' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-1" aria-hidden="true" />
+            아카이브
+          </button>
           <button
             onClick={() => chooseProvider('naver')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${provider === 'naver' ? 'bg-place-accent text-background' : 'text-text-secondary hover:text-text-primary'}`}
@@ -351,8 +480,19 @@ export function MapView() {
       </div>
 
       {/* Separate containers per SDK — never share a DOM node between map SDKs */}
-      <div ref={naverContainerRef} className={`h-full w-full${provider === 'naver' ? '' : ' hidden'}`} />
-      <div ref={googleContainerRef} className={`h-full w-full${provider === 'google' ? '' : ' hidden'}`} />
+      {provider === 'naver' && naverReady ? (
+        <div ref={naverContainerRef} className="h-full w-full" />
+      ) : null}
+      {provider === 'google' && googleReady ? (
+        <div ref={googleContainerRef} className="h-full w-full" />
+      ) : null}
+      {(provider === 'archive' || (provider === 'naver' && !naverReady) || (provider === 'google' && !googleReady)) && (
+        <StaticArchiveMap
+          places={filteredPlaces}
+          selectedPlace={selectedPlace}
+          onPlaceSelect={handlePlaceSelect}
+        />
+      )}
 
       {selectedPlace && (
         <PlacePopup place={selectedPlace} onClose={() => setSelectedPlace(null)} />
