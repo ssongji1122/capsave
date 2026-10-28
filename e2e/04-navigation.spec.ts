@@ -22,6 +22,8 @@ test.describe('라우트 및 네비게이션', () => {
   });
 
   test('게스트 → /map 접근 시 샘플 지도 화면을 볼 수 있다', async ({ page }) => {
+    // 외부 지도 SDK 로드 속도에 따라 정적 지도가 사라지지 않도록, SDK가 없는 환경을 고정합니다.
+    await page.route(/openapi\.map\.naver\.com|maps\.googleapis\.com/, (route) => route.abort());
     await page.goto('/map');
     await expect(page.getByText('ARCHIVE MAP')).toBeVisible({ timeout: 8000 });
     await expect(page.getByText('오브젝트 성수')).toBeVisible();
