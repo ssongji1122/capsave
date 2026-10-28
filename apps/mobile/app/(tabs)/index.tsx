@@ -16,6 +16,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
+import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
+import { CategoryShape } from '@/components/CategoryShape';
 import { CaptureCard } from '@/components/CaptureCard';
 import { useCaptures } from '@/contexts/CapturesContext';
 
@@ -26,6 +28,7 @@ export default function HomeScreen() {
   const { captures: allCaptures, isLoading, refresh, deleteCapture, searchCaptures } = useCaptures();
 
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[]>([]);
+  const [archiveSection, setArchiveSection] = useState<ArchiveSection | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -93,9 +96,6 @@ export default function HomeScreen() {
     }
   };
 
-  const totalCount = displayCaptures.length;
-  const placeCount = displayCaptures.filter((c) => c.category === 'place').length;
-  const textCount = displayCaptures.filter((c) => c.category === 'text').length;
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -120,38 +120,21 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Scrave</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>my craves</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            AI 캡처 오거나이저
+            scrap, save your crave
           </Text>
         </View>
       </View>
 
-      {/* Stats Bar */}
-      {totalCount > 0 && (
-        <View style={[styles.statsBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.primary }]}>{totalCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>전체</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.placeAccent }]}>{placeCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>장소</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.textAccent }]}>{textCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>텍스트</Text>
-          </View>
-        </View>
-      )}
-
+      <View style={styles.archiveFilters} accessibilityLabel="캡처 종류">
+        {[{id:'all' as const,label:'전체'},...ARCHIVE_SECTIONS].map(section => <TouchableOpacity key={section.id} accessibilityRole="button" accessibilityState={{selected:archiveSection===section.id}} onPress={() => setArchiveSection(section.id)} style={[styles.archiveFilter, {borderBottomColor:archiveSection===section.id?colors.primary:'transparent'}]}>{section.id !== 'all' && <CategoryShape section={section.id}/>}<Text style={{fontSize:12,color:archiveSection===section.id?colors.text:colors.textSecondary}}>{section.label} {displayCaptures.filter(item=>section.id==='all'||classifyArchiveCapture(item)===section.id).length}</Text></TouchableOpacity>)}
+      </View>
       {/* Search Bar */}
       <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Ionicons name="search" size={18} color={colors.textTertiary} />
@@ -172,10 +155,12 @@ export default function HomeScreen() {
 
       {/* List */}
       <FlatList
-        data={displayCaptures}
+        numColumns={2}
+        columnWrapperStyle={{ gap: 14, paddingHorizontal: 16 }}
+        data={displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection)}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <CaptureCard item={item} onDelete={handleDelete} />
+          <CaptureCard compact item={item} onDelete={handleDelete} />
         )}
         contentContainerStyle={displayCaptures.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
@@ -192,7 +177,7 @@ export default function HomeScreen() {
       {/* FAB */}
       <Animated.View style={[styles.fabContainer, { transform: [{ scale: fabScale }] }]}>
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.primary }]}
+          style={[styles.fab, { backgroundColor: colors.text }]}
           onPress={handleAddCapture}
           activeOpacity={0.8}
         >
@@ -204,6 +189,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  archiveFilters:{flexDirection:"row",flexWrap:"wrap",gap:16,marginHorizontal:24,marginBottom:24},
+  archiveFilter:{flexDirection:"row",alignItems:"center",gap:4,minHeight:44,borderBottomWidth:1,justifyContent:"center"},
   container: {
     flex: 1,
   },
@@ -213,8 +200,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 21,
+    fontWeight: '700',
     letterSpacing: -0.5,
   },
   headerSubtitle: {

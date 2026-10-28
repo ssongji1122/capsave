@@ -4,7 +4,7 @@ import { buildGuideSlug, createGuideDraft, validateGuideDraftInput } from '@/lib
 import { createGuideModelCaller, getUserCapturesByIds } from '@/lib/guide-draft-sources';
 import { parseJsonBody } from '@/lib/http-json';
 import { GUIDE_DRAFT_DAILY_LIMIT, consumeGuideDraftLimit } from '@/lib/rate-limit';
-import { createClient } from '@/lib/supabase/server';
+import { createRequestClient } from '@/lib/supabase/request-client';
 
 /**
  * Builds a guide draft from 2-10 of the signed-in user's place captures.
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = await createRequestClient(request);
     const captures = await getUserCapturesByIds(supabase, user.id, input.captureIds);
     if (captures.length !== input.captureIds.length) {
       return NextResponse.json({ error: 'Some captures are not available' }, { status: 400 });

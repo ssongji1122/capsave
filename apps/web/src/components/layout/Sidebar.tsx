@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
-import { Home, MapPin, FileText, Map, Settings, LogOut } from 'lucide-react';
+import { Home, MapPin, FileText, Map, Compass, Settings, LogOut } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: '홈', icon: Home, description: '전체 캡처' },
   { href: '/places', label: '장소', icon: MapPin, description: '맛집·카페·여행지' },
+  { href: '/guides', label: '가이드', icon: Compass, description: '여행 동선 노트' },
   { href: '/texts', label: '텍스트', icon: FileText, description: 'AI·코드·레시피' },
   { href: '/map', label: '지도', icon: Map, description: '저장 장소 지도' },
 ];
@@ -86,7 +87,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center py-1 px-4 ${
+                className={`flex flex-col items-center py-1 px-3 ${
                   isActive ? 'text-primary' : 'text-text-tertiary'
                 }`}
               >

@@ -22,7 +22,9 @@ interface GuestCapturesContextValue {
   isGuestFull: boolean;
   addCapture: (result: AnalysisResult, imageBase64: string) => Promise<void>;
   deleteCapture: (id: number) => void;
+  reclassifyCapture: (id: number, category: CaptureItem['category'], places: CaptureItem['places']) => CaptureItem | null;
   clearCaptures: () => void;
+  reloadCaptures: () => void;
 }
 
 const GuestCapturesContext = createContext<GuestCapturesContextValue | null>(null);
@@ -30,10 +32,11 @@ const GuestCapturesContext = createContext<GuestCapturesContextValue | null>(nul
 export function GuestCapturesProvider({ children }: { children: React.ReactNode }) {
   const [rawCaptures, setRawCaptures] = useState<GuestCapture[]>([]);
 
-  useEffect(() => {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    setRawCaptures(parseGuestCaptures(stored));
+  const reloadCaptures = useCallback(() => {
+    setRawCaptures(parseGuestCaptures(sessionStorage.getItem(STORAGE_KEY)));
   }, []);
+
+  useEffect(reloadCaptures, [reloadCaptures]);
 
   const persist = useCallback((captures: GuestCapture[]) => {
     sessionStorage.setItem(STORAGE_KEY, serializeGuestCaptures(captures));
@@ -98,6 +101,25 @@ export function GuestCapturesProvider({ children }: { children: React.ReactNode 
     });
   }, []);
 
+  const reclassifyCapture = useCallback((
+    id: number,
+    category: CaptureItem['category'],
+    places: CaptureItem['places'],
+  ) => {
+    const target = rawCaptures.find((capture) => capture.id === id);
+    if (!target) return null;
+
+    const reclassified: GuestCapture = {
+      ...target,
+      category,
+      places,
+      confidence: 1,
+    };
+    const updated = rawCaptures.map((capture) => (capture.id === id ? reclassified : capture));
+    persist(updated);
+    return guestCaptureToItem(reclassified);
+  }, [persist, rawCaptures]);
+
   const clearCaptures = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
     setRawCaptures([]);
@@ -109,7 +131,7 @@ export function GuestCapturesProvider({ children }: { children: React.ReactNode 
 
   return (
     <GuestCapturesContext.Provider
-      value={{ guestCaptures, remainingSlots, isGuestFull, addCapture, deleteCapture, clearCaptures }}
+      value={{ guestCaptures, remainingSlots, isGuestFull, addCapture, deleteCapture, reclassifyCapture, clearCaptures, reloadCaptures }}
     >
       {children}
     </GuestCapturesContext.Provider>

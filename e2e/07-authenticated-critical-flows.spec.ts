@@ -71,7 +71,7 @@ test.describe('인증 사용자 핵심 플로우', () => {
 
     await page.goto('/places');
     await page.getByText('성수 카페 저장').click();
-    await page.getByRole('button', { name: /골라 둔 후기·영상/ }).first().click();
+    await page.getByRole('button', { name: /이 장소의 후기·영상/ }).first().click();
 
     await expect(page.getByRole('link', { name: '성수 테스트 카페 내돈내산 후기' })).toBeVisible();
     await expect(page.getByText('YouTube API 키가 아직 없어 골라 드리지 못했습니다.')).toBeVisible();
@@ -79,18 +79,24 @@ test.describe('인증 사용자 핵심 플로우', () => {
   });
 
   test('저장된 장소가 지도에 표시되고 지도 공급자 전환과 장소 팝업이 동작한다', async ({ page }) => {
-    let geocodeCalled = false;
+    const geocodedCaptureIds: number[] = [];
     await installMapSdkMocks(page);
     await mockAuthenticatedBackend(page, createCaptureRows());
-    await page.route('**/api/geocode', async (route) => {
-      geocodeCalled = true;
+    await page.route('**/api/geocode/capture', async (route) => {
+      const { captureId } = route.request().postDataJSON() as { captureId: number };
+      geocodedCaptureIds.push(captureId);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          lat: 37.5663,
-          lng: 126.9918,
-          formattedAddress: '서울 중구 을지로',
+          captureId,
+          places: [{
+            name: '을지로 테스트 식당',
+            address: '서울 중구 을지로',
+            lat: 37.5663,
+            lng: 126.9918,
+            geocodedAt: new Date().toISOString(),
+          }],
         }),
       });
     });
@@ -100,7 +106,8 @@ test.describe('인증 사용자 핵심 플로우', () => {
     await expect(page.getByText('2개 장소')).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /성수 테스트 카페/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /을지로 테스트 식당/ })).toBeVisible();
-    expect(geocodeCalled).toBe(true);
+    // Only the capture without coordinates is sent for geocoding.
+    expect(geocodedCaptureIds).toEqual([502]);
 
     await page.getByRole('button', { name: /성수 테스트 카페/ }).click();
     await expect(page.getByRole('dialog', { name: '성수 테스트 카페 장소 정보' })).toBeVisible();

@@ -8,6 +8,7 @@ import { UploadZone } from '@/components/upload/UploadZone';
 import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
 import { CaptureList } from '@/components/captures/CaptureList';
+import { getVisibleArchiveCaptures } from '@/lib/sample-captures';
 import { Archive, Camera, FileText, ImagePlus, Map, MapPin, Sparkles } from 'lucide-react';
 
 function LandingContent() {
@@ -16,17 +17,19 @@ function LandingContent() {
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'place' | 'text'>('all');
+  const visibleCaptures = getVisibleArchiveCaptures(guestCaptures);
 
   const filteredCaptures = categoryFilter === 'all'
-    ? guestCaptures
-    : guestCaptures.filter((c) => c.category === categoryFilter);
-  const placeCount = guestCaptures.filter((c) => c.category === 'place').length;
-  const textCount = guestCaptures.filter((c) => c.category === 'text').length;
+    ? visibleCaptures
+    : visibleCaptures.filter((c) => c.category === categoryFilter);
+  const placeCount = visibleCaptures.filter((c) => c.category === 'place').length;
+  const textCount = visibleCaptures.filter((c) => c.category === 'text').length;
   const usedSlots = guestCaptures.length;
+  const visibleCount = visibleCaptures.length;
   const trialProgress = Math.min(100, (usedSlots / 3) * 100);
   const activeFilterLabel = categoryFilter === 'all' ? '전체 캡처' : categoryFilter === 'place' ? '장소 캡처' : '텍스트 캡처';
   const filterStats = [
-    { key: 'all' as const, label: '전체', value: usedSlots, icon: Archive, tone: 'text-primary', surface: 'bg-primary-surface' },
+    { key: 'all' as const, label: '전체', value: visibleCount, icon: Archive, tone: 'text-primary', surface: 'bg-primary-surface' },
     { key: 'place' as const, label: '장소', value: placeCount, icon: MapPin, tone: 'text-place-accent', surface: 'bg-place-surface' },
     { key: 'text' as const, label: '텍스트', value: textCount, icon: FileText, tone: 'text-text-accent', surface: 'bg-text-surface' },
   ];
@@ -165,7 +168,7 @@ function LandingContent() {
           </aside>
         </section>
 
-        {guestCaptures.length > 0 ? (
+        {visibleCaptures.length > 0 ? (
           <section className="overflow-hidden rounded-3xl border border-border bg-surface">
             <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -209,7 +212,7 @@ function LandingContent() {
           </section>
         )}
 
-      {guestCaptures.some((c) => c.category === 'place') && (
+      {visibleCaptures.some((c) => c.category === 'place') && (
         <section className="rounded-3xl border border-border bg-surface p-6 text-center">
           <Map size={28} className="text-place-accent mx-auto mb-2" />
           <p className="text-text-primary font-semibold">지도에서 장소를 한눈에</p>

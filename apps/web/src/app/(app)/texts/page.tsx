@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
 import { CaptureItem } from '@scrave/shared';
 import { FileText } from 'lucide-react';
@@ -9,10 +10,17 @@ import {
   getProtectedCategoryPageModel,
   removeCaptureFromCategoryPage,
 } from '@/lib/protected-category-page';
+import { SAMPLE_CAPTURES } from '@/lib/sample-captures';
 
 export default function TextsPage() {
   const { getCapturesByCategory, isLoading, deleteCapture, isAuthReady } = useCaptures();
+  const { guestCaptures, deleteCapture: deleteGuestCapture } = useGuestCaptures();
   const [dbCaptures, setDbCaptures] = useState<CaptureItem[]>([]);
+  const hasSavedCaptures = dbCaptures.length + guestCaptures.length > 0;
+  const guestTextCaptures = guestCaptures.filter((capture) => capture.category === 'text');
+  const sampleTextCaptures = hasSavedCaptures
+    ? []
+    : SAMPLE_CAPTURES.filter((capture) => capture.category === 'text');
 
   useEffect(() => {
     if (!isAuthReady) return;
@@ -21,16 +29,20 @@ export default function TextsPage() {
 
   const pageModel = getProtectedCategoryPageModel({
     dbCaptures,
-    guestCaptures: [],
+    guestCaptures: [...guestTextCaptures, ...sampleTextCaptures],
     isAuthReady,
     isLoading,
   });
 
   const handleDelete = useCallback(async (id: number) => {
+    if (id < 0) {
+      deleteGuestCapture(id);
+      return;
+    }
     const deleted = await deleteCapture(id);
     if (!deleted) return;
     setDbCaptures((prev) => removeCaptureFromCategoryPage(prev, id));
-  }, [deleteCapture]);
+  }, [deleteCapture, deleteGuestCapture]);
 
   return (
     <div className="pb-20 lg:pb-8">

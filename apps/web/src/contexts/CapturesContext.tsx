@@ -13,11 +13,13 @@ import {
   saveCapture as saveCaptureQuery,
   deleteCapture as deleteCaptureQuery,
   reclassifyCapture as reclassifyCaptureQuery,
+  updateCapturePlaces as updateCapturePlacesQuery,
   mapRowToCapture,
   MAX_FREE_CAPTURES,
 } from '@scrave/shared';
 import { createClient } from '@/lib/supabase/browser';
 import { showErrorToast } from '@/lib/notifications';
+import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
 import { getRealUserId } from '@/lib/auth-user';
 import {
   applyRealtimeCaptureDelete,
@@ -46,6 +48,7 @@ interface CapturesContextValue {
     category: CaptureCategory,
     places: PlaceInfo[] | null
   ) => Promise<CaptureItem | null>;
+  updateCapturePlaces?: (id: number, places: PlaceInfo[]) => Promise<CaptureItem | null>;
   saveCapture: (result: AnalysisResult, imageUrl: string) => Promise<void>;
 }
 
@@ -201,6 +204,21 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [client, userId]);
 
+  const handleUpdateCapturePlaces = useCallback(async (
+    id: number,
+    places: PlaceInfo[]
+  ) => {
+    if (!userId) return null;
+    try {
+      const updated = await updateCapturePlacesQuery(client, id, places);
+      setCaptures((prev) => applyRealtimeCaptureUpdate(prev, updated, userId));
+      return updated;
+    } catch (error) {
+      console.warn('Failed to persist geocoded places:', error);
+      return null;
+    }
+  }, [client, userId]);
+
   const handleSave = useCallback(async (result: AnalysisResult, imageUrl: string) => {
     if (!userId) {
       showErrorToast('로그인이 필요합니다.');
@@ -219,6 +237,13 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
       };
       setCaptures((prev) => [enriched, ...prev]);
+      // Best-effort: store coordinates now so the map and route checks can reuse them.
+      if (newCapture.category === 'place' && newCapture.places.length > 0) {
+        void requestCaptureCoordinates(newCapture.id).then((places) => {
+          if (!places) return;
+          setCaptures((prev) => prev.map((c) => (c.id === newCapture.id ? { ...c, places } : c)));
+        });
+      }
     } catch (error) {
       console.error('Failed to save capture:', error);
       showErrorToast('저장에 실패했습니다. 다시 시도해주세요.');
@@ -243,6 +268,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         searchCaptures: handleSearch,
         getCapturesByCategory: handleGetByCategory,
         reclassifyCapture: handleReclassify,
+        updateCapturePlaces: handleUpdateCapturePlaces,
         saveCapture: handleSave,
       }}
     >

@@ -5,6 +5,7 @@
 저장소 루트의 `AGENTS.md`와 작업 폴더에 적용되는 하위 규칙을 먼저 읽습니다. 다음 자료는 작업과 관련된 항목만 읽고, 참조 문서를 한꺼번에 전부 불러오지 않습니다.
 
 - [DECISIONS.md](../DECISIONS.md)
+- [docs/coordination/2026-10-09_scrave-master-plan.md](../docs/coordination/2026-10-09_scrave-master-plan.md)
 - [DESIGN.md](../DESIGN.md)
 - [package.json](../package.json)
 

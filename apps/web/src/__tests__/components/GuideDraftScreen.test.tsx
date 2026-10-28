@@ -122,4 +122,52 @@ describe('GuideDraftScreen', () => {
     expect(JSON.parse(String(init.body))).toEqual({ name });
     expect(screen.getByText('1개 붙임')).toBeTruthy();
   });
+
+  it('saves the draft to /api/guides and enables unlisted link sharing', async () => {
+    sessionStorage.setItem(GUIDE_DRAFT_STORAGE_KEY, serializeGuideDraft(DRAFT));
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            guide: {
+              id: 'saved-guide-1',
+              slug: DRAFT.guide.slug,
+              visibility: 'private',
+              status: 'ready',
+            },
+          }),
+          { status: 201 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            guide: {
+              id: 'saved-guide-1',
+              slug: DRAFT.guide.slug,
+              visibility: 'unlisted',
+              status: 'ready',
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    render(<GuideDraftScreen />);
+
+    fireEvent.click(await screen.findByRole('button', { name: '가이드 보관함에 저장' }));
+    await screen.findByText('가이드 보관함에 저장했습니다.');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/guides',
+      expect.objectContaining({ method: 'POST' }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '링크 공유 켜기' }));
+    await screen.findByText(/원본 캡처 사진은 노출되지 않습니다/);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/guides/saved-guide-1',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    expect(screen.getByRole('button', { name: '공유 링크 복사' })).toBeTruthy();
+  });
 });

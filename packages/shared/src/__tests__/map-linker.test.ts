@@ -255,3 +255,12 @@ describe('getMobileMapLinks', () => {
     }
   });
 });
+
+
+describe('contextual review searches', () => {
+  it('keeps map place lookup separate from the itinerary review topic', () => {
+    const links = getReviewLinks('인천국제공항', null, '인천국제공항 1터미널 출국 체크인');
+    expect(decodeURIComponent(links.find(link => link.provider === 'naver')!.webUrl)).toContain('1터미널 출국 체크인');
+    expect(new URL(links.find(link => link.provider === 'kakao')!.webUrl).searchParams.get('q')).toBe('인천국제공항');
+  });
+});

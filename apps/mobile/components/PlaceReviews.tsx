@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
-import type { PlaceReviewResult } from '@scrave/shared';
+import type { CaptureReviewTopic, PlaceReviewResult } from '@scrave/shared';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { openUrl } from '@/services/map-linker';
@@ -12,6 +12,7 @@ import { supabase } from '@/services/supabase';
 
 interface PlaceReviewsProps {
   placeName: string;
+  topic?: CaptureReviewTopic;
 }
 
 type LoadState =
@@ -25,7 +26,7 @@ async function getToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-export function PlaceReviews({ placeName }: PlaceReviewsProps) {
+export function PlaceReviews({ placeName, topic }: PlaceReviewsProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const [state, setState] = useState<LoadState>({ status: 'idle' });
@@ -39,7 +40,7 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
     }
     setState({ status: 'loading' });
     try {
-      const result = await fetchPlaceReviews(placeName, { serverUrl, getToken });
+      const result = await fetchPlaceReviews(topic?.query ?? placeName, { serverUrl, getToken });
       setState({ status: 'loaded', result });
     } catch (error) {
       setState({
@@ -52,6 +53,7 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
   if (state.status !== 'loaded') {
     return (
       <View style={styles.idle}>
+        {topic && <Text style={[styles.note, { color: colors.textSecondary }]}>{topic.reason}</Text>}
         <TouchableOpacity
           style={[styles.loadButton, { backgroundColor: colors.placeSurface, borderColor: colors.placeBorder }]}
           onPress={load}
@@ -69,7 +71,7 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
               ? '후기·영상 고르는 중'
               : state.status === 'error'
                 ? '다시 불러오기'
-                : '골라 둔 후기·영상'}
+                : topic?.label ?? '골라 둔 후기·영상'}
           </Text>
         </TouchableOpacity>
         {state.status === 'error' && (
@@ -85,6 +87,7 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
 
   return (
     <View style={[styles.panel, { borderColor: colors.border }]}>
+      {topic && <Text style={[styles.note, { color: colors.textSecondary }]}>{topic.reason}</Text>}
       <Text style={[styles.sectionTitle, { color: colors.placeAccent }]}>네이버 후기 · 협찬 글 제외</Text>
       {naver.posts.map((post) => (
         <TouchableOpacity

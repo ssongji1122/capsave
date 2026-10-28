@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { notFound } from 'next/navigation';
+import { getSharedGuideBySlug, type PublicGuide } from '@scrave/shared';
 import { findPublicGuide } from '@/lib/public-guides';
+import { createClient } from '@/lib/supabase/server';
 
 export const alt = 'Scrave 공개 여행 가이드 미리보기';
 export const size = {
@@ -13,9 +15,26 @@ interface OpenGraphImageProps {
   params: Promise<{ slug: string }>;
 }
 
+async function resolveGuideForOg(slug: string): Promise<PublicGuide | null> {
+  const staticGuide = findPublicGuide(slug);
+  if (staticGuide) return staticGuide;
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return null;
+  }
+  try {
+    const supabase = await createClient();
+    return await getSharedGuideBySlug(supabase, slug);
+  } catch {
+    return null;
+  }
+}
+
 export default async function OpenGraphImage({ params }: OpenGraphImageProps) {
   const { slug } = await params;
-  const guide = findPublicGuide(slug);
+  const guide = await resolveGuideForOg(slug);
 
   if (!guide) {
     notFound();
@@ -64,7 +83,7 @@ export default async function OpenGraphImage({ params }: OpenGraphImageProps) {
               letterSpacing: '0.18em',
             }}
           >
-            BALI · ULUWATU · PUBLIC GUIDE
+            {guide.eyebrow || 'SCRAVE GUIDE'}
           </div>
           <div
             style={{
@@ -92,7 +111,7 @@ export default async function OpenGraphImage({ params }: OpenGraphImageProps) {
               fontSize: 24,
             }}
           >
-            {`장소 ${guide.places.length}곳 · 확인한 자료 ${referenceCount}개 · Google 지도`}
+            {`장소 ${guide.places.length}곳 · 확인한 자료 ${referenceCount}개`}
           </div>
         </div>
 
@@ -124,73 +143,6 @@ export default async function OpenGraphImage({ params }: OpenGraphImageProps) {
             S
           </div>
           Scrave
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            right: -32,
-            top: 92,
-            width: 420,
-            height: 420,
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid rgba(125, 211, 252, 0.28)',
-            borderRadius: '50%',
-            background:
-              'radial-gradient(circle at 34% 27%, #294C52, #102328 58%, #071014 100%)',
-            boxShadow: '0 40px 90px rgba(0,0,0,0.5)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              position: 'absolute',
-              width: 420,
-              height: 132,
-              border: '1px solid rgba(125, 211, 252, 0.2)',
-              borderRadius: '50%',
-            }}
-          />
-          <div
-            style={{
-              display: 'flex',
-              position: 'absolute',
-              width: 158,
-              height: 420,
-              border: '1px solid rgba(125, 211, 252, 0.18)',
-              borderRadius: '50%',
-            }}
-          />
-          <div
-            style={{
-              display: 'flex',
-              position: 'absolute',
-              right: 88,
-              bottom: 96,
-              width: 28,
-              height: 28,
-              border: '7px solid rgba(244, 132, 95, 0.22)',
-              borderRadius: '50%',
-              background: '#F4845F',
-              boxShadow: '0 0 30px rgba(244, 132, 95, 0.72)',
-            }}
-          />
-          <div
-            style={{
-              display: 'flex',
-              position: 'absolute',
-              right: 52,
-              bottom: 67,
-              color: '#F4A286',
-              fontSize: 14,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-            }}
-          >
-            ULUWATU · BALI
-          </div>
         </div>
       </div>
     ),

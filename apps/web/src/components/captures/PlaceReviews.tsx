@@ -2,17 +2,19 @@
 
 import { useState, type MouseEvent } from 'react';
 import { ExternalLink, MessageSquareText, PlayCircle, RotateCw, Sparkles } from 'lucide-react';
+import type { CaptureReviewTopic } from '@scrave/shared';
 import type { PlaceReviewResult } from '@/lib/place-review-sources';
 
 interface PlaceReviewsProps {
   placeName: string;
+  topic?: CaptureReviewTopic;
 }
 
 type LoadState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'loaded'; result: PlaceReviewResult }
-  | { status: 'error' };
+  | { status: 'error'; loginRequired?: boolean };
 
 const cache = new Map<string, PlaceReviewResult>();
 
@@ -183,9 +185,10 @@ function ReviewResult({ result }: { result: PlaceReviewResult }) {
   );
 }
 
-export function PlaceReviews({ placeName }: PlaceReviewsProps) {
+export function PlaceReviews({ placeName, topic }: PlaceReviewsProps) {
+  const query = topic?.query ?? placeName;
   const [state, setState] = useState<LoadState>(() => {
-    const cached = cache.get(placeName);
+    const cached = cache.get(query);
     return cached ? { status: 'loaded', result: cached } : { status: 'idle' };
   });
 
@@ -196,11 +199,12 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
       const response = await fetch('/api/place-reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: placeName }),
+        body: JSON.stringify({ name: query }),
       });
+      if (response.status === 401) { setState({ status: 'error', loginRequired: true }); return; }
       if (!response.ok) throw new Error(`place-reviews ${response.status}`);
       const result = (await response.json()) as PlaceReviewResult;
-      cache.set(placeName, result);
+      cache.set(query, result);
       setState({ status: 'loaded', result });
     } catch (error) {
       console.error('[PlaceReviews] load failed:', error);
@@ -208,12 +212,16 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
     }
   };
 
+  if (state.status === 'error' && state.loginRequired) {
+    return <a href="/login" onClick={stop} className="block text-sm underline py-2">로그인하고 후기 보기</a>;
+  }
+
   if (state.status === 'loaded') {
-    return <ReviewResult result={state.result} />;
+    return <div>{topic && <p className="text-xs text-text-secondary mt-2">{topic.reason}</p>}<ReviewResult result={state.result} /></div>;
   }
 
   return (
-    <button
+    <div>{topic && <p className="text-xs text-text-secondary mt-2">{topic.reason}</p>}<button
       type="button"
       onClick={load}
       disabled={state.status === 'loading'}
@@ -224,7 +232,7 @@ export function PlaceReviews({ placeName }: PlaceReviewsProps) {
         ? '후기·영상 고르는 중'
         : state.status === 'error'
           ? '다시 불러오기'
-          : '골라 둔 후기·영상'}
-    </button>
+          : topic?.label ?? '골라 둔 후기·영상'}
+    </button></div>
   );
 }

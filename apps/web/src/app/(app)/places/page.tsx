@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
 import { CaptureItem } from '@scrave/shared';
 import { MapPin, Sparkles } from 'lucide-react';
@@ -11,11 +12,18 @@ import {
   getProtectedCategoryPageModel,
   removeCaptureFromCategoryPage,
 } from '@/lib/protected-category-page';
+import { SAMPLE_CAPTURES } from '@/lib/sample-captures';
 
 export default function PlacesPage() {
   const { getCapturesByCategory, isLoading, deleteCapture, isAuthReady } = useCaptures();
+  const { guestCaptures, deleteCapture: deleteGuestCapture } = useGuestCaptures();
   const [dbCaptures, setDbCaptures] = useState<CaptureItem[]>([]);
   const [picking, setPicking] = useState(false);
+  const hasSavedCaptures = dbCaptures.length + guestCaptures.length > 0;
+  const guestPlaceCaptures = guestCaptures.filter((capture) => capture.category === 'place');
+  const samplePlaceCaptures = hasSavedCaptures
+    ? []
+    : SAMPLE_CAPTURES.filter((capture) => capture.category === 'place');
 
   useEffect(() => {
     if (!isAuthReady) return;
@@ -24,16 +32,20 @@ export default function PlacesPage() {
 
   const pageModel = getProtectedCategoryPageModel({
     dbCaptures,
-    guestCaptures: [],
+    guestCaptures: [...guestPlaceCaptures, ...samplePlaceCaptures],
     isAuthReady,
     isLoading,
   });
 
   const handleDelete = useCallback(async (id: number) => {
+    if (id < 0) {
+      deleteGuestCapture(id);
+      return;
+    }
     const deleted = await deleteCapture(id);
     if (!deleted) return;
     setDbCaptures((prev) => removeCaptureFromCategoryPage(prev, id));
-  }, [deleteCapture]);
+  }, [deleteCapture, deleteGuestCapture]);
 
   return (
     <div className="pb-20 lg:pb-8">

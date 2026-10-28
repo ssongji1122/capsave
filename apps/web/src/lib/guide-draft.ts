@@ -62,6 +62,7 @@ export interface GuideCandidate {
   links: string[];
   captureNote: string;
   sourceCaptureIds: number[];
+  geocodedAt?: string;
 }
 
 export interface UnresolvedPlace {
@@ -188,6 +189,7 @@ export function collectGuideCandidates(captures: CaptureItem[]): {
         links: [...(place.links ?? [])],
         captureNote: item.summary.trim(),
         sourceCaptureIds: [item.id],
+        ...(place.geocodedAt ? { geocodedAt: place.geocodedAt } : {}),
       });
     }
   }
@@ -363,6 +365,7 @@ export function assembleGuideDraft(
         .map((link) => toEditorialReference(link, checkedAt))
         .filter((reference): reference is GuideReference => reference !== null),
       sourceCaptureIds: [...candidate.sourceCaptureIds],
+      ...(candidate.geocodedAt ? { geocodedAt: candidate.geocodedAt } : {}),
     }];
   });
 

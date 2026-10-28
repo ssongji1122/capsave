@@ -26,9 +26,9 @@ const ScraveDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#000000',
-    card: '#000000',
-    text: '#FFFFFF',
+    background: Colors.light.background,
+    card: Colors.light.surface,
+    text: Colors.light.text,
     border: '#262626',
     primary: '#F4845F',
   },
@@ -87,7 +87,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : ScraveDarkTheme}>
+    <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: Colors.light.background, card: Colors.light.surface, text: Colors.light.text, border: Colors.light.border, primary: Colors.light.primary } }}>
       <UserPreferencesProvider>
         <CapturesProvider>
           <Stack>
