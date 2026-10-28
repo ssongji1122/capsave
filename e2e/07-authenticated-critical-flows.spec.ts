@@ -71,7 +71,7 @@ test.describe('인증 사용자 핵심 플로우', () => {
 
     await page.goto('/places');
     await page.getByText('성수 카페 저장').click();
-    await page.getByRole('button', { name: /골라 둔 후기·영상/ }).first().click();
+    await page.getByRole('button', { name: /이 장소의 후기·영상/ }).first().click();
 
     await expect(page.getByRole('link', { name: '성수 테스트 카페 내돈내산 후기' })).toBeVisible();
     await expect(page.getByText('YouTube API 키가 아직 없어 골라 드리지 못했습니다.')).toBeVisible();

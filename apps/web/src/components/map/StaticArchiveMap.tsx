@@ -78,11 +78,8 @@ export function StaticArchiveMap({
       })}
 
       <div className="absolute bottom-36 right-4 hidden max-w-xs rounded-2xl border border-border bg-surface/90 p-4 backdrop-blur md:block">
-        <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-          <MapPin size={16} className="text-place-accent" aria-hidden="true" />
-          {places.length}개 장소
-        </div>
-        <p className="mt-1 text-xs leading-5 text-text-tertiary">
+        <p className="flex items-start gap-2 text-xs leading-5 text-text-tertiary">
+          <MapPin size={14} className="mt-0.5 shrink-0 text-place-accent" aria-hidden="true" />
           아래 장소 카드를 누르면 지도 선택과 캡처 정보가 함께 바뀝니다.
         </p>
       </div>
