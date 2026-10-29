@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
+@font-face { font-family: 'SUIT'; src: url('/fonts/SUIT-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'SUIT'; src: url('/fonts/SUIT-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'SUIT'; src: url('/fonts/SUIT-SemiBold.woff2') format('woff2'); font-weight: 600 900; font-display: swap; }
+
 @theme {
   /* Backgrounds */
-  --color-background: #F3EFE6;
-  --color-surface: #F3EFE6;
-  --color-surface-elevated: #EAE4D7;
-  --color-border: #DDD7CC;
-  --color-border-light: #CCC4B6;
+  --color-background: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #F3F6FA;
+  --color-border: #DFE6EE;
+  --color-border-light: #BCCAD9;
 
   /* Text */
-  --color-text-primary: #161513;
-  --color-text-secondary: #6B675E;
-  --color-text-tertiary: #716C62;
+  --color-text-primary: #24354A;
+  --color-text-secondary: #53667D;
+  --color-text-tertiary: #607187;
 
   /* Primary */
-  --color-primary: #A83F20;
-  --color-primary-light: #8D331A;
-  --color-primary-dark: #8D331A;
-  --color-primary-surface: rgba(168, 63, 32, 0.10);
-  --color-primary-border: rgba(168, 63, 32, 0.25);
+  --color-primary: #526985;
+  --color-primary-light: #405671;
+  --color-primary-dark: #405671;
+  --color-primary-surface: rgba(82, 105, 133, 0.10);
+  --color-primary-border: rgba(82, 105, 133, 0.25);
 
   /* Place accent */
   --color-place-accent: #26715B;
@@ -41,9 +45,9 @@
   --color-info: #1D63A6;
 
   /* Font families */
-  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'SUIT', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --font-label: 'Space Grotesk', sans-serif;
+  --font-label: 'SUIT', sans-serif;
 }
 
 body {
@@ -81,3 +85,5 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

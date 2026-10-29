@@ -1,0 +1,17 @@
+.page { max-width: 1180px; margin: auto; padding: 24px clamp(20px, 4vw, 56px) 64px; }
+.header { display: flex; justify-content: space-between; gap: 16px; align-items: center; font-size: 13px; }
+.brand { font-size: 28px; letter-spacing: -.06em; font-weight: 600; color: var(--color-primary); }
+.intro { margin-block: 64px 48px; max-width: 600px; }
+.intro > p:first-child { font-size: 11px; letter-spacing: .15em; color: var(--color-primary); }
+.intro h1 { font-weight: 600; letter-spacing: -.04em; font-size: clamp(28px, 5vw, 42px); margin-block: 12px; }
+.intro p { font-size: 15px; line-height: 1.8; color: var(--color-text-secondary); }
+.intro > a { display: inline-flex; align-items: center; min-height: 44px; background: var(--color-primary); color: white; padding: 12px 20px; border-radius: 12px; margin-top: 24px; font-size: 14px; }
+.section { margin-top: 48px; }
+.section h2 { padding-bottom: 16px; border-bottom: 1px solid var(--color-border); font-size: 18px; font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 24px 12px; padding-top: 24px; }
+.grid a { min-width: 0; border-radius: 12px; text-align: center; padding: 8px; }
+.grid a:hover { background: var(--color-surface-elevated); }
+.grid img { width: 100%; aspect-ratio: 1; height: auto; object-fit: contain; }
+.grid span { display: block; font-size: 12px; color: var(--color-text-secondary); margin-top: 12px; }
+.page footer { margin-top: 64px; font-size: 13px; line-height: 1.8; color: var(--color-text-secondary); }
+@media(max-width: 600px) { .grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px 16px; } .intro { margin-top: 40px; } }

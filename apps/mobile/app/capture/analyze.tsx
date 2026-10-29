@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Animated,
-  Alert,
-  StatusBar,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Alert, StatusBar } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -439,7 +430,7 @@ const styles = StyleSheet.create({
   },
   navTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   content: {
     flex: 1,
@@ -480,7 +471,7 @@ const styles = StyleSheet.create({
   },
   loadingTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     marginTop: 20,
   },
   loadingSubtitle: {
@@ -503,7 +494,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   errorMessage: {
     fontSize: 14,
@@ -523,7 +514,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   resultSection: {
     paddingHorizontal: 16,
@@ -544,7 +535,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   sourceLabel: {
     fontSize: 12,
@@ -552,7 +543,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'SUIT-SemiBold',
     lineHeight: 30,
   },
   resultSummary: {
@@ -575,17 +566,17 @@ const styles = StyleSheet.create({
   },
   placeIndexText: {
     fontSize: 11,
-    fontWeight: '700' as const,
+    fontFamily: 'SUIT-SemiBold' as const,
     color: '#050508',
   },
   placeLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
     letterSpacing: 0.5,
   },
   placeValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
     marginTop: 4,
   },
   mapButtons: {
@@ -611,7 +602,7 @@ const styles = StyleSheet.create({
   },
   mapLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   textCard: {
     marginTop: 16,
@@ -621,7 +612,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -662,7 +653,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
   saveButton: {
     flexDirection: 'row',
@@ -680,7 +671,7 @@ const styles = StyleSheet.create({
   saveText: {
     color: '#FFF',
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   uploadIndicator: {
     flexDirection: 'row',

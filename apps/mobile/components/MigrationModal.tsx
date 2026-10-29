@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { deleteImageFromStorage, supabase, uploadImageToStorage } from '@/services/supabase';
 import { getAllCaptures, replaceAllCaptures } from '@/services/database';
 import { saveCapture as supaSave } from '@scrave/shared';

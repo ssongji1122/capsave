@@ -1,15 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  StatusBar,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, StyleSheet, FlatList, StatusBar, RefreshControl, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -320,7 +311,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: 'SUIT-SemiBold',
     flex: 1,
   },
   countBadge: {
@@ -330,7 +321,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   guideModeBtn: {
     paddingHorizontal: 12,
@@ -339,7 +330,7 @@ const styles = StyleSheet.create({
   },
   guideModeBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   toggleGroup: {
     flexDirection: 'row',
@@ -365,7 +356,7 @@ const styles = StyleSheet.create({
   },
   selectBannerText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   guideBottomBar: {
     position: 'absolute',
@@ -382,7 +373,7 @@ const styles = StyleSheet.create({
   },
   guideBottomText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   createGuideBtn: {
     paddingHorizontal: 16,
@@ -391,7 +382,7 @@ const styles = StyleSheet.create({
   },
   createGuideBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   listContent: {
     paddingTop: 4,
@@ -415,7 +406,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     marginBottom: 8,
   },
   emptySubtitle: {

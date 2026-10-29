@@ -1,18 +1,7 @@
 import { buildCaptureReviewTopic } from '@scrave/shared';
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActionSheetIOS,
-  Platform,
-  Clipboard,
-  StatusBar,
-  Modal,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, ActionSheetIOS, Platform, Clipboard, StatusBar, Modal } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -394,7 +383,7 @@ const styles = StyleSheet.create({
   },
   navTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     flex: 1,
     textAlign: 'center',
   },
@@ -436,7 +425,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   confidence: {
     fontSize: 11,
@@ -448,7 +437,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     lineHeight: 26,
   },
   summary: {
@@ -463,7 +452,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 10,
@@ -488,7 +477,7 @@ const styles = StyleSheet.create({
   },
   placeIndexText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     color: '#050508',
   },
   placeTextGroup: {
@@ -497,7 +486,7 @@ const styles = StyleSheet.create({
   },
   placeName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   placeAddress: {
     fontSize: 13,
@@ -539,7 +528,7 @@ const styles = StyleSheet.create({
   },
   fullTextToggleText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   fullTextBox: {
     marginTop: 10,
@@ -565,7 +554,7 @@ const styles = StyleSheet.create({
   },
   copyBtnText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
   searchRow: {
     flexDirection: 'row',
@@ -583,7 +572,7 @@ const styles = StyleSheet.create({
   },
   searchLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   linkBtn: {
     flexDirection: 'row',
@@ -611,7 +600,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
   notFound: {
     flex: 1,

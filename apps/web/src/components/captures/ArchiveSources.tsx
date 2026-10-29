@@ -1,4 +1,5 @@
 'use client';
+import { ArchiveIllustration } from './ArchiveIllustration';
 import { useEffect, useState } from 'react';
 import { buildArchiveLinks, buildSourceQuery, safeArchiveUrl, type ArchiveCapture } from '@scrave/shared';
 interface Candidate { title: string; url: string }
@@ -26,7 +27,7 @@ export function ArchiveSources({ capture }: { capture: ArchiveCapture }) {
     return () => controller.abort();
   }, [query, attempt]);
   return <section aria-label="원본 출처와 후속 링크" onClick={e => e.stopPropagation()} className="mt-6 border-t border-border-light pt-4">
-    <h4 className="text-lg font-normal">원본·출처와 다음 행동</h4>
+    <div className="flex items-center gap-3"><ArchiveIllustration kind="sources" size={52} /><h4 className="text-lg font-medium">원본·출처와 다음 행동</h4></div>
     <p className="text-xs text-text-secondary my-2">공개 이름으로 Bing을 검색합니다. 검색 후보와 캡처에 연결된 링크는 원문 일치 확인 전입니다.</p>
     <div className="flex flex-col gap-2">{buildArchiveLinks(capture).map(link => <a className="text-sm text-text-accent min-h-11 py-2" key={link.url} href={link.url} target="_blank" rel="noopener noreferrer">{link.label}</a>)}</div>
     <p role="status" className="text-xs text-text-secondary my-2">{status}</p>

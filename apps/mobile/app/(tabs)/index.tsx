@@ -1,15 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  TextInput,
-  Animated,
-  StatusBar,
-  RefreshControl,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +8,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
 import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
+import { ArchiveIllustration } from '@/components/ArchiveIllustration';
 import { CategoryShape } from '@/components/CategoryShape';
 import { CaptureCard } from '@/components/CaptureCard';
 import { useCaptures } from '@/contexts/CapturesContext';
@@ -100,7 +92,7 @@ export default function HomeScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={[styles.emptyIcon, { backgroundColor: colors.surfaceElevated }]}>
-        <Ionicons name="camera-outline" size={48} color={colors.textTertiary} />
+        <ArchiveIllustration kind="add" size={96} />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
         캡처를 시작해보세요
@@ -125,15 +117,17 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
+          <Text style={[styles.brand, { color: colors.primary }]}>scrave</Text>
           <Text style={[styles.headerTitle, { color: colors.text }]}>my craves</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            scrap, save your crave
+            캡처로 모아 둔 일상과 취향
           </Text>
         </View>
+        <ArchiveIllustration kind="archive" size={84} />
       </View>
 
       <View style={styles.archiveFilters} accessibilityLabel="캡처 종류">
-        {[{id:'all' as const,label:'전체'},...ARCHIVE_SECTIONS].map(section => <TouchableOpacity key={section.id} accessibilityRole="button" accessibilityState={{selected:archiveSection===section.id}} onPress={() => setArchiveSection(section.id)} style={[styles.archiveFilter, {borderBottomColor:archiveSection===section.id?colors.primary:'transparent'}]}>{section.id !== 'all' && <CategoryShape section={section.id}/>}<Text style={{fontSize:12,color:archiveSection===section.id?colors.text:colors.textSecondary}}>{section.label} {displayCaptures.filter(item=>section.id==='all'||classifyArchiveCapture(item)===section.id).length}</Text></TouchableOpacity>)}
+        {[{id:'all' as const,label:'전체'},...ARCHIVE_SECTIONS].map(section => <TouchableOpacity key={section.id} accessibilityRole="button" accessibilityState={{selected:archiveSection===section.id}} onPress={() => setArchiveSection(section.id)} style={[styles.archiveFilter, {borderBottomColor:archiveSection===section.id?colors.primary:'transparent'}]}>{section.id !== 'all' && <CategoryShape section={section.id}/>}<Text style={{fontSize: 12,color:archiveSection===section.id?colors.text:colors.textSecondary}}>{section.label} {displayCaptures.filter(item=>section.id==='all'||classifyArchiveCapture(item)===section.id).length}</Text></TouchableOpacity>)}
       </View>
       {/* Search Bar */}
       <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -177,7 +171,7 @@ export default function HomeScreen() {
       {/* FAB */}
       <Animated.View style={[styles.fabContainer, { transform: [{ scale: fabScale }] }]}>
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.text }]}
+          style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={handleAddCapture}
           activeOpacity={0.8}
         >
@@ -194,20 +188,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  brand: { fontFamily: 'SUIT-SemiBold', fontSize: 24, letterSpacing: -1, marginBottom: 12 },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 12,
   },
   headerTitle: {
-    fontSize: 21,
-    fontWeight: '700',
+    fontSize: 28,
+    fontFamily: 'SUIT-SemiBold',
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 15,
-    marginTop: 4,
-    fontWeight: '500',
+    fontSize: 13,
+    marginTop: 6,
+    fontFamily: 'SUIT-Medium',
   },
   statsBar: {
     flexDirection: 'row',
@@ -224,12 +222,12 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'SUIT-SemiBold',
   },
   statLabel: {
     fontSize: 11,
     marginTop: 2,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
   statDivider: {
     width: 1,
@@ -247,6 +245,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: {
+    fontFamily: 'SUIT-Regular',
     flex: 1,
     fontSize: 15,
     height: 24,
@@ -274,10 +273,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     marginBottom: 8,
   },
   emptySubtitle: {
+    fontFamily: 'SUIT-Regular',
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   fabContainer: {
     position: 'absolute',
@@ -307,9 +307,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FFB800',
+    shadowColor: '#526985',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 8,
   },

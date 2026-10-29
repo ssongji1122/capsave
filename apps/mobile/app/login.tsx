@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 36,
-    fontWeight: '800',
+    fontFamily: 'SUIT-SemiBold',
     marginBottom: 4,
   },
   subtitle: {
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   devSkipButton: {
     marginTop: 16,

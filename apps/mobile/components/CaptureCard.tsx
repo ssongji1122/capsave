@@ -1,13 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActionSheetIOS,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, ActionSheetIOS, Platform } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -97,7 +90,7 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
     const appearance = ARCHIVE_APPEARANCE[section];
     const icons = { blob: 'flower', cross: 'add', x: 'close', star: 'star' } as const;
     return <TouchableOpacity style={styles.photoCard} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
-      {resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]} contentFit="contain" cachePolicy="memory-disk" />}
+      <View style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]}>{resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={{width:'100%',height:'100%'}} contentFit="contain" cachePolicy="memory-disk" />}</View>
       <Text style={[styles.photoTitle, {color: colors.text}]} numberOfLines={2}>{item.title}</Text>
       <View style={styles.photoMeta}><Ionicons name={icons[appearance.shape]} size={12} color={appearance.color}/><Text style={{color: colors.textSecondary, fontSize: 11}}>{ARCHIVE_SECTIONS.find(s=>s.id===section)?.label}</Text></View>
     </TouchableOpacity>;
@@ -213,8 +206,8 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
 
 const styles = StyleSheet.create({
   photoCard: { flex: 1, maxWidth: '48%', minWidth: 0, marginBottom: 20 },
-  photoImage: { width: '100%', height: 220, borderRadius: 14 },
-  photoTitle: { fontSize: 14, fontWeight: '600', marginTop: 10, lineHeight: 20 },
+  photoImage: { width: '100%', height: 200, borderRadius: 14, borderWidth: 1, borderColor: Colors.light.border },
+  photoTitle: { fontSize: 14, fontFamily: 'SUIT-SemiBold', marginTop: 10, lineHeight: 20, minHeight: 40 },
   photoMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
   card: {
     borderRadius: 0,
@@ -241,7 +234,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   headerRight: {
     flexDirection: 'row',
@@ -260,7 +253,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 28,
-    fontWeight: '400',
+    fontFamily: 'SUIT-Regular',
     lineHeight: 36,
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -294,7 +287,7 @@ const styles = StyleSheet.create({
   },
   placeName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   placeAddress: {
     fontSize: 12,
@@ -332,6 +325,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
 });

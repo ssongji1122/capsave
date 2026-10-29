@@ -5,10 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
 import { Home, MapPin, FileText, Map, Compass, Settings, LogOut } from 'lucide-react';
 
-const BRAND_MARK_COLOR = '#F2622E';
+const BRAND_MARK_COLOR = '#526985';
 
 const navItems = [
-  { href: '/dashboard', label: '홈', icon: Home, description: '전체 캡처' },
+  { href: '/dashboard', label: 'my craves', icon: Home, description: '전체 캡처' },
   { href: '/places', label: '장소', icon: MapPin, description: '맛집·카페·여행지' },
   { href: '/guides', label: '가이드', icon: Compass, description: '여행 동선 노트' },
   { href: '/texts', label: '텍스트', icon: FileText, description: 'AI·코드·레시피' },

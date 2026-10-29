@@ -24,6 +24,7 @@ import { Bookmark, Camera, CheckCircle2, Compass, Layers } from 'lucide-react';
 
 import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
 import { ArchiveSections } from '@/components/captures/ArchiveSections';
+import { ArchiveIllustration } from '@/components/captures/ArchiveIllustration';
 import editorial from '@/components/captures/EditorialArchive.module.css';
 
 const CONFIDENCE_THRESHOLD = 0.5;
@@ -249,10 +250,14 @@ export default function HomePage() {
   return (
     <div className={`${editorial.archive} pb-20 lg:pb-8`}>
       {/* Header */}
-      <div className="px-5 pt-8 pb-3 lg:pt-10">
+      <div className={editorial.archiveHeader}>
+        <div>
         <p className={editorial.eyebrow}>scrave</p>
         <h1>my craves</h1>
-        <p className="text-text-secondary text-sm mt-4">scrap, save your crave</p>
+        <p>캡처로 모아 둔 일상과 취향</p>
+        <a href="/stickers" className="inline-flex items-center min-h-11 text-xs text-primary underline underline-offset-4">스티커북 열기</a>
+        </div>
+        <ArchiveIllustration kind="archive" size={112} />
       </div>
 
       <ArchiveSections value={archiveSection} onChange={setArchiveSection} counts={{ all: baseShown.length, ...Object.fromEntries(ARCHIVE_SECTIONS.map(section => [section.id, baseShown.filter(item => classifyArchiveCapture(item) === section.id).length])) } as Record<ArchiveSection | 'all', number>} />
@@ -350,7 +355,7 @@ export default function HomePage() {
         isLoading={visibleArchiveCaptures.length === 0 && isLoading}
         onDelete={handleDelete}
         onMetaChange={handleMetaChange}
-        emptyIcon={<Camera size={40} className="text-primary" />}
+        emptyIcon={<ArchiveIllustration kind="add" size={88} />}
         emptyTitle="캡처를 시작해보세요"
         emptySubtitle={'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}
         hasMore={isAuthenticated ? hasMore : false}
