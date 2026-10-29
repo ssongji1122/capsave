@@ -42,7 +42,7 @@ export function StaticArchiveMap({
     <div className="relative h-full w-full overflow-hidden bg-background">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(22,21,19,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(22,21,19,0.06)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
-      <div className="absolute left-4 top-20 max-w-[280px] rounded-2xl border border-border bg-surface/90 p-4 backdrop-blur">
+      <div className="absolute left-4 top-48 hidden max-w-[280px] rounded-2xl border border-border bg-surface/90 p-4 backdrop-blur md:block">
         <p className="text-xs font-semibold text-text-primary" style={{ fontFamily: 'var(--font-label)' }}>
           ARCHIVE MAP
         </p>
