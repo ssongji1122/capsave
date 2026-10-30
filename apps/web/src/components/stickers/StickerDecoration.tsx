@@ -132,9 +132,10 @@ export function StickerDecoration({ target, label, preview }: {
      </div>
      <section className={styles.picker} aria-label="스티커 선택">
       <input type="search" aria-label="스티커 검색" placeholder="커피, 단풍, 공부…" value={query} onChange={e => setQuery(e.target.value)}/>
-      <div className={styles.grid}>{STICKER_CATALOG.filter(s => (s.label + ' ' + s.subject).toLowerCase().includes(query.toLowerCase())).map(s => <button type="button" key={s.id} disabled={draft!.length >= MAX_STICKERS} aria-label={s.label + ' 붙이기'} onClick={() => { const id = crypto.randomUUID(); change([...draft!, { id, stickerId: s.id, x: 0.5, y: 0.5, size: 0.25, rotation: 0 }]); setSelected(id); }}><img src={'/stickers/' + s.file} alt="" loading="lazy"/><span>{s.label}</span></button>)}</div>
+      <div className={styles.grid}>{STICKER_CATALOG.filter(s => (s.label + ' ' + s.subject).toLowerCase().includes(query.toLowerCase())).map(s => <button type="button" key={s.id} disabled={draft!.length >= MAX_STICKERS} aria-label={s.label + ' 붙이기'} title={s.label} className={styles.choice} onClick={() => { const id = crypto.randomUUID(); change([...draft!, { id, stickerId: s.id, x: 0.5, y: 0.5, size: 0.25, rotation: 0 }]); setSelected(id); }}><img src={'/stickers/' + s.file} alt="" loading="lazy"/><span role="tooltip" className={styles.tooltip}>{s.label}</span></button>)}</div>
      </section>
     </div>
+    <div role="status" className={styles.selectedName}>{active ? STICKER_CATALOG.find(s => s.id === active.stickerId)?.label : ""}</div>
     <div className={styles.controls}>
      <button type="button" disabled={!history.length} onClick={() => { setDraft(history[history.length - 1]); setHistory(h => h.slice(0, -1)); setSelected(null); }}>되돌리기</button>
      <button type="button" disabled={!active} onClick={() => { change(draft!.filter(p => p.id !== selected)); setSelected(null); }}>선택 삭제</button>

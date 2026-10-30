@@ -3,3 +3,5 @@
 .overlay{container-type:size}.surface{position:absolute;left:50%;top:50%;width:min(100cqw,100cqh);height:min(100cqw,100cqh);transform:translate(-50%,-50%)}
 .dialog header{position:sticky;top:-20px;z-index:5;background:var(--color-surface);padding-block:8px}.dialog{word-break:keep-all}.dialog h2{overflow-wrap:anywhere}@media(max-width:600px){.dialog header{top:-14px}}
 .error{position:absolute;bottom:8px;left:8px;right:8px;z-index:4;padding:8px;background:var(--color-surface);color:var(--color-text-primary);font-size:13px}
+
+.choice{position:relative}.grid .tooltip{display:none;position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:max-content;max-width:100%;padding:3px 6px;border-radius:6px;background:var(--color-text-primary,#24354A);color:white;pointer-events:none;z-index:1}.choice:focus-visible .tooltip{display:block}@media(hover:hover){.choice:hover .tooltip{display:block}}.selectedName{min-height:20px;margin-top:8px;color:var(--color-text-secondary,#53667D);font-size:13px}

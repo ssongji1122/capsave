@@ -77,3 +77,12 @@ it('keeps an edit open on token refresh and clears it when the account changes',
     const reopened = await open();
     expect(within(reopened).getByText('0/20')).toBeTruthy();
 });
+it('uses icon-only choices with accessible names and a selected-name hint', async () => {
+    render(<StickerDecoration target="archive" label="보관함"/>);
+    const dialog = await open();
+    const choice = within(dialog).getByRole('button', { name: '딸기 케이크 붙이기' });
+    expect(choice.getAttribute('title')).toBe('딸기 케이크');
+    expect(choice.querySelector('[role="tooltip"]')?.textContent).toBe('딸기 케이크');
+    fireEvent.click(choice);
+    expect(within(dialog).getByRole('status').textContent).toBe('딸기 케이크');
+});
