@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { StickerDecoration } from '../stickers/StickerDecoration';
 import { CategoryShape } from './CategoryShape';
 import Link from 'next/link';
 import {
@@ -200,6 +201,7 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
   return (
     <article data-expanded={expanded} className={`rounded-3xl overflow-hidden border ${borderColor} bg-surface transition-all duration-200 hover:scale-[1.01] hover:border-border-light`}>
       {/* Image */}
+      {!item.imageUrl && <div className="relative w-full h-64 bg-surface-elevated"><p className="p-6 text-text-secondary">{item.title}</p><StickerDecoration target={"capture:"+item.id} label={item.title}/></div>}
       {item.imageUrl && (
         <div className="relative w-full h-64 bg-surface-elevated">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -221,6 +223,7 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
             )}
           </div>
 
+          <StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageSrc} />
           {/* Confidence badge */}
           {item.confidence != null && (
             <div className="absolute bottom-2 left-3 px-2 py-0.5 rounded-full bg-surface/95 backdrop-blur-sm text-[10px] font-mono text-ai-accent">

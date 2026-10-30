@@ -1,0 +1,702 @@
+export const STICKER_CATALOG = [
+  {
+    "id": 1,
+    "theme": "01-record",
+    "file": "01-record-01.png",
+    "subject": "screenshot card",
+    "label": "캡처 카드"
+  },
+  {
+    "id": 2,
+    "theme": "01-record",
+    "file": "01-record-02.png",
+    "subject": "hand adding screenshot to tray",
+    "label": "캡처를 넣는 손"
+  },
+  {
+    "id": 3,
+    "theme": "01-record",
+    "file": "01-record-03.png",
+    "subject": "open archive box",
+    "label": "열린 보관함"
+  },
+  {
+    "id": 4,
+    "theme": "01-record",
+    "file": "01-record-04.png",
+    "subject": "connected source page",
+    "label": "출처 연결"
+  },
+  {
+    "id": 5,
+    "theme": "01-record",
+    "file": "01-record-05.png",
+    "subject": "calendar",
+    "label": "달력"
+  },
+  {
+    "id": 6,
+    "theme": "01-record",
+    "file": "01-record-06.png",
+    "subject": "clipboard",
+    "label": "클립보드"
+  },
+  {
+    "id": 7,
+    "theme": "01-record",
+    "file": "01-record-07.png",
+    "subject": "bookmark ribbon",
+    "label": "책갈피"
+  },
+  {
+    "id": 8,
+    "theme": "01-record",
+    "file": "01-record-08.png",
+    "subject": "photo strip",
+    "label": "사진 띠"
+  },
+  {
+    "id": 9,
+    "theme": "01-record",
+    "file": "01-record-09.png",
+    "subject": "envelope",
+    "label": "편지"
+  },
+  {
+    "id": 10,
+    "theme": "01-record",
+    "file": "01-record-10.png",
+    "subject": "small diary",
+    "label": "다이어리"
+  },
+  {
+    "id": 11,
+    "theme": "02-stationery",
+    "file": "02-stationery-01.png",
+    "subject": "pencil",
+    "label": "연필"
+  },
+  {
+    "id": 12,
+    "theme": "02-stationery",
+    "file": "02-stationery-02.png",
+    "subject": "fountain pen",
+    "label": "만년필"
+  },
+  {
+    "id": 13,
+    "theme": "02-stationery",
+    "file": "02-stationery-03.png",
+    "subject": "washi tape roll",
+    "label": "마스킹 테이프"
+  },
+  {
+    "id": 14,
+    "theme": "02-stationery",
+    "file": "02-stationery-04.png",
+    "subject": "scissors",
+    "label": "가위"
+  },
+  {
+    "id": 15,
+    "theme": "02-stationery",
+    "file": "02-stationery-05.png",
+    "subject": "paper clips",
+    "label": "클립"
+  },
+  {
+    "id": 16,
+    "theme": "02-stationery",
+    "file": "02-stationery-06.png",
+    "subject": "open notebook",
+    "label": "펼친 노트"
+  },
+  {
+    "id": 17,
+    "theme": "02-stationery",
+    "file": "02-stationery-07.png",
+    "subject": "rubber stamp",
+    "label": "도장"
+  },
+  {
+    "id": 18,
+    "theme": "02-stationery",
+    "file": "02-stationery-08.png",
+    "subject": "sticky notes",
+    "label": "메모지"
+  },
+  {
+    "id": 19,
+    "theme": "02-stationery",
+    "file": "02-stationery-09.png",
+    "subject": "pencil case",
+    "label": "필통"
+  },
+  {
+    "id": 20,
+    "theme": "02-stationery",
+    "file": "02-stationery-10.png",
+    "subject": "glue stick",
+    "label": "풀"
+  },
+  {
+    "id": 21,
+    "theme": "03-cafe",
+    "file": "03-cafe-01.png",
+    "subject": "espresso cup",
+    "label": "에스프레소"
+  },
+  {
+    "id": 22,
+    "theme": "03-cafe",
+    "file": "03-cafe-02.png",
+    "subject": "iced latte",
+    "label": "아이스 라테"
+  },
+  {
+    "id": 23,
+    "theme": "03-cafe",
+    "file": "03-cafe-03.png",
+    "subject": "hand drip coffee set",
+    "label": "핸드드립"
+  },
+  {
+    "id": 24,
+    "theme": "03-cafe",
+    "file": "03-cafe-04.png",
+    "subject": "coffee beans bag",
+    "label": "원두 봉투"
+  },
+  {
+    "id": 25,
+    "theme": "03-cafe",
+    "file": "03-cafe-05.png",
+    "subject": "moka pot",
+    "label": "모카포트"
+  },
+  {
+    "id": 26,
+    "theme": "03-cafe",
+    "file": "03-cafe-06.png",
+    "subject": "lemonade glass with lemon slice",
+    "label": "레모네이드"
+  },
+  {
+    "id": 27,
+    "theme": "03-cafe",
+    "file": "03-cafe-07.png",
+    "subject": "lemon soda bottle",
+    "label": "레몬 소다"
+  },
+  {
+    "id": 28,
+    "theme": "03-cafe",
+    "file": "03-cafe-08.png",
+    "subject": "teapot",
+    "label": "티포트"
+  },
+  {
+    "id": 29,
+    "theme": "03-cafe",
+    "file": "03-cafe-09.png",
+    "subject": "matcha cup",
+    "label": "말차"
+  },
+  {
+    "id": 30,
+    "theme": "03-cafe",
+    "file": "03-cafe-10.png",
+    "subject": "cocoa mug",
+    "label": "코코아"
+  },
+  {
+    "id": 31,
+    "theme": "04-sweets",
+    "file": "04-sweets-01.png",
+    "subject": "strawberry shortcake slice",
+    "label": "딸기 케이크"
+  },
+  {
+    "id": 32,
+    "theme": "04-sweets",
+    "file": "04-sweets-02.png",
+    "subject": "whole birthday cake",
+    "label": "생일 케이크"
+  },
+  {
+    "id": 33,
+    "theme": "04-sweets",
+    "file": "04-sweets-03.png",
+    "subject": "lemon cake slice",
+    "label": "레몬 케이크"
+  },
+  {
+    "id": 34,
+    "theme": "04-sweets",
+    "file": "04-sweets-04.png",
+    "subject": "chocolate cake",
+    "label": "초콜릿 케이크"
+  },
+  {
+    "id": 35,
+    "theme": "04-sweets",
+    "file": "04-sweets-05.png",
+    "subject": "cheesecake slice",
+    "label": "치즈 케이크"
+  },
+  {
+    "id": 36,
+    "theme": "04-sweets",
+    "file": "04-sweets-06.png",
+    "subject": "croissant",
+    "label": "크루아상"
+  },
+  {
+    "id": 37,
+    "theme": "04-sweets",
+    "file": "04-sweets-07.png",
+    "subject": "cinnamon roll",
+    "label": "시나몬 롤"
+  },
+  {
+    "id": 38,
+    "theme": "04-sweets",
+    "file": "04-sweets-08.png",
+    "subject": "macaron pair",
+    "label": "마카롱"
+  },
+  {
+    "id": 39,
+    "theme": "04-sweets",
+    "file": "04-sweets-09.png",
+    "subject": "pudding",
+    "label": "푸딩"
+  },
+  {
+    "id": 40,
+    "theme": "04-sweets",
+    "file": "04-sweets-10.png",
+    "subject": "ice cream sundae",
+    "label": "아이스크림"
+  },
+  {
+    "id": 41,
+    "theme": "05-autumn",
+    "file": "05-autumn-01.png",
+    "subject": "red maple leaf",
+    "label": "단풍잎"
+  },
+  {
+    "id": 42,
+    "theme": "05-autumn",
+    "file": "05-autumn-02.png",
+    "subject": "golden ginkgo leaf",
+    "label": "은행잎"
+  },
+  {
+    "id": 43,
+    "theme": "05-autumn",
+    "file": "05-autumn-03.png",
+    "subject": "small acorns",
+    "label": "도토리"
+  },
+  {
+    "id": 44,
+    "theme": "05-autumn",
+    "file": "05-autumn-04.png",
+    "subject": "pine cone",
+    "label": "솔방울"
+  },
+  {
+    "id": 45,
+    "theme": "05-autumn",
+    "file": "05-autumn-05.png",
+    "subject": "persimmon",
+    "label": "감"
+  },
+  {
+    "id": 46,
+    "theme": "05-autumn",
+    "file": "05-autumn-06.png",
+    "subject": "pumpkin",
+    "label": "호박"
+  },
+  {
+    "id": 47,
+    "theme": "05-autumn",
+    "file": "05-autumn-07.png",
+    "subject": "chestnuts",
+    "label": "밤"
+  },
+  {
+    "id": 48,
+    "theme": "05-autumn",
+    "file": "05-autumn-08.png",
+    "subject": "autumn tree",
+    "label": "단풍나무"
+  },
+  {
+    "id": 49,
+    "theme": "05-autumn",
+    "file": "05-autumn-09.png",
+    "subject": "wool scarf",
+    "label": "목도리"
+  },
+  {
+    "id": 50,
+    "theme": "05-autumn",
+    "file": "05-autumn-10.png",
+    "subject": "fallen leaves in a small basket",
+    "label": "낙엽 바구니"
+  },
+  {
+    "id": 51,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-01.png",
+    "subject": "fishing rod and line",
+    "label": "낚싯대"
+  },
+  {
+    "id": 52,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-02.png",
+    "subject": "fishing float and tiny fish",
+    "label": "낚시찌와 물고기"
+  },
+  {
+    "id": 53,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-03.png",
+    "subject": "fishing tackle box",
+    "label": "낚시 도구함"
+  },
+  {
+    "id": 54,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-04.png",
+    "subject": "hiking boots",
+    "label": "등산화"
+  },
+  {
+    "id": 55,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-05.png",
+    "subject": "backpack with trekking poles",
+    "label": "등산 가방"
+  },
+  {
+    "id": 56,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-06.png",
+    "subject": "mountain trail",
+    "label": "산길"
+  },
+  {
+    "id": 57,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-07.png",
+    "subject": "trail signpost",
+    "label": "이정표"
+  },
+  {
+    "id": 58,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-08.png",
+    "subject": "camping tent",
+    "label": "텐트"
+  },
+  {
+    "id": 59,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-09.png",
+    "subject": "camping lantern",
+    "label": "랜턴"
+  },
+  {
+    "id": 60,
+    "theme": "06-outdoors",
+    "file": "06-outdoors-10.png",
+    "subject": "thermos",
+    "label": "보온병"
+  },
+  {
+    "id": 61,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-01.png",
+    "subject": "open laptop showing simple connected AI nodes without letters",
+    "label": "AI 노트북"
+  },
+  {
+    "id": 62,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-02.png",
+    "subject": "study notebook with small robot doodle",
+    "label": "AI 공부 노트"
+  },
+  {
+    "id": 63,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-03.png",
+    "subject": "desk lamp and book",
+    "label": "책과 스탠드"
+  },
+  {
+    "id": 64,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-04.png",
+    "subject": "headphones and tablet",
+    "label": "태블릿과 헤드폰"
+  },
+  {
+    "id": 65,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-05.png",
+    "subject": "flashcard stack",
+    "label": "학습 카드"
+  },
+  {
+    "id": 66,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-06.png",
+    "subject": "hourglass beside textbook",
+    "label": "공부 시간"
+  },
+  {
+    "id": 67,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-07.png",
+    "subject": "keyboard and mouse",
+    "label": "키보드와 마우스"
+  },
+  {
+    "id": 68,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-08.png",
+    "subject": "small friendly robot head",
+    "label": "작은 로봇"
+  },
+  {
+    "id": 69,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-09.png",
+    "subject": "mind map on paper",
+    "label": "생각 정리"
+  },
+  {
+    "id": 70,
+    "theme": "07-ai-study",
+    "file": "07-ai-study-10.png",
+    "subject": "graduation cap on books",
+    "label": "책과 학사모"
+  },
+  {
+    "id": 71,
+    "theme": "08-travel",
+    "file": "08-travel-01.png",
+    "subject": "airplane and ticket",
+    "label": "비행기와 항공권"
+  },
+  {
+    "id": 72,
+    "theme": "08-travel",
+    "file": "08-travel-02.png",
+    "subject": "suitcase",
+    "label": "여행 가방"
+  },
+  {
+    "id": 73,
+    "theme": "08-travel",
+    "file": "08-travel-03.png",
+    "subject": "passport cover without text",
+    "label": "여권"
+  },
+  {
+    "id": 74,
+    "theme": "08-travel",
+    "file": "08-travel-04.png",
+    "subject": "folded map with pin",
+    "label": "지도와 핀"
+  },
+  {
+    "id": 75,
+    "theme": "08-travel",
+    "file": "08-travel-05.png",
+    "subject": "train",
+    "label": "기차"
+  },
+  {
+    "id": 76,
+    "theme": "08-travel",
+    "file": "08-travel-06.png",
+    "subject": "camera",
+    "label": "카메라"
+  },
+  {
+    "id": 77,
+    "theme": "08-travel",
+    "file": "08-travel-07.png",
+    "subject": "beach umbrella",
+    "label": "해변 파라솔"
+  },
+  {
+    "id": 78,
+    "theme": "08-travel",
+    "file": "08-travel-08.png",
+    "subject": "hotel key",
+    "label": "호텔 열쇠"
+  },
+  {
+    "id": 79,
+    "theme": "08-travel",
+    "file": "08-travel-09.png",
+    "subject": "bicycle",
+    "label": "자전거"
+  },
+  {
+    "id": 80,
+    "theme": "08-travel",
+    "file": "08-travel-10.png",
+    "subject": "little cafe building",
+    "label": "카페"
+  },
+  {
+    "id": 81,
+    "theme": "09-home",
+    "file": "09-home-01.png",
+    "subject": "shopping bag with lamp",
+    "label": "쇼핑백"
+  },
+  {
+    "id": 82,
+    "theme": "09-home",
+    "file": "09-home-02.png",
+    "subject": "parcel box",
+    "label": "택배 상자"
+  },
+  {
+    "id": 83,
+    "theme": "09-home",
+    "file": "09-home-03.png",
+    "subject": "watering can",
+    "label": "물뿌리개"
+  },
+  {
+    "id": 84,
+    "theme": "09-home",
+    "file": "09-home-04.png",
+    "subject": "potted plant",
+    "label": "화분"
+  },
+  {
+    "id": 85,
+    "theme": "09-home",
+    "file": "09-home-05.png",
+    "subject": "headphones and music player",
+    "label": "음악 듣기"
+  },
+  {
+    "id": 86,
+    "theme": "09-home",
+    "file": "09-home-06.png",
+    "subject": "knitting yarn",
+    "label": "뜨개질"
+  },
+  {
+    "id": 87,
+    "theme": "09-home",
+    "file": "09-home-07.png",
+    "subject": "paint palette and brush",
+    "label": "그림 그리기"
+  },
+  {
+    "id": 88,
+    "theme": "09-home",
+    "file": "09-home-08.png",
+    "subject": "sneakers",
+    "label": "운동화"
+  },
+  {
+    "id": 89,
+    "theme": "09-home",
+    "file": "09-home-09.png",
+    "subject": "reading chair",
+    "label": "독서 의자"
+  },
+  {
+    "id": 90,
+    "theme": "09-home",
+    "file": "09-home-10.png",
+    "subject": "small vase of flowers",
+    "label": "꽃병"
+  },
+  {
+    "id": 91,
+    "theme": "10-nature",
+    "file": "10-nature-01.png",
+    "subject": "sun peeking from cloud",
+    "label": "구름과 해"
+  },
+  {
+    "id": 92,
+    "theme": "10-nature",
+    "file": "10-nature-02.png",
+    "subject": "crescent moon and stars",
+    "label": "달과 별"
+  },
+  {
+    "id": 93,
+    "theme": "10-nature",
+    "file": "10-nature-03.png",
+    "subject": "rainbow",
+    "label": "무지개"
+  },
+  {
+    "id": 94,
+    "theme": "10-nature",
+    "file": "10-nature-04.png",
+    "subject": "rainy umbrella",
+    "label": "비와 우산"
+  },
+  {
+    "id": 95,
+    "theme": "10-nature",
+    "file": "10-nature-05.png",
+    "subject": "snowflake and mitten",
+    "label": "눈과 장갑"
+  },
+  {
+    "id": 96,
+    "theme": "10-nature",
+    "file": "10-nature-06.png",
+    "subject": "seashell",
+    "label": "조개"
+  },
+  {
+    "id": 97,
+    "theme": "10-nature",
+    "file": "10-nature-07.png",
+    "subject": "ocean wave",
+    "label": "파도"
+  },
+  {
+    "id": 98,
+    "theme": "10-nature",
+    "file": "10-nature-08.png",
+    "subject": "wildflower bouquet",
+    "label": "들꽃"
+  },
+  {
+    "id": 99,
+    "theme": "10-nature",
+    "file": "10-nature-09.png",
+    "subject": "butterfly",
+    "label": "나비"
+  },
+  {
+    "id": 100,
+    "theme": "10-nature",
+    "file": "10-nature-10.png",
+    "subject": "pair of cherries",
+    "label": "체리"
+  }
+] as const;

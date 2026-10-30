@@ -1,3 +1,4 @@
+import { StickerDecoration } from '@/components/StickerDecoration';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl } from 'react-native';
 import { Text } from '@/components/ScraveText';
@@ -115,7 +116,8 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header,{position:"relative",minHeight:170}]}>
+        <StickerDecoration target="archive" label="보관함"/>
         <View>
           <Text style={[styles.brand, { color: colors.primary }]}>scrave</Text>
           <Text style={[styles.headerTitle, { color: colors.text }]}>my craves</Text>

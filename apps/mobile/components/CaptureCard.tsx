@@ -1,3 +1,4 @@
+import { StickerDecoration } from './StickerDecoration';
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, ActionSheetIOS, Platform } from 'react-native';
 import { Text } from '@/components/ScraveText';
@@ -90,7 +91,7 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
     const appearance = ARCHIVE_APPEARANCE[section];
     const icons = { blob: 'flower', cross: 'add', x: 'close', star: 'star' } as const;
     return <TouchableOpacity style={styles.photoCard} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
-      <View style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]}>{resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={{width:'100%',height:'100%'}} contentFit="contain" cachePolicy="memory-disk" />}</View>
+      <View style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]}>{resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={{width:'100%',height:'100%'}} contentFit="contain" cachePolicy="memory-disk" />}<StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageUri??undefined}/></View>
       <Text style={[styles.photoTitle, {color: colors.text}]} numberOfLines={2}>{item.title}</Text>
       <View style={styles.photoMeta}><Ionicons name={icons[appearance.shape]} size={12} color={appearance.color}/><Text style={{color: colors.textSecondary, fontSize: 11}}>{ARCHIVE_SECTIONS.find(s=>s.id===section)?.label}</Text></View>
     </TouchableOpacity>;
@@ -125,14 +126,15 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
       </View>
 
       {/* Image Preview */}
+      {!resolvedImageUri && <View style={{position:"relative",height:200,backgroundColor:colors.surfaceElevated}}><Text style={{padding:20,color:colors.textSecondary}}>{item.title}</Text><StickerDecoration target={"capture:"+item.id} label={item.title}/></View>}
       {resolvedImageUri && (
-        <Image
+        <View style={{position:"relative"}}><Image
           source={{ uri: resolvedImageUri }}
           style={styles.cardImage}
           contentFit="contain"
           transition={200}
           cachePolicy="memory-disk"
-        />
+        /><StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageUri}/></View>
       )}
 
       {/* Title & Summary */}

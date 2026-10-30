@@ -1,5 +1,6 @@
 'use client';
 
+import { StickerDecoration } from '@/components/stickers/StickerDecoration';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useCaptures, MAX_FREE_CAPTURES } from '@/contexts/CapturesContext';
 import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
@@ -250,7 +251,8 @@ export default function HomePage() {
   return (
     <div className={`${editorial.archive} pb-20 lg:pb-8`}>
       {/* Header */}
-      <div className={editorial.archiveHeader}>
+      <div className={editorial.archiveHeader} style={{position:"relative",minHeight:180}}>
+        <StickerDecoration target="archive" label="보관함" />
         <div>
         <p className={editorial.eyebrow}>scrave</p>
         <h1>my craves</h1>
