@@ -52,3 +52,10 @@
 @media (max-width: 600px) { .archive { --archive-image-height: 200px; --archive-record: 14px; } .archiveHeader { padding-top: 24px; } }
 
 .archive article[data-expanded="true"] { grid-column: 1 / -1; }
+
+.archive :global(.capture-deck) article[data-expanded="true"] { display: block; }
+.archive :global(.capture-deck) article[data-expanded="true"] > div:first-child { position: relative; top: auto; }
+.archive :global(.capture-deck-surface) { outline-offset: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .archive :global(.capture-deck-surface) { transform: none !important; }
+}

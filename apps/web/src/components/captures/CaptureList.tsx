@@ -1,6 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { CaptureDeck } from './CaptureDeck';
 import { Search } from 'lucide-react';
 import { CaptureItem } from '@scrave/shared';
 import type { CaptureUserMeta } from '@/lib/capture-intent';
@@ -33,6 +34,7 @@ export function CaptureList({
   loadMore,
   searchQuery,
 }: CaptureListProps) {
+  const [view, setView] = useState<'grid' | 'deck'>('grid');
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
@@ -73,7 +75,10 @@ export function CaptureList({
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+      <div className="flex gap-2 px-4 pt-4" role="group" aria-label="카드 보기 방식">
+        {(['grid', 'deck'] as const).map(mode => <button key={mode} type="button" aria-pressed={view === mode} onClick={() => setView(mode)} className="min-h-11 rounded-full border border-border px-4 text-sm text-primary">{mode === 'grid' ? '모아보기' : '한 장씩'}</button>)}
+      </div>
+      {view === 'deck' ? <CaptureDeck captures={captures} onDelete={onDelete} onMetaChange={onMetaChange} /> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
         {captures.map((item) => (
           <CaptureCard
             key={item.id}
@@ -82,7 +87,7 @@ export function CaptureList({
             onMetaChange={onMetaChange}
           />
         ))}
-      </div>
+      </div>}
       {hasMore && (
         <div className="flex justify-center mt-6 mb-4">
           <button

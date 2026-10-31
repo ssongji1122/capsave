@@ -1,0 +1,44 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { SAMPLE_CAPTURES } from '@/lib/sample-captures';
+import { CaptureDeck } from '@/components/captures/CaptureDeck';
+vi.mock('@/components/captures/CaptureCard', () => ({ CaptureCard: ({item}: {item: {title:string}}) => <h2>{item.title}</h2> }));
+afterEach(cleanup);
+it('keeps navigation inside the selected category and resets when switching category', () => {
+ const first = SAMPLE_CAPTURES[0];
+ const second = {...first, id: 999, title: '두 번째 장소'};
+ render(<CaptureDeck captures={[first, SAMPLE_CAPTURES[1], second]} onDelete={vi.fn()} />);
+ expect(screen.getByText(first.title)).toBeTruthy();
+ fireEvent.click(screen.getByRole('button', {name:'다음 카드'}));
+ expect(screen.getByText('두 번째 장소')).toBeTruthy();
+ expect(screen.queryByText(SAMPLE_CAPTURES[1].title)).toBeNull();
+ expect((screen.getByRole('button', {name:'다음 카드'}) as HTMLButtonElement).disabled).toBe(true);
+ fireEvent.change(screen.getByRole('combobox', {name:'넘겨 볼 카테고리'}), {target:{value:'travel'}});
+ expect(screen.getByText(SAMPLE_CAPTURES[1].title)).toBeTruthy();
+ expect(screen.getByText('1 / 1')).toBeTruthy();
+});
+it('supports keyboard navigation without intercepting keys inside controls', () => {
+ const first = SAMPLE_CAPTURES[0];
+ render(<CaptureDeck captures={[first, {...first, id:998, title:'다음 장소'}]} onDelete={vi.fn()} />);
+ const surface = screen.getByLabelText('카드를 좌우로 넘깁니다');
+ fireEvent.keyDown(surface, {key:'ArrowRight'});
+ expect(screen.getByText('다음 장소')).toBeTruthy();
+ fireEvent.keyDown(surface, {key:'ArrowLeft'});
+ expect(screen.getByText(first.title)).toBeTruthy();
+ fireEvent.keyDown(screen.getByRole('combobox'), {key:'ArrowRight'});
+ expect(screen.getByText(first.title)).toBeTruthy();
+});
+it('ignores vertical drags and advances on a horizontal swipe', () => {
+ const first = SAMPLE_CAPTURES[0];
+ vi.stubGlobal('PointerEvent', MouseEvent);
+ render(<CaptureDeck captures={[first, {...first, id:998, title:'다음 장소'}]} onDelete={vi.fn()} />);
+ const surface = screen.getByLabelText('카드를 좌우로 넘깁니다');
+ fireEvent.pointerDown(surface, {button:0, clientX:200, clientY:100});
+ fireEvent.pointerUp(surface, {clientX:180, clientY:250});
+ expect(screen.getByText(first.title)).toBeTruthy();
+ fireEvent.pointerDown(surface, {button:0, clientX:200, clientY:100});
+ fireEvent.pointerMove(surface, {clientX:100, clientY:110});
+ fireEvent.pointerUp(surface, {clientX:100, clientY:110});
+ expect(screen.getByText('다음 장소')).toBeTruthy();
+ vi.unstubAllGlobals();
+});
