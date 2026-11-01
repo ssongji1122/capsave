@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest';
+const existingSearch = vi.hoisted(()=>vi.fn());
+vi.mock('@/lib/saved-archive-sources',()=>({findAndSaveArchiveSources:existingSearch}));
 import { enrichCaptureSources } from '@/lib/enrich-capture';
 function db(row:any, references:any[] = [row]) {
  const writes:any[]=[]; const chain:any={select:()=>chain,eq:()=>chain,is:()=>chain,limit:()=>chain,single:async()=>({data:row,error:null}),update:(value:any)=>{writes.push(value);return chain;},then:(resolve:any)=>Promise.resolve({data:writes.length?[{id:7}]:references,error:null}).then(resolve)};
@@ -28,4 +30,11 @@ it('reuses an already stored original at the same post index instead of duplicat
  const reference={...row,id:9,title:'서울 · 원본 1/1',image_url:'owner/old.jpg',links:[post.url]};
  const store=vi.fn();const result=await enrichCaptureSources(db(row,[reference]) as any,'owner',7,{find:vi.fn().mockResolvedValue(post),store});
  expect(store).not.toHaveBeenCalled();expect(result.status).toBe('matched');expect(result.links).toContain('https://scrave.vercel.app/api/image?path=owner%2Fold.jpg');
+});
+
+it('preserves the existing shopping/text source-search path for non-Instagram captures',async()=>{
+ existingSearch.mockResolvedValue({saved:true,status:'candidate',links:['https://example.com'],results:[]});
+ const client=db({...row,source:'other'});const find=vi.fn();
+ const result=await enrichCaptureSources(client as any,'owner',7,{find});
+ expect(existingSearch).toHaveBeenCalledWith(client,'owner',7);expect(find).not.toHaveBeenCalled();expect(result.status).toBe('candidate');
 });

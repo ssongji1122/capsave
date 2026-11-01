@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildArchiveLinks, mapRowToCapture, savedImagePath, canonicalInstagramPost, extractStoragePath, type CaptureRow } from '@scrave/shared';
+import { findAndSaveArchiveSources } from './saved-archive-sources';
 import { isOwnedCaptureStoragePath } from './storage-ownership';
 import { findInstagramOriginal, readBoundedResponse, trustedInstagramImage, type InstagramOriginal } from './instagram-original';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -28,6 +29,7 @@ export async function enrichCaptureSources(client: SupabaseClient, userId: strin
   const {data,error} = await client.from('captures').select('*').eq('id',captureId).eq('user_id',userId).is('deleted_at',null).single();
   if (error || !data) throw new Error('캡처를 찾을 수 없습니다.');
   const capture = mapRowToCapture(data as CaptureRow);
+  if (capture.source !== 'instagram') return findAndSaveArchiveSources(client,userId,captureId);
   const savedImages = capture.links.filter(link => savedImagePath(link));
   const savedPost = capture.links.map(canonicalInstagramPost).find(Boolean);
   if (!deps?.force && savedImages.length && savedPost) return {saved:true,links:capture.links,places:capture.places,imageCount:savedImages.length,sourceUrl:savedPost,status:'saved' as const};
