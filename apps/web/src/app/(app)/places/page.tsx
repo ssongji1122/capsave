@@ -21,9 +21,7 @@ export default function PlacesPage() {
   const [picking, setPicking] = useState(false);
   const hasSavedCaptures = dbCaptures.length + guestCaptures.length > 0;
   const guestPlaceCaptures = guestCaptures.filter((capture) => capture.category === 'place');
-  const samplePlaceCaptures = hasSavedCaptures
-    ? []
-    : SAMPLE_CAPTURES.filter((capture) => capture.category === 'place');
+  const samplePlaceCaptures: CaptureItem[] = [];
 
   useEffect(() => {
     if (!isAuthReady) return;

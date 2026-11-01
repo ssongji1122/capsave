@@ -104,7 +104,7 @@ describe('dashboard search results', () => {
     });
   });
 
-  it('shows read-only samples when there are no saved captures yet', () => {
+  it('shows a login entry instead of samples in an empty archive', () => {
     mocks.useCaptures.mockReturnValue({
       captures: [],
       isLoading: false,
@@ -123,16 +123,11 @@ describe('dashboard search results', () => {
 
     render(React.createElement(HomePage));
 
-    expect(screen.getByText('성수 브런치 저장 샘플')).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: '더 보기' })[0]);
-    expect(screen.getByText('오브젝트 성수')).toBeTruthy();
-    expect(screen.getByText('여행 준비 메모 샘플')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
-    expect(screen.queryByRole('button', { name: '여행 준비 메모 샘플 삭제' })).toBeNull();
-    expect(screen.getAllByText('샘플').length).toBeGreaterThan(0);
+    expect(screen.queryByText('성수 브런치 저장 샘플')).toBeNull();
+    expect(screen.getByRole('link', {name:'로그인해서 내 캡처 불러오기'})).toBeTruthy();
   });
 
-  it('searches the sample captures before the user saves anything', async () => {
+  it('never injects samples into empty archive search', async () => {
     mocks.useCaptures.mockReturnValue({
       captures: [],
       isLoading: false,
@@ -155,7 +150,7 @@ describe('dashboard search results', () => {
       target: { value: '우도' },
     });
 
-    await screen.findByText('여행 준비 메모 샘플');
+    expect(screen.queryByText('여행 준비 메모 샘플')).toBeNull();
     await waitFor(() => {
       expect(screen.queryByText('성수 브런치 저장 샘플')).toBeNull();
     });

@@ -18,9 +18,7 @@ export default function TextsPage() {
   const [dbCaptures, setDbCaptures] = useState<CaptureItem[]>([]);
   const hasSavedCaptures = dbCaptures.length + guestCaptures.length > 0;
   const guestTextCaptures = guestCaptures.filter((capture) => capture.category === 'text');
-  const sampleTextCaptures = hasSavedCaptures
-    ? []
-    : SAMPLE_CAPTURES.filter((capture) => capture.category === 'text');
+  const sampleTextCaptures: CaptureItem[] = [];
 
   useEffect(() => {
     if (!isAuthReady) return;

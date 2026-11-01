@@ -185,7 +185,7 @@ export function MapView() {
     [captures, guestCaptures]
   );
   const visibleArchiveCaptures = useMemo(
-    () => getVisibleArchiveCaptures(archiveCaptures),
+    () => archiveCaptures,
     [archiveCaptures]
   );
   const searchedCaptures = useMemo(
