@@ -17,9 +17,10 @@ interface CaptureCardProps {
   item: CaptureItem;
   onDelete?: (id: number) => void;
   compact?: boolean;
+  fillWidth?: boolean;
 }
 
-export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProps) {
+export function CaptureCard({ item, onDelete, compact = false, fillWidth = false }: CaptureCardProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
@@ -90,7 +91,7 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
     const section = classifyArchiveCapture(item);
     const appearance = ARCHIVE_APPEARANCE[section];
     const icons = { blob: 'flower', cross: 'add', x: 'close', star: 'star' } as const;
-    return <TouchableOpacity style={styles.photoCard} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
+    return <TouchableOpacity style={[styles.photoCard, fillWidth && {maxWidth:'100%',width:'100%'}]} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
       <View style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]}>{resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={{width:'100%',height:'100%'}} contentFit="contain" cachePolicy="memory-disk" />}<StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageUri??undefined}/></View>
       <Text style={[styles.photoTitle, {color: colors.text}]} numberOfLines={2}>{item.title}</Text>
       <View style={styles.photoMeta}><Ionicons name={icons[appearance.shape]} size={12} color={appearance.color}/><Text style={{color: colors.textSecondary, fontSize: 11}}>{ARCHIVE_SECTIONS.find(s=>s.id===section)?.label}</Text></View>

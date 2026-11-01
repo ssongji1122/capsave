@@ -1,18 +1,19 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ARCHIVE_SECTIONS, classifyArchiveCapture, type CaptureItem } from '@scrave/shared';
+import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection, type CaptureItem } from '@scrave/shared';
 import type { CaptureUserMeta } from '@/lib/capture-intent';
 import { swipeStep } from '@/lib/capture-swipe';
 import { CaptureCard } from './CaptureCard';
 
-export function CaptureDeck({ captures, onDelete, onMetaChange }: {
+export function CaptureDeck({ captures, onDelete, onMetaChange, initialCategory }: {
   captures: CaptureItem[];
+  initialCategory?: ArchiveSection;
   onDelete: (id: number) => void;
   onMetaChange?: (id: number, meta: CaptureUserMeta) => void;
 }) {
   const sections = ARCHIVE_SECTIONS.filter(section => captures.some(item => classifyArchiveCapture(item) === section.id));
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState(initialCategory ?? '');
   const [position, setPosition] = useState(0);
   const category = sections.find(section => section.id === selected)?.id ?? sections[0]?.id;
   const items = captures.filter(item => classifyArchiveCapture(item) === category);

@@ -1,6 +1,6 @@
 import { StickerDecoration } from '@/components/StickerDecoration';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
-import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
+import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection, CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, type CaptureSort } from '@scrave/shared';
 import { ArchiveIllustration } from '@/components/ArchiveIllustration';
 import { CategoryShape } from '@/components/CategoryShape';
 import { CaptureCard } from '@/components/CaptureCard';
@@ -25,6 +25,16 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  const [sort, setSort] = useState<CaptureSort>('recent');
+  const [anchorId, setAnchorId] = useState<number | null>(null);
+  const [deck, setDeck] = useState(false);
+  const { width } = useWindowDimensions();
+  const filtered = displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection);
+  const anchor = filtered.find(c=>c.id===anchorId) ?? sortCaptures(filtered,'recent')[0];
+  const deckCategory = archiveSection === 'all' && anchor ? classifyArchiveCapture(anchor) : archiveSection;
+  const ordered = sortCaptures(deck ? filtered.filter(c=>classifyArchiveCapture(c)===deckCategory) : filtered,sort,anchor);
+  const related = anchor ? relatedCaptures(anchor,filtered) : [];
 
   const fabScale = useRef(new Animated.Value(1)).current;
 
@@ -149,14 +159,29 @@ export default function HomeScreen() {
         )}
       </View>
 
+      <View style={{paddingHorizontal:16, gap:8, paddingBottom:12}}>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}} accessibilityLabel="카드 정렬">
+          {CAPTURE_SORT_OPTIONS.map(option=><TouchableOpacity key={option.id} accessibilityRole="button" accessibilityState={{selected:sort===option.id}} onPress={()=>setSort(option.id)} style={{minHeight:44,justifyContent:'center',paddingHorizontal:10,borderRadius:12,borderWidth:1,borderColor:sort===option.id?colors.primary:colors.border}}><Text style={{color:colors.text,fontSize:12}}>{option.label}</Text></TouchableOpacity>)}
+          <TouchableOpacity accessibilityRole="button" onPress={()=>setDeck(!deck)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary}}>{deck?'모아보기':'한 장씩'}</Text></TouchableOpacity>
+        </View>
+        {deck && <Text style={{color:colors.textSecondary,fontSize:12}}>같은 카테고리의 카드만 좌우로 넘깁니다. 다른 종류는 위에서 선택하세요.</Text>}
+        {sort==='upcoming' && <Text style={{color:colors.textSecondary,fontSize:12}}>캡처에서 읽은 오늘 이후 날짜를 먼저 보여줍니다. 변경 여부는 원본에서 확인하세요.</Text>}
+        {sort==='related' && anchor && <Text style={{color:colors.textSecondary,fontSize:12}}>연관 기준: {anchor.title} · 같은 카테고리의 태그·장소·출처 계정을 비교합니다.</Text>}
+      </View>
       {/* List */}
       <FlatList
-        numColumns={2}
-        columnWrapperStyle={{ gap: 14, paddingHorizontal: 16 }}
-        data={displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection)}
+        key={`${deck ? 'deck' : 'grid'}:${sort}:${archiveSection}:${anchor?.id ?? ''}`}
+        numColumns={deck ? 1 : 2}
+        horizontal={deck}
+        pagingEnabled={deck}
+        columnWrapperStyle={deck ? undefined : { gap: 14, paddingHorizontal: 16 }}
+        data={ordered}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <CaptureCard compact item={item} onDelete={handleDelete} />
+          <View style={deck ? {width,paddingHorizontal:16} : {flex:1,maxWidth:'50%'}}>
+            <CaptureCard compact fillWidth item={item} onDelete={handleDelete} />
+            {sort==='related' && <View style={{padding:8}}><Text style={{color:colors.textSecondary,fontSize:12}}>{item.id===anchor?.id ? '연관 기준 카드' : related.find(r=>r.capture.id===item.id)?.reasons.join(' / ') ?? '연결 근거 없음'}</Text><TouchableOpacity accessibilityRole="button" onPress={()=>setAnchorId(item.id)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary}}>이 카드 기준으로 보기</Text></TouchableOpacity></View>}
+          </View>
         )}
         contentContainerStyle={displayCaptures.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
