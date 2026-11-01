@@ -10,7 +10,7 @@ export function CaptureGallery({images,title,onOpen,onChange}: {images: NonNulla
   const move = (step:number) => {const next=Math.max(0,Math.min(images.length-1,index+step));setPosition(next);onChange?.(next);};
   if (!image) return null;
   const src = image.imageUrl.startsWith('data:') ? image.imageUrl : `/api/image?path=${encodeURIComponent(extractStoragePath(image.imageUrl))}`;
-  return <div role="group" tabIndex={0} aria-label={`${title} 게시물 이미지`} className="relative h-full w-full" style={{touchAction:'pan-y'}}
+  return <div data-capture-gallery role="group" tabIndex={0} aria-label={`${title} 게시물 이미지`} className="relative h-full w-full" style={{touchAction:'pan-y'}}
     onKeyDown={event=>{if(event.target!==event.currentTarget)return;if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();event.stopPropagation();move(event.key==='ArrowRight'?1:-1);}}}
     onPointerDown={event=>{event.stopPropagation();if(event.button!==0||(event.target as HTMLElement).closest('button'))return;start.current={x:event.clientX,y:event.clientY};swiped.current=false;}}
     onPointerUp={event=>{event.stopPropagation();if(!start.current)return;const dx=event.clientX-start.current.x;const dy=event.clientY-start.current.y;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){move(dx<0?1:-1);swiped.current=true;}start.current=null;}}

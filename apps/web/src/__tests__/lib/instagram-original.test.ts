@@ -26,3 +26,8 @@ it('never confirms a search result without caption matching',async()=>{
  const inspect=vi.fn().mockResolvedValue({...parseInstagramOriginal('https://instagram.com/p/Other/',html),caption:'부산 바다 야경'});
  expect(await findInstagramOriginal(capture,[],search,inspect)).toBeNull();expect(search).toHaveBeenCalledTimes(1);
 });
+it('decodes Instagram double-escaped slashes and query ampersands before fetching CDN originals',()=>{
+ const encoded=JSON.stringify({is_video:false,display_url:'https:\\/\\/scontent.cdninstagram.com\\/one.jpg?a=1\\u0026b=2'});
+ const post=parseInstagramOriginal('https://instagram.com/p/Abcd/',encoded);
+ expect(post.images[0].url).toBe('https://scontent.cdninstagram.com/one.jpg?a=1&b=2');
+});

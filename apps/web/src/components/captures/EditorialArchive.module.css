@@ -34,7 +34,7 @@
 
 .archive article > button { display: flex; gap: 6px; align-items: center; font-size: var(--archive-label); }
 .archive article[data-expanded="false"] > div:nth-of-type(2) > :not(:first-child) { display: none; }
-.archive article[data-expanded="false"] > div:first-child > div:not([data-sticker-overlay]) { display: none; }
+.archive article[data-expanded="false"] > div:first-child > div:not([data-sticker-overlay]):not([data-capture-gallery]) { display: none; }
 .archive article[data-expanded="false"] > div:first-child > button:not([data-sticker-trigger]) { opacity: 0; }
 .archive article[data-expanded="false"]:hover > div:first-child > button,
 .archive article[data-expanded="false"]:focus-within > div:first-child > button { opacity: 1; }

@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { buildArchiveLinks, mapRowToCapture, savedImagePath, canonicalInstagramPost, type CaptureRow } from '@scrave/shared';
+import { buildArchiveLinks, mapRowToCapture, savedImagePath, canonicalInstagramPost, extractStoragePath, type CaptureRow } from '@scrave/shared';
+import { isOwnedCaptureStoragePath } from './storage-ownership';
 import { findInstagramOriginal, readBoundedResponse, trustedInstagramImage, type InstagramOriginal } from './instagram-original';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MEDIA_BUDGET_MS = 45_000;
@@ -39,7 +40,17 @@ export async function enrichCaptureSources(client: SupabaseClient, userId: strin
   if (post) {
     links.add(post.url);
     const deadline = Date.now()+MEDIA_BUDGET_MS;
-    for (const image of post.images) {
+    for (const [index,image] of post.images.entries()) {
+      const existing = references.find(ref => {
+        const ordinal = ref.title.match(/원본\s+(\d+)\/(\d+)/);
+        return ordinal && Number(ordinal[1]) === index+1 && Number(ordinal[2]) === post.images.length
+          && ref.links.some(link => canonicalInstagramPost(link) === post.url)
+          && isOwnedCaptureStoragePath(extractStoragePath(ref.imageUrl ?? ''), userId);
+      });
+      if (existing) {
+        links.add(`https://scrave.vercel.app/api/image?path=${encodeURIComponent(extractStoragePath(existing.imageUrl))}`);
+        imageCount++; continue;
+      }
       if (Date.now() >= deadline) {partial = true; break;}
       try { links.add(await (deps?.store ?? ((p,i)=>storeOriginalImage(client,userId,p,i)))(post,image)); imageCount++; }
       catch { partial = true; }

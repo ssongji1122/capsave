@@ -27,6 +27,10 @@ export function parseInstagramOriginal(value: string, html: string): InstagramOr
   const images: InstagramOriginal['images'] = []; const seen = new Set<string>();
   for (const match of html.replace(/\\"/g,'"').matchAll(/"is_video":(true|false),"display_url":"((?:\\.|[^"\\])*)"/g)) {
     let imageUrl = ''; try { imageUrl = JSON.parse(`"${match[2]}"`); } catch { continue; }
+    // Instagram embeds can encode the JSON string twice. Backslash-slash left in
+    // a URL becomes a double path separator and invalidates the CDN signature.
+    try { imageUrl = JSON.parse(`"${imageUrl.replaceAll('"', '\\"')}"`); } catch { /* Already decoded. */ }
+    imageUrl = imageUrl.replaceAll('\\/', '/');
     if (!trustedInstagramImage(imageUrl)) continue;
     const key = new URL(imageUrl).pathname; if (seen.has(key)) continue;
     seen.add(key); images.push({url:imageUrl,kind:match[1] === 'true' ? 'video-preview' : 'image'});

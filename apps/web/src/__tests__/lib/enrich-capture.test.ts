@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest';
 import { enrichCaptureSources } from '@/lib/enrich-capture';
-function db(row:any) {
- const writes:any[]=[]; const chain:any={select:()=>chain,eq:()=>chain,is:()=>chain,limit:()=>chain,single:async()=>({data:row,error:null}),update:(value:any)=>{writes.push(value);return chain;},then:(resolve:any)=>Promise.resolve({data:writes.length?[{id:7}]:[row],error:null}).then(resolve)};
+function db(row:any, references:any[] = [row]) {
+ const writes:any[]=[]; const chain:any={select:()=>chain,eq:()=>chain,is:()=>chain,limit:()=>chain,single:async()=>({data:row,error:null}),update:(value:any)=>{writes.push(value);return chain;},then:(resolve:any)=>Promise.resolve({data:writes.length?[{id:7}]:references,error:null}).then(resolve)};
  return {from:()=>chain,writes};
 }
 const row={id:7,user_id:'owner',category:'place',title:'낙산공원',summary:'서울 야경',extracted_text:'낙산공원 가을',links:[],tags:[],places:[{name:'낙산공원',address:'서울 종로구 낙산길 41'}],source:'instagram'};
@@ -22,4 +22,10 @@ it('does no network or storage work for an inaccessible row',async()=>{
 it('reports partial media failure while preserving matched source and screenshot',async()=>{
  const result=await enrichCaptureSources(db(row) as any,'owner',7,{find:vi.fn().mockResolvedValue(post),store:vi.fn().mockRejectedValue(new Error('offline'))});
  expect(result.status).toBe('partial');expect(result.imageCount).toBe(0);expect(result.links).toContain(post.url);
+});
+
+it('reuses an already stored original at the same post index instead of duplicating media',async()=>{
+ const reference={...row,id:9,title:'서울 · 원본 1/1',image_url:'owner/old.jpg',links:[post.url]};
+ const store=vi.fn();const result=await enrichCaptureSources(db(row,[reference]) as any,'owner',7,{find:vi.fn().mockResolvedValue(post),store});
+ expect(store).not.toHaveBeenCalled();expect(result.status).toBe('matched');expect(result.links).toContain('https://scrave.vercel.app/api/image?path=owner%2Fold.jpg');
 });
