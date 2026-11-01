@@ -33,7 +33,7 @@
 }
 
 .archive article > button { display: flex; gap: 6px; align-items: center; font-size: var(--archive-label); }
-.archive article[data-expanded="false"] > div:nth-of-type(2) > :not(:first-child) { display: none; }
+
 .archive article[data-expanded="false"] > div:first-child > div:not([data-sticker-overlay]):not([data-capture-gallery]) { display: none; }
 .archive article[data-expanded="false"] > div:first-child > button:not([data-sticker-trigger]) { opacity: 0; }
 .archive article[data-expanded="false"]:hover > div:first-child > button,
@@ -59,3 +59,5 @@
 @media (prefers-reduced-motion: reduce) {
   .archive :global(.capture-deck-surface) { transform: none !important; }
 }
+
+.archive article[data-expanded="false"] [data-sticker-trigger] { display: none; }

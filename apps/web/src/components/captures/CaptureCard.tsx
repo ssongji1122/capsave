@@ -213,41 +213,10 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
       {!item.imageUrl && <div className="relative w-full h-64 bg-surface-elevated"><p className="p-6 text-text-secondary">{item.title}</p><StickerDecoration target={"capture:"+item.id} label={item.title}/></div>}
       {item.imageUrl && (
         <div className="relative w-full h-64 bg-surface-elevated">
-          <CaptureGallery images={images} title={item.title} onChange={setImageIndex} onOpen={index => { setImageIndex(index); setExpanded(!expanded); }} />
-          <div className="absolute top-3 left-3 flex items-center gap-1.5">
-            <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
-              <span style={{ fontFamily: 'var(--font-label)' }}>{isPlace ? `장소 ${item.places.length}개` : '텍스트'}</span>
-            </div>
-            {isTravelPack && (
-              <div className="px-2 py-0.5 rounded-full bg-primary-surface border border-primary-border text-[10px] font-semibold text-primary backdrop-blur-sm">
-                여행·예약
-              </div>
-            )}
-          </div>
-
+          <CaptureGallery images={images} title={item.title} onChange={setImageIndex} onOpen={index => { setImageIndex(index); setShowOriginalModal(true); }} />
           <StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageSrc} />
-          {/* Confidence badge */}
-          {item.confidence != null && images.length === 1 && (
-            <div className="absolute bottom-2 left-3 px-2 py-0.5 rounded-full bg-surface/95 backdrop-blur-sm text-[10px] font-mono text-ai-accent">
-              AI {Math.round(item.confidence * 100)}%
-            </div>
-          )}
 
-          {/* Original image uncropped zoom trigger */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowOriginalModal(true);
-            }}
-            aria-label={`${item.title} 원본 확대`}
-            className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-surface/95 px-2.5 py-1 text-[10px] font-semibold text-text-primary backdrop-blur-sm hover:bg-surface-elevated transition-colors"
-          >
-            <Maximize2 size={12} aria-hidden="true" />
-            원본
-          </button>
-
-          {isSample ? (
+          {expanded && (isSample ? (
             <div className="absolute top-3 right-3 rounded-full bg-surface/95 px-2.5 py-1 text-[10px] font-semibold text-primary backdrop-blur-sm">
               샘플
             </div>
@@ -259,71 +228,18 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
             >
               <X size={18} aria-hidden="true" />
             </button>
-          )}
+          ))}
         </div>
       )}
 
-      <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="w-full min-h-11 text-left text-sm text-primary border-b border-border-light py-3"><CategoryShape section={classifyArchiveCapture(item)} /> {ARCHIVE_SECTIONS.find(section => section.id === classifyArchiveCapture(item))?.label} · {expanded ? '정리한 내용 접기' : '정리한 내용·출처 보기'}</button>
-      {/* Clickable body */}
-      <div className="p-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
-          <ChevronDown
-            size={14}
-            className={`text-text-tertiary transition-transform ml-2 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
+      <div className="p-4">
+        <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
+        <p className="text-sm text-text-secondary mt-1.5 leading-5 truncate" title={item.summary}>{item.summary || primaryPlace?.name || '저장한 캡처'}</p>
+        <div data-card-actions className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+          {primaryPlace && <Link href={`/map?capture=${item.id}`} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><MapPin size={14} aria-hidden="true" />지도 보기</Link>}
+          {item.imageUrl && <button type="button" onClick={() => setShowOriginalModal(true)} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><Maximize2 size={14} aria-hidden="true" />원본 보기</button>}
+          <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="inline-flex min-h-11 items-center gap-1 text-xs text-text-secondary">{expanded ? '접기' : '더 보기'}<ChevronDown size={13} aria-hidden="true" /></button>
         </div>
-
-        {/* Collapsed: summary preview */}
-        {!expanded && item.summary && (
-          <p className="text-sm text-text-secondary mt-1.5 leading-5 line-clamp-2">{item.summary}</p>
-        )}
-
-        {!expanded && primaryPlace && (
-          <div className="mt-2 flex items-center gap-3 rounded-2xl border border-place-border bg-place-surface px-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-text-primary truncate">{primaryPlace.name}</p>
-              {primaryPlace.address && (
-                <p className="mt-0.5 text-xs text-text-tertiary font-mono truncate">{primaryPlace.address}</p>
-              )}
-            </div>
-            <Link
-              href={`/map?capture=${item.id}`}
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`${item.title} 지도에서 보기`}
-              className="inline-flex min-h-9 flex-shrink-0 items-center gap-1.5 rounded-xl border border-place-border bg-background/50 px-2.5 text-xs font-semibold text-place-accent transition-colors hover:bg-place-surface"
-            >
-              <MapPin size={13} aria-hidden="true" />
-              지도
-            </Link>
-          </div>
-        )}
-
-        {!expanded && textPreview && (
-          <p className="mt-2 rounded-2xl border border-[rgba(125,211,252,0.20)] bg-text-surface px-3 py-2 text-xs leading-5 text-text-secondary line-clamp-2">
-            {textPreview}
-          </p>
-        )}
-
-        {/* Collapsed: compact place count / tag / action badge preview */}
-        {!expanded && (
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex flex-wrap items-center gap-1.5" style={{ fontFamily: 'var(--font-label)' }}>
-              {isPlace && <span className="text-xs text-place-accent">장소 {item.places.length}개</span>}
-              {pendingActionCount > 0 && (
-                <span className="rounded-full bg-primary-surface border border-primary-border px-2 py-0.5 text-[10px] font-semibold text-primary">
-                  행동 {pendingActionCount}건
-                </span>
-              )}
-              {item.tags.slice(0, 3).map((tag, i) => (
-                <span key={i} className="text-xs text-text-tertiary">#{tag}</span>
-              ))}
-            </div>
-            <span className="text-xs text-text-tertiary" style={{ fontFamily: 'var(--font-label)' }}>{formatDate(item.createdAt)}</span>
-          </div>
-        )}
-
         {/* Expanded: full details */}
         {expanded && (
           <>

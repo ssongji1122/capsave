@@ -12,7 +12,7 @@ const post={url:'https://www.instagram.com/p/Abcd/',author:'seoulpick._',caption
 it('saves original and durable image plus map links on the existing single row',async()=>{
  const client=db(row);const store=vi.fn().mockResolvedValue('https://scrave.vercel.app/api/image?path=owner%2Foriginal.jpg');
  const result=await enrichCaptureSources(client as any,'owner',7,{find:vi.fn().mockResolvedValue(post),store});
- expect(result.status).toBe('matched');expect(result.imageCount).toBe(1);expect(client.writes[0].links).toContain(post.url);expect(client.writes[0].links.some((url:string)=>url.includes('google.com/maps'))).toBe(true);
+ expect(result.status).toBe('matched');expect(result).toEqual(expect.objectContaining({imageCount:1}));expect(client.writes[0].links).toContain(post.url);expect(client.writes[0].links.some((url:string)=>url.includes('google.com/maps'))).toBe(true);
 });
 it('retains screenshot and marks unresolved rather than inventing an original',async()=>{
  const client=db(row);const store=vi.fn();const result=await enrichCaptureSources(client as any,'owner',7,{find:vi.fn().mockResolvedValue(null),store});
@@ -23,7 +23,7 @@ it('does no network or storage work for an inaccessible row',async()=>{
 });
 it('reports partial media failure while preserving matched source and screenshot',async()=>{
  const result=await enrichCaptureSources(db(row) as any,'owner',7,{find:vi.fn().mockResolvedValue(post),store:vi.fn().mockRejectedValue(new Error('offline'))});
- expect(result.status).toBe('partial');expect(result.imageCount).toBe(0);expect(result.links).toContain(post.url);
+ expect(result.status).toBe('partial');expect(result).toEqual(expect.objectContaining({imageCount:0}));expect(result.links).toContain(post.url);
 });
 
 it('reuses an already stored original at the same post index instead of duplicating media',async()=>{
