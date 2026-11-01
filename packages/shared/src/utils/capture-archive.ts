@@ -67,5 +67,9 @@ export function buildArchiveLinks(capture: ArchiveCapture): ArchiveLink[] {
     links.push({ kind: 'map', label: `${place.name} · Google 지도 검색`, url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(term)}` });
     links.push({ kind: 'map', label: `${place.name} · 네이버 지도 검색`, url: `https://map.naver.com/p/search/${encodeURIComponent(term)}` });
   });
-  return links.filter((link, index) => links.findIndex(other => other.url === link.url) === index);
+  const uniqueLinks = new Map<string, ArchiveLink>();
+  for (const link of links) {
+    if (!uniqueLinks.has(link.url) || link.kind === 'map') uniqueLinks.set(link.url, link);
+  }
+  return [...uniqueLinks.values()];
 }

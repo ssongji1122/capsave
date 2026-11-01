@@ -46,3 +46,10 @@ it('does not send an old flight timestamp to map search as an address',()=>{
  it('keeps schedule timestamps out of source searches', () => {
   expect(buildSourceQuery({...base,category:'place',places:[{name:'인천공항',address:'2026-11-05 20:20'}]})).toBe('인천공항');
  });
+
+it('keeps map labels after generated map URLs are saved and reloaded',()=>{
+ const capture={...base,places:[{name:'인천공항'}]};
+ const generated=buildArchiveLinks(capture).filter(x=>x.kind==='map');
+ const reopened=buildArchiveLinks({...capture,links:generated.map(x=>x.url)});
+ expect(reopened.filter(x=>x.kind==='map')).toEqual(generated);
+});

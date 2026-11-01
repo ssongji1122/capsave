@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { StickerDecoration } from '../stickers/StickerDecoration';
 import { CategoryShape } from './CategoryShape';
 import Link from 'next/link';
@@ -692,7 +693,7 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
       </div>
 
       {/* Uncropped Original Image Zoom Modal */}
-      {showOriginalModal && item.imageUrl && (
+      {showOriginalModal && item.imageUrl && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -708,8 +709,8 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <p className="text-sm font-bold text-text-primary">{item.title}</p>
-              <p className="text-xs text-text-secondary">
+              <p className="text-sm font-bold text-white">{item.title}</p>
+              <p className="text-xs text-white/70">
                 글자와 예약번호·QR 코드가 잘리지 않는 원본 전체 화면입니다
               </p>
             </div>
@@ -733,7 +734,8 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
               className="mx-auto max-h-[76vh] w-auto object-contain"
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </article>
   );

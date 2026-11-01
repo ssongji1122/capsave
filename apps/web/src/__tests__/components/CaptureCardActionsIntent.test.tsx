@@ -90,7 +90,7 @@ describe('CaptureCard post-capture actions, original zoom, and intent saving', (
     const zoomBtn = screen.getByRole('button', { name: '비자 원본 확인서 원본 확대' });
     fireEvent.click(zoomBtn);
 
-    expect(screen.getByRole('dialog', { name: '비자 원본 확인서 원본 이미지' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '비자 원본 확인서 원본 이미지' }).parentElement).toBe(document.body);
 
     const closeBtn = screen.getByRole('button', { name: '원본 확대 닫기' });
     fireEvent.click(closeBtn);
