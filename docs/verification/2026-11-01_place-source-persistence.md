@@ -28,3 +28,7 @@ Gemini 2.5 Flash 검색 응답은 2·5·7을 확인으로 주장했지만 독립
 커밋 83be536. 기존 Vercel 프로젝트에 배포했으나 dpl_7YFDp3guQEAuNTsiKutUANjfaQt7가 BLOCKED / TEAM_ACCESS_REQUIRED로 거절됐다. 사유: 커밋 작성자에게 해당 프로젝트 배포 권한이 없음. CLI 계정은 admin@friendspick.co.kr, 실제 커밋 작성자 이메일은 liebe129@gmail.com이다. 작성자 위장·권한 검사 우회는 하지 않았다.
 
 기존 운영 앱은 유지된다. 최신 코드의 운영 저장·재조회와 실기기 확인은 아직 완료되지 않았다. 계정 소유자가 Vercel의 GitHub 연결 또는 이메일 확인을 완료해야 재배포할 수 있다. Expo 코드 검증을 네이티브 앱 배포로 확대하지 않는다.
+
+## 작성자 설정 원인 재확인
+
+GitHub CLI의 실제 인증 사용자는 ssongji1122(ID 179897605)이며 GitHub API에서 해당 계정의 noreply 이메일 verified=true를 확인했다. 기존 로컬 user.email은 이 인증 계정의 검증된 이메일 목록에 없었다. 사용자의 배포 권한 수정 요청에 따라 이 저장소에만 검증된 noreply 이메일을 설정했다. 기존 커밋을 수정하지 않고 새 검증 기록 커밋으로 배포한다. 브라우저 Google SSO가 선택한 다른 GitHub 계정 liebe129의 Vercel 연결 요청은 취소했다. 유료 팀원 추가와 보안 검사 우회는 하지 않는다.
