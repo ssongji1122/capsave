@@ -13,7 +13,8 @@ import {
   MapPin,
 } from 'lucide-react';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
-import { createJpegUploadFile, fileToBase64, resizeImageFile } from '@/lib/image-utils';
+import { createJpegUploadFile, fileToBase64 } from '@/lib/image-utils';
+import { prepareBatchAnalysis, batchAnalysisError } from '@/lib/batch-analysis-request';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import { getBatchResultImageSourceIndices } from '@/lib/batch-save-mapper';
 import {
@@ -65,33 +66,15 @@ export function BatchAnalyzeModal({
       setError('');
       setErrorTitle(BATCH_ANALYSIS_ERROR_TITLE);
       setCanRetryAnalysis(true);
-      const resizedBlobs = await Promise.all(
-        files.map((file) => resizeImageFile(file))
-      );
-      // Convert blobs to base64 for JSON transport (avoids FormData size limits)
-      const base64Images = await Promise.all(
-        resizedBlobs.map((blob) => {
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const dataUrl = reader.result as string;
-              // Strip "data:image/jpeg;base64," prefix
-              resolve(dataUrl.split(',')[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        })
-      );
+      const body = await prepareBatchAnalysis(files);
 
       const analyzeRes = await fetch('/api/analyze-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: base64Images }),
+        body,
       });
       if (!analyzeRes.ok) {
-        const errData = await analyzeRes.json().catch(() => null);
-        throw new Error(errData?.error || 'AI 통합 분석 실패');
+        throw new Error(await batchAnalysisError(analyzeRes));
       }
       const { results: analysisResults } = await analyzeRes.json();
 
