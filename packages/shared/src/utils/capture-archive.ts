@@ -25,7 +25,7 @@ export interface ArchiveLink {
   url: string;
 }
 export const TIMESTAMP_ONLY_ADDRESS = /^\d{4}[-./]\d{1,2}[-./]\d{1,2}(?:[ T]\d{1,2}:\d{2})?$/;
-const TRAVEL = /여행\s*(준비|계획|일정)|항공권|탑승권|항공편|여정|터미널|체크인|호텔\s*예약|숙소\s*예약|boarding|itinerary|flight\s*\d|\b[A-Z0-9]{2}\d{3,4}\b/i;
+const TRAVEL = /여행\s*(준비|계획|일정)|항공권|탑승권|항공편|여정|(?:공항|여객)\s*터미널|제?\s*\d+\s*터미널|체크인|호텔\s*예약|숙소\s*예약|boarding|itinerary|flight\s*\d|\b[A-Z0-9]{2}\d{3,4}\b/i;
 const SHOPPING = /장바구니|구매|상품|배송|최저가|옵션|쿠팡|product|shopping|add to cart/i;
 const PRIVATE_LABEL = /예약\s*번호|주문\s*번호|승객|여권|연락처|전화번호|카드번호|confirmation|booking\s*(id|ref)/i;
 const MAX_QUERY_LENGTH = 100;

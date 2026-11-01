@@ -53,3 +53,8 @@ it('keeps map labels after generated map URLs are saved and reloaded',()=>{
  const reopened=buildArchiveLinks({...capture,links:generated.map(x=>x.url)});
  expect(reopened.filter(x=>x.kind==='map')).toEqual(generated);
 });
+
+it('keeps command-line terminal instructions out of travel',()=>{
+ expect(classifyArchiveCapture({...base,title:'Artemis',extractedText:'터미널에서 아래 입력 git clone'})).toBe('questions');
+ expect(classifyArchiveCapture({...base,title:'인천공항 1터미널'})).toBe('travel');
+});
