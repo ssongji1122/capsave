@@ -9,6 +9,7 @@ export const ARCHIVE_SECTIONS = [
 ] as const;
 export type ArchiveSection = typeof ARCHIVE_SECTIONS[number]['id'];
 export interface ArchiveCapture {
+  id?: number;
   category: CaptureCategory;
   title: string;
   summary: string;
@@ -37,8 +38,10 @@ export function classifyArchiveCapture(capture: ArchiveCapture): ArchiveSection 
   return 'questions';
 }
 export function buildSourceQuery(capture: ArchiveCapture): string {
-  const placeName = classifyArchiveCapture(capture) === 'places' ? capture.places[0]?.name : undefined;
-  const title = (placeName || capture.title).trim();
+  const place = classifyArchiveCapture(capture) === 'places' ? capture.places.find(p => p.name.trim() || (p.address?.trim() && !TIMESTAMP_ONLY_ADDRESS.test(p.address.trim()))) : undefined;
+  const address = place?.address?.trim();
+  const placeQuery = place ? [place.name.trim(), address && !TIMESTAMP_ONLY_ADDRESS.test(address) ? address : ''].filter(Boolean).join(' ') : '';
+  const title = (placeQuery || capture.title).trim();
   if (PRIVATE_LABEL.test(title)) return '';
   return title.replace(/https?:\/\/\S+|\S+@\S+|\b\d{2,4}-\d{3,4}-\d{4}\b|\b\d{6,}\b/g, '').trim().slice(0, MAX_QUERY_LENGTH);
 }
