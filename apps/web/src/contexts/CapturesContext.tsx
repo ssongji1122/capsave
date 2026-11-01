@@ -237,6 +237,15 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
       };
       setCaptures((prev) => [enriched, ...prev]);
+      // Source discovery is bounded and free; analysis remains the existing single paid call.
+      try {
+        const response = await fetch('/api/capture-enrich', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({captureId:newCapture.id})});
+        if (response.ok) {
+          const source = await response.json();
+          if (Array.isArray(source.links)) setCaptures(prev => prev.map(c => c.id === newCapture.id ? {...c,links:source.links} : c));
+        }
+      } catch { /* The original remains saved; its source panel offers retry. */ }
+
       // Best-effort: store coordinates now so the map and route checks can reuse them.
       if (newCapture.category === 'place' && newCapture.places.length > 0) {
         void requestCaptureCoordinates(newCapture.id).then((places) => {

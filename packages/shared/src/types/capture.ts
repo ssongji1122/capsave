@@ -29,6 +29,7 @@ export interface AnalysisResult {
 }
 
 export interface CaptureItem {
+  gallery?: { imageUrl: string; label: string; captureId: number }[];
   id: number;
   category: CaptureCategory;
   title: string;

@@ -1,3 +1,4 @@
+import { savedImagePath } from './capture-gallery';
 import type { CaptureCategory, PlaceInfo } from '../types/capture';
 
 /** Browsing sections are derived from existing analysis; persisted categories stay intact. */
@@ -54,7 +55,7 @@ export function safeArchiveUrl(value: string): string | null {
 export function buildArchiveLinks(capture: ArchiveCapture): ArchiveLink[] {
   const links: ArchiveLink[] = [];
   const sourceUrls = [...new Set([...capture.links, ...capture.places.flatMap(p => p.links ?? [])].map(safeArchiveUrl).filter((x): x is string => x !== null))];
-  sourceUrls.forEach(url => links.push({ kind: 'source', label: '캡처에 연결된 링크 · 내용 확인 필요', url }));
+  sourceUrls.filter(url => !savedImagePath(url)).forEach(url => links.push({ kind: 'source', label: '캡처에 연결된 링크 · 내용 확인 필요', url }));
   const query = buildSourceQuery(capture);
   if (query) links.push({ kind: 'search', label: '원본 출처 검색 · 확인 전', url: `https://www.google.com/search?q=${encodeURIComponent(query)}` });
   if (classifyArchiveCapture(capture) === 'shopping' && query) {

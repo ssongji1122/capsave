@@ -40,6 +40,8 @@ import {
   type CaptureRevisitContext,
   type CaptureUserMeta,
 } from '@/lib/capture-intent';
+import { CaptureGallery } from './CaptureGallery';
+import { captureImages, savedImagePath } from '@scrave/shared';
 import { ArchiveSources } from './ArchiveSources';
 import { classifyArchiveCapture, ARCHIVE_SECTIONS } from '@scrave/shared';
 import { PlaceReviews } from './PlaceReviews';
@@ -57,7 +59,12 @@ const PROVIDER_DOT_CLASS: Record<string, string> = {
 };
 const COLLAPSED_TEXT_PREVIEW_LENGTH = 96;
 
-export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) {
+export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: CaptureCardProps) {
+  const [sourceUpdate, setSourceUpdate] = useState<Partial<CaptureItem>>({});
+  const [imageIndex, setImageIndex] = useState(0);
+  const item = { ...initialItem, ...sourceUpdate };
+  const images = captureImages(item);
+  const displayedImage = images[Math.min(imageIndex, Math.max(0, images.length - 1))];
   const [expanded, setExpanded] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -178,14 +185,15 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
   const actions = extractCaptureActions(item);
   const pendingActionCount = actions.filter((a) => !meta.completedActions.includes(a.id)).length;
   const isTravelPack = meta.pinnedToTravelPack || isTravelPackCandidate(item);
-  const resolvedImageSrc = item.imageUrl
-    ? isDataUri(item.imageUrl)
-      ? item.imageUrl
-      : `/api/image?path=${encodeURIComponent(extractStoragePath(item.imageUrl))}`
+  const currentImageUrl = displayedImage?.imageUrl ?? item.imageUrl;
+  const resolvedImageSrc = currentImageUrl
+    ? isDataUri(currentImageUrl)
+      ? currentImageUrl
+      : `/api/image?path=${encodeURIComponent(extractStoragePath(currentImageUrl))}`
     : '';
 
   const handleDelete = () => {
-    if (confirm('이 캡처를 삭제하시겠습니까?')) {
+    if (confirm(images.some(image => image.captureId !== item.id) ? '이 대표 캡처만 삭제합니다. 같은 게시물의 다른 캡처는 보존됩니다. 삭제하시겠습니까?' : '이 캡처와 연결된 이미지 보기를 삭제하시겠습니까?')) {
       onDelete(item.id);
     }
   };
@@ -205,14 +213,7 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
       {!item.imageUrl && <div className="relative w-full h-64 bg-surface-elevated"><p className="p-6 text-text-secondary">{item.title}</p><StickerDecoration target={"capture:"+item.id} label={item.title}/></div>}
       {item.imageUrl && (
         <div className="relative w-full h-64 bg-surface-elevated">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={resolvedImageSrc}
-            alt={altText}
-            className="w-full h-full object-contain cursor-pointer"
-            onClick={() => setExpanded(!expanded)}
-            loading={isDataUri(item.imageUrl) ? undefined : 'lazy'}
-          />
+          <CaptureGallery images={images} title={item.title} onChange={setImageIndex} onOpen={index => { setImageIndex(index); setExpanded(!expanded); }} />
           <div className="absolute top-3 left-3 flex items-center gap-1.5">
             <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
               <span style={{ fontFamily: 'var(--font-label)' }}>{isPlace ? `장소 ${item.places.length}개` : '텍스트'}</span>
@@ -226,7 +227,7 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
 
           <StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageSrc} />
           {/* Confidence badge */}
-          {item.confidence != null && (
+          {item.confidence != null && images.length === 1 && (
             <div className="absolute bottom-2 left-3 px-2 py-0.5 rounded-full bg-surface/95 backdrop-blur-sm text-[10px] font-mono text-ai-accent">
               AI {Math.round(item.confidence * 100)}%
             </div>
@@ -542,11 +543,11 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
               </div>
             )}
 
-            <ArchiveSources capture={item} />
+            <ArchiveSources capture={item} onEnriched={links => setSourceUpdate({ links })} />
             {/* Links */}
             {item.links.length > 0 && (
               <div className="mt-3 flex flex-col gap-1.5">
-                {item.links.map((link, i) => (
+                {item.links.filter(link => !savedImagePath(link)).map((link, i) => (
                   <a
                     key={i}
                     href={link}

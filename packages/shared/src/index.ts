@@ -125,3 +125,5 @@ export { STICKER_CATALOG, MAX_STICKERS, normalizeSticker, parseDecorations, stic
 export type { StickerPlacement } from './utils/stickers';
 export { CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, nextCaptureDate } from './utils/capture-discovery';
 export type { CaptureSort } from './utils/capture-discovery';
+
+export { canonicalInstagramPost, groupCapturePosts, captureImages, savedImagePath } from './utils/capture-gallery';

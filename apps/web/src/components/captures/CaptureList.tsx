@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { CaptureDeck } from './CaptureDeck';
 import { Search } from 'lucide-react';
-import { CaptureItem, CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, classifyArchiveCapture, extractStoragePath, type CaptureSort } from '@scrave/shared';
+import { CaptureItem, groupCapturePosts, CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, classifyArchiveCapture, extractStoragePath, type CaptureSort } from '@scrave/shared';
 import { isDataUri } from '@/lib/image-utils';
 import type { CaptureUserMeta } from '@/lib/capture-intent';
 import { CaptureCard } from './CaptureCard';
@@ -39,7 +39,7 @@ export function CaptureList({
   const [sort, setSort] = useState<CaptureSort>('recent');
   const [anchorId, setAnchorId] = useState<number | null>(null);
   const anchor = captures.find(c => c.id === anchorId) ?? sortCaptures(captures, 'recent')[0];
-  const ordered = sortCaptures(captures, sort, anchor);
+  const ordered = groupCapturePosts(sortCaptures(captures, sort, anchor));
   const related = anchor ? relatedCaptures(anchor, captures) : [];
   if (isLoading) {
     return (
