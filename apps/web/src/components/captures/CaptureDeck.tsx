@@ -60,7 +60,7 @@ export function CaptureDeck({ captures, onDelete, onMetaChange, initialCategory 
           if (start.current) move(swipeStep(event.clientX - start.current.x, event.clientY - start.current.y));
           start.current = null; setOffset(0);
         }}
-        onPointerCancel={() => {start.current = null; setOffset(0);}}
+        onPointerCancel={() => {start.current = null; dragged.current = false; setOffset(0);}}
       >
         <CaptureCard key={item.id} item={item} onDelete={onDelete} onMetaChange={onMetaChange} />
       </div>

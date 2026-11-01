@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { SAMPLE_CAPTURES } from '@/lib/sample-captures';
 import { CaptureDeck } from '@/components/captures/CaptureDeck';
-vi.mock('@/components/captures/CaptureCard', () => ({ CaptureCard: ({item}: {item: {title:string}}) => <h2>{item.title}</h2> }));
+vi.mock('@/components/captures/CaptureCard', () => ({ CaptureCard: ({item, onDelete}: {item: {id:number; title:string}; onDelete: (id:number)=>void}) => <><h2>{item.title}</h2><button onClick={() => onDelete(item.id)}>카드 동작</button></> }));
 afterEach(cleanup);
 it('keeps navigation inside the selected category and resets when switching category', () => {
  const first = SAMPLE_CAPTURES[0];
@@ -41,4 +41,23 @@ it('ignores vertical drags and advances on a horizontal swipe', () => {
  fireEvent.pointerUp(surface, {clientX:100, clientY:110});
  expect(screen.getByText('다음 장소')).toBeTruthy();
  vi.unstubAllGlobals();
+});
+
+it('keeps card actions usable after the browser cancels a horizontal gesture', () => {
+ const first = SAMPLE_CAPTURES[0];
+ const onDelete = vi.fn();
+ vi.stubGlobal('PointerEvent', MouseEvent);
+ try {
+  render(<CaptureDeck captures={[first, {...first, id:997, title:'다음 장소'}]} onDelete={onDelete} />);
+  const surface = screen.getByLabelText('카드를 좌우로 넘깁니다');
+  fireEvent.pointerDown(surface, {button:0, clientX:200, clientY:100});
+  fireEvent.pointerMove(surface, {clientX:100, clientY:110});
+  fireEvent.pointerCancel(surface);
+  expect(screen.getByText(first.title)).toBeTruthy();
+  const action = screen.getByRole('button', {name:'카드 동작'});
+  fireEvent.pointerDown(action, {button:0, clientX:50, clientY:50});
+  fireEvent.pointerUp(action, {clientX:50, clientY:50});
+  fireEvent.click(action);
+  expect(onDelete).toHaveBeenCalledWith(first.id);
+ } finally { vi.unstubAllGlobals(); }
 });
