@@ -11,6 +11,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { CaptureWorkflow } from '@/components/CaptureWorkflow';
+import { useCaptureMeta } from '@/contexts/CaptureMetaContext';
+import { EMPTY_CAPTURE_META } from '../../../../packages/shared/src/utils/capture-intent';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { getMapLinks, openMap, openUrl, sortByPreferredProvider } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
@@ -27,6 +30,7 @@ export default function CaptureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { captures, deleteCapture } = useCaptures();
+  const { metaMap, ready: metaReady, error: metaError, updateMeta } = useCaptureMeta();
   const item = captures.find((c) => c.id === Number(id));
 
   const [showOriginal, setShowOriginal] = useState(false);
@@ -279,6 +283,8 @@ export default function CaptureDetailScreen() {
           )}
 
           <ArchiveSources capture={item} />
+          {metaError ? <Text style={{color:colors.error}}>{metaError}</Text> : null}
+          <CaptureWorkflow key={item.id} capture={item} meta={metaMap[item.id] ?? EMPTY_CAPTURE_META} ready={metaReady} onUpdate={change=>updateMeta(item.id,change)} />
           {/* Places */}
           {isPlace && item.places.length > 0 && (
             <View style={[styles.section, { borderTopColor: colors.border }]}>

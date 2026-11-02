@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import { StickerDecoration } from '../stickers/StickerDecoration';
 import { CategoryShape } from './CategoryShape';
 import Link from 'next/link';
@@ -74,6 +75,15 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
   const [copied, setCopied] = useState(false);
   const [copiedActionId, setCopiedActionId] = useState<string | null>(null);
   const [showOriginalModal, setShowOriginalModal] = useState(false);
+  useEffect(() => {
+    if (!showOriginalModal) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; opener?.focus(); };
+  }, [showOriginalModal]);
+  const originalModalRef = useModalFocusTrap(showOriginalModal, () => setShowOriginalModal(false));
+
   const [meta, setMeta] = useState<CaptureUserMeta>(EMPTY_CAPTURE_META);
 
   useEffect(() => {
@@ -618,10 +628,11 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
       {/* Uncropped Original Image Zoom Modal */}
       {showOriginalModal && item.imageUrl && createPortal(
         <div
+          ref={originalModalRef}
           role="dialog"
           aria-modal="true"
           aria-label={`${item.title} 원본 이미지`}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4 backdrop-blur-sm"
           onClick={(e) => {
             e.stopPropagation();
             setShowOriginalModal(false);
@@ -641,7 +652,7 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
               type="button"
               aria-label="원본 확대 닫기"
               onClick={() => setShowOriginalModal(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-secondary hover:text-text-primary"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-text-secondary hover:text-text-primary"
             >
               <X size={18} aria-hidden="true" />
             </button>

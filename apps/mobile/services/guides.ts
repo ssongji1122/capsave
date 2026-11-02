@@ -156,3 +156,28 @@ export async function saveMobileGuide(
     shareUrl: `${base}/g/${data.guide.slug}`,
   };
 }
+
+export async function listMobileGuides(
+  {serverUrl,getToken,fetchImpl=fetch}: MobileGuideApiOptions,
+): Promise<import('@scrave/shared').SavedGuideSummary[]> {
+  const token=await getToken();
+  if (!token) throw new Error(LOGIN_REQUIRED);
+  const response=await fetchImpl(`${serverUrl.replace(/\/$/,'')}/api/guides`,{headers:{Authorization:`Bearer ${token}`}});
+  if (response.status===401) throw new Error(LOGIN_REQUIRED);
+  if (!response.ok) throw new Error('가이드 목록을 불러오지 못했습니다.');
+  const data=await response.json() as {guides:import('@scrave/shared').SavedGuideSummary[]};
+  return data.guides;
+}
+
+export async function loadMobileGuide(
+  id:string, {serverUrl,getToken,fetchImpl=fetch}: MobileGuideApiOptions,
+): Promise<import('@scrave/shared').SavedGuideRecord> {
+  const token=await getToken();
+  if (!token) throw new Error(LOGIN_REQUIRED);
+  const response=await fetchImpl(`${serverUrl.replace(/\/$/,'')}/api/guides/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${token}`}});
+  if (response.status===401) throw new Error(LOGIN_REQUIRED);
+  if (response.status===404) throw new Error('가이드를 찾을 수 없습니다.');
+  if (!response.ok) throw new Error('가이드를 불러오지 못했습니다.');
+  const data=await response.json() as {guide:import('@scrave/shared').SavedGuideRecord};
+  return data.guide;
+}

@@ -138,3 +138,5 @@ export type {
   CaptureActionItem,
   ActionableCaptureInput,
 } from './utils/capture-actions';
+
+export * from './utils/capture-intent';
