@@ -99,15 +99,18 @@ test.describe('라우트 및 네비게이션', () => {
   });
 
   for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 }]) {
-    test(`${viewport.width}px 정적 지도 안내 상자가 상단 막대와 겹치지 않는다`, async ({ page }) => {
+    test(`${viewport.width}px 정적 지도 안내 상자와 핀이 상단 막대에 가려지지 않는다`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await seedGuestPlaceCapture(page);
       await page.route(/openapi\.map\.naver\.com|maps\.googleapis\.com/, (route) => route.abort());
       await page.goto('/map');
       await expect(page.getByRole('button', { name: `${GUEST_SEED_PLACE_NAME} 선택` })).toBeVisible({ timeout: 8000 });
 
-      const infoBox = await page.getByText('ARCHIVE MAP').locator('..').boundingBox();
-      if (infoBox === null) return;
+      // 안내 상자와 핀이 상단 막대에 가려지면 안 됩니다. 모바일처럼 안내 상자를 숨긴 화면에서는 핀만 봅니다.
+      const mapItems = [
+        await page.getByText('ARCHIVE MAP').locator('..').boundingBox(),
+        await page.getByRole('button', { name: '오브젝트 성수 선택' }).boundingBox(),
+      ];
       const topBarParts = [
         page.locator('form').filter({ has: page.getByRole('searchbox', { name: '지도 장소 검색' }) }),
         page.getByRole('button', { name: '구글', exact: true }),
@@ -116,10 +119,13 @@ test.describe('라우트 및 네비게이션', () => {
         const box = await part.boundingBox();
         expect(box).not.toBeNull();
         if (box === null) continue;
-        const overlaps =
-          infoBox.x < box.x + box.width && box.x < infoBox.x + infoBox.width &&
-          infoBox.y < box.y + box.height && box.y < infoBox.y + infoBox.height;
-        expect(overlaps).toBe(false);
+        for (const item of mapItems) {
+          if (item === null) continue;
+          const overlaps =
+            item.x < box.x + box.width && box.x < item.x + item.width &&
+            item.y < box.y + box.height && box.y < item.y + item.height;
+          expect(overlaps).toBe(false);
+        }
       }
     });
   }

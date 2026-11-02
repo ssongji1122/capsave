@@ -2,35 +2,13 @@
 
 import { MapPin } from 'lucide-react';
 import { ARCHIVE_APPEARANCE } from '@scrave/shared';
+import { getStaticPinPosition } from '@/lib/static-map-layout';
 import type { MapPlace } from './MapView';
 
 interface StaticArchiveMapProps {
   places: readonly MapPlace[];
   selectedPlace: MapPlace | null;
   onPlaceSelect: (place: MapPlace) => void;
-}
-
-const MAP_PADDING_PERCENT = 12;
-const MAP_SPAN_FALLBACK = 0.01;
-
-function getPinPosition(
-  place: MapPlace,
-  places: readonly MapPlace[],
-): { readonly left: number; readonly top: number } {
-  const lats = places.map((item) => item.lat);
-  const lngs = places.map((item) => item.lng);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  const latSpan = Math.max(MAP_SPAN_FALLBACK, maxLat - minLat);
-  const lngSpan = Math.max(MAP_SPAN_FALLBACK, maxLng - minLng);
-  const available = 100 - MAP_PADDING_PERCENT * 2;
-
-  return {
-    left: MAP_PADDING_PERCENT + ((place.lng - minLng) / lngSpan) * available,
-    top: MAP_PADDING_PERCENT + ((maxLat - place.lat) / latSpan) * available,
-  };
 }
 
 export function StaticArchiveMap({
@@ -55,7 +33,7 @@ export function StaticArchiveMap({
         const isSelected =
           selectedPlace?.captureId === place.captureId &&
           selectedPlace.placeIndex === place.placeIndex;
-        const position = getPinPosition(place, places);
+        const position = getStaticPinPosition(place, places);
 
         return (
           <button
