@@ -127,3 +127,14 @@ export { CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, nextCaptureDate } 
 export type { CaptureSort } from './utils/capture-discovery';
 
 export { canonicalInstagramPost, groupCapturePosts, captureImages, savedImagePath } from './utils/capture-gallery';
+
+export {
+  extractCaptureActions,
+  isTravelPackCandidate,
+  buildGoogleCalendarUrl,
+} from './utils/capture-actions';
+export type {
+  CaptureActionKind,
+  CaptureActionItem,
+  ActionableCaptureInput,
+} from './utils/capture-actions';
