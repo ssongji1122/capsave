@@ -11,6 +11,7 @@ import { getVisibleArchiveCaptures } from '@/lib/sample-captures';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 import { StaticArchiveMap } from './StaticArchiveMap';
+import { RouteCandidatesPanel } from './RouteCandidatesPanel';
 import { isMapContainerVisible, pickDefaultMapProvider, resolveMapProvider, type MapProviderChoice, type WebMapProvider } from '@/lib/map-provider';
 import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
 import { ARCHIVE_APPEARANCE, hasFreshCoordinates, needsGeocoding } from '@scrave/shared';
@@ -493,6 +494,12 @@ export function MapView() {
               검색
             </button>
           </form>
+
+          <RouteCandidatesPanel
+            places={filteredPlaces}
+            captures={placeCaptures}
+            onSelectPlace={handlePlaceSelect}
+          />
 
           {hasActiveFilter && filteredPlaces.length > 0 && selectedPlace && (
             <div className="rounded-xl border border-place-border bg-place-surface px-3 py-2 text-xs text-text-secondary backdrop-blur-xl">
