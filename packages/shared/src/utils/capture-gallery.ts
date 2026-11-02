@@ -25,17 +25,39 @@ export function captureImages(item: CaptureItem): NonNullable<CaptureItem['galle
   const seen = new Set<string>();
   return [...images, ...linked].filter(image => image.imageUrl && !seen.has(image.imageUrl) && Boolean(seen.add(image.imageUrl)));
 }
+const SENTENCE_END_MARKS = '.!?';
+
+// Splits after . ! ? that are followed by whitespace or the end, keeping the original separator.
+// A scan instead of a lookbehind regex, because Safari before 16.4 cannot parse lookbehind and would fail the whole bundle.
+function splitSentences(text: string): { sentence: string; separator: string }[] {
+  const out: { sentence: string; separator: string }[] = [];
+  let start = 0;
+  let i = 0;
+  while (i < text.length) {
+    const endsSentence = SENTENCE_END_MARKS.includes(text[i]) && (i + 1 === text.length || /\s/.test(text[i + 1]));
+    if (!endsSentence) { i++; continue; }
+    let j = i + 1;
+    while (j < text.length && /\s/.test(text[j])) j++;
+    out.push({ sentence: text.slice(start, i + 1), separator: text.slice(i + 1, j) });
+    start = j;
+    i = j;
+  }
+  if (start < text.length) out.push({ sentence: text.slice(start), separator: '' });
+  return out;
+}
+
 /** Joins summaries as paragraphs, showing each exact sentence once so a notice repeated across a post's images does not stack. */
 function uniqueSentences(texts: string[]): string {
   const seen = new Set<string>();
   return texts.map(text => {
-    const parts = text.split(/((?<=[.!?])\s+)/);
     let out = '';
-    for (let i = 0; i < parts.length; i += 2) {
-      const sentence = parts[i].trim();
-      if (!sentence || seen.has(sentence)) continue;
-      seen.add(sentence);
-      out += (out ? parts[i - 1] : '') + sentence;
+    let separatorBefore = '';
+    for (const { sentence, separator } of splitSentences(text)) {
+      const key = sentence.trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out += (out ? separatorBefore : '') + key;
+      separatorBefore = separator || ' ';
     }
     return out;
   }).filter(Boolean).join('\n\n');
