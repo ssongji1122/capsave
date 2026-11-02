@@ -1,0 +1,57 @@
+import React from 'react';
+import {render,fireEvent,screen,waitFor} from '@testing-library/react-native';
+import { ArchiveScreen } from '../ArchiveScreen';
+import {createArchiveStore} from '../services/archive-store';
+jest.mock('@granite-js/native/react-native-svg',()=>({__esModule:true,default:'Svg',Path:'Path'}));
+jest.mock('../services/platform',()=>({pickPhoto:jest.fn(),executeAction:jest.fn(),openSource:jest.fn(),archiveStore:{}}));
+jest.mock('@toss/tds-react-native',()=>({Button:({children,onPress,disabled,loading}:any)=>{
+ const {Pressable,Text}=require('react-native');return <Pressable accessibilityRole="button" disabled={disabled||loading} onPress={onPress}><Text>{children}</Text></Pressable>;
+}}));
+it('selects, stores and reopens a capture using the existing mobile workflow',async()=>{
+ const values=new Map<string,string>();
+ const storage={getItem:async(key:string)=>values.get(key)??null,setItem:async(key:string,value:string)=>{values.set(key,value);}};
+ const picker=jest.fn().mockResolvedValue({id:'one',type:'PHOTO',dataUri:'/9j/dGVzdA=='});
+ const first=render(<ArchiveScreen store={createArchiveStore(storage)} selectPhoto={picker}/>);
+ await waitFor(()=>expect(screen.getByText('간직할 캡처를 추가합니다.')).toBeTruthy());
+ fireEvent.press(screen.getByText('캡처 추가'));
+ await waitFor(()=>expect(screen.getByLabelText('캡처 제목')).toBeTruthy());
+ fireEvent.changeText(screen.getByLabelText('캡처 제목'),'호텔 예약');
+ fireEvent.changeText(screen.getByLabelText('사진 속 필요한 글'),'예약번호: AB12345');
+ fireEvent.press(screen.getByText('보관함에 저장'));
+ await waitFor(()=>expect(screen.getByLabelText('캡처 메모')).toBeTruthy());
+ fireEvent.changeText(screen.getByLabelText('캡처 메모'),'현장에서 제시합니다');
+ fireEvent.press(screen.getByLabelText('저장 이유와 메모 저장'));
+ await waitFor(()=>expect(screen.getByText('저장 이유와 메모를 보관했습니다.')).toBeTruthy());
+ fireEvent.press(screen.getByLabelText('예약·확인번호 · AB12345 처리 완료 표시'));
+ await waitFor(()=>expect(screen.getByText('완료됨 · 되돌리기')).toBeTruthy());
+ first.unmount();render(<ArchiveScreen store={createArchiveStore(storage)} selectPhoto={picker}/>);
+ await waitFor(()=>expect(screen.getByText('호텔 예약')).toBeTruthy());
+ fireEvent.press(screen.getByText('호텔 예약'));
+ await waitFor(()=>expect(screen.getByLabelText('캡처 메모').props.value).toBe('현장에서 제시합니다'));
+ expect(screen.getByText('완료됨 · 되돌리기')).toBeTruthy();
+});
+it('leaves the archive unchanged on album cancellation',async()=>{
+ const store=createArchiveStore({getItem:async()=>null,setItem:jest.fn()});
+ render(<ArchiveScreen store={store} selectPhoto={async()=>null}/>);
+ await waitFor(()=>expect(screen.getByText('간직할 캡처를 추가합니다.')).toBeTruthy());
+ fireEvent.press(screen.getByText('캡처 추가'));
+ await waitFor(()=>expect(screen.getByText('사진 선택을 취소했습니다.')).toBeTruthy());
+ expect((await store.load()).captures).toHaveLength(0);
+});
+it('keeps the selected draft after a failed write and persists it when retried',async()=>{
+ let stored:string|null=null;
+ const write=jest.fn(async(_key:string,value:string)=>{stored=value;});
+ write.mockRejectedValueOnce(new Error('저장 공간이 부족합니다.'));
+ const store=createArchiveStore({getItem:async()=>stored,setItem:write});
+ render(<ArchiveScreen store={store} selectPhoto={async()=>({id:'one',type:'PHOTO',dataUri:'/9j/dGVzdA=='})}/>);
+ await waitFor(()=>expect(screen.getByText('간직할 캡처를 추가합니다.')).toBeTruthy());
+ fireEvent.press(screen.getByText('캡처 추가'));
+ await waitFor(()=>expect(screen.getByLabelText('캡처 제목')).toBeTruthy());
+ fireEvent.changeText(screen.getByLabelText('캡처 제목'),'소중한 사진');
+ fireEvent.press(screen.getByText('보관함에 저장'));
+ await waitFor(()=>expect(screen.getByText('저장 공간이 부족합니다.')).toBeTruthy());
+ expect(screen.getByLabelText('캡처 제목').props.value).toBe('소중한 사진');
+ fireEvent.press(screen.getByText('보관함에 저장'));
+ await waitFor(()=>expect(screen.getByLabelText('캡처 메모')).toBeTruthy());
+ expect((await store.load()).captures).toHaveLength(1);
+});

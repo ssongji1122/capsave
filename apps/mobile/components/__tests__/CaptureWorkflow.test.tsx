@@ -1,0 +1,51 @@
+import React from 'react';
+import { TextInput, TouchableOpacity } from 'react-native';
+import { CaptureWorkflow } from '../CaptureWorkflow';
+import { EMPTY_CAPTURE_META } from '../../../../packages/shared/src/utils/capture-intent';
+const renderer = require('react-test-renderer');
+const {act} = renderer;
+jest.mock('../ScraveText', () => ({Text: require('react-native').Text}));
+jest.mock('@/services/map-linker', () => ({openUrl: jest.fn()}));
+const capture = {id:1,title:'호텔 예약',summary:'',extractedText:'예약번호: AB12345',places:[],links:[],tags:[]};
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+it('saves a note and explicit action completion through the native controls', async () => {
+  const update = jest.fn().mockResolvedValue(undefined);
+  let tree: any;
+  await act(async () => {tree=renderer.create(<CaptureWorkflow capture={capture} meta={EMPTY_CAPTURE_META} ready onUpdate={update} />);});
+  await act(async () => {tree.root.findByType(TextInput).props.onChangeText('현장에서 제시합니다');});
+  const button = (name:string) => tree.root.findAllByType(TouchableOpacity).find((x:any)=>x.props.accessibilityLabel===name);
+  await act(async () => {await button('저장 이유와 메모 저장').props.onPress();});
+  expect(update).toHaveBeenCalled();
+  expect(update.mock.calls[0][0](EMPTY_CAPTURE_META).note).toBe('현장에서 제시합니다');
+  await act(async () => {await button('예약·확인번호 · AB12345 처리 완료 표시').props.onPress();});
+  expect(update.mock.calls[1][0](EMPTY_CAPTURE_META).completedActions).toContain('reservation_code:AB12345');
+  await act(async()=>tree.unmount());
+});
+it('keeps editing disabled before persistent metadata has loaded', async () => {
+  let tree:any;
+  await act(async()=>{tree=renderer.create(<CaptureWorkflow capture={capture} meta={EMPTY_CAPTURE_META} ready={false} onUpdate={jest.fn()} />);});
+  const save = tree.root.findAllByType(TouchableOpacity).find((x:any)=>x.props.accessibilityLabel==='저장 이유와 메모 저장');
+  expect(save.props.disabled).toBe(true);
+  expect(tree.root.findByType(TextInput).props.editable).toBe(false);
+  await act(async()=>tree.unmount());
+});
+it('preserves an unsaved note while an action completion is persisted', async () => {
+ let tree:any;
+ const update=jest.fn().mockResolvedValue(undefined);
+ await act(async()=>{tree=renderer.create(<CaptureWorkflow capture={capture} meta={EMPTY_CAPTURE_META} ready onUpdate={update}/>);});
+ await act(async()=>{tree.root.findByType(TextInput).props.onChangeText('아직 저장하지 않은 메모');});
+ await act(async()=>{tree.update(<CaptureWorkflow capture={capture} meta={{...EMPTY_CAPTURE_META,reasons:[],completedActions:['reservation_code:AB12345']}} ready onUpdate={update}/>);});
+ expect(tree.root.findByType(TextInput).props.value).toBe('아직 저장하지 않은 메모');
+ await act(async()=>tree.unmount());
+});
+it('uses the injected platform action without changing completion state', async () => {
+ const execute=jest.fn().mockResolvedValue(undefined);
+ const update=jest.fn();
+ let tree:any;
+ await act(async()=>{tree=renderer.create(<CaptureWorkflow capture={capture} meta={EMPTY_CAPTURE_META} ready onUpdate={update} onExecute={execute}/>);});
+ const copy=tree.root.findAllByType(TouchableOpacity).find((x:any)=>x.props.accessibilityLabel==='예약·확인번호 · AB12345 복사');
+ await act(async()=>{await copy.props.onPress();});
+ expect(execute).toHaveBeenCalledWith(expect.objectContaining({kind:'reservation_code',value:'AB12345'}));
+ expect(update).not.toHaveBeenCalled();
+ await act(async()=>tree.unmount());
+});

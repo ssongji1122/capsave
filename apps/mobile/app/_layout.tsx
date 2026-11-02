@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { CaptureMetaProvider } from '@/contexts/CaptureMetaContext';
 import { CapturesProvider } from '@/contexts/CapturesContext';
 import { UserPreferencesProvider } from '@/contexts/UserPreferencesContext';
 
@@ -93,7 +94,10 @@ function RootLayoutNav() {
     <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: Colors.light.background, card: Colors.light.surface, text: Colors.light.text, border: Colors.light.border, primary: Colors.light.primary } }}>
       <UserPreferencesProvider>
         <CapturesProvider>
+        <CaptureMetaProvider>
           <Stack>
+          <Stack.Screen name="guide/index" options={{title:'내 가이드',headerBackTitle:'뒤로'}} />
+          <Stack.Screen name="guide/[id]" options={{title:'동선 가이드',headerBackTitle:'뒤로'}} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -105,6 +109,7 @@ function RootLayoutNav() {
             }}
           />
           </Stack>
+        </CaptureMetaProvider>
         </CapturesProvider>
       </UserPreferencesProvider>
     </ThemeProvider>

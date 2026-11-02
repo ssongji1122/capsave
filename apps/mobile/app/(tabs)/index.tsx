@@ -1,5 +1,5 @@
 import { StickerDecoration } from '@/components/StickerDecoration';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl, useWindowDimensions } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -12,15 +12,19 @@ import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection, CAPTURE_
 import { ArchiveIllustration } from '@/components/ArchiveIllustration';
 import { CategoryShape } from '@/components/CategoryShape';
 import { CaptureCard } from '@/components/CaptureCard';
+import { useCaptureMeta } from '@/contexts/CaptureMetaContext';
+import { selectArchiveCaptures, ARCHIVE_LENSES } from '@/services/archive-view';
+import type { ArchiveLens } from '../../../../packages/shared/src/utils/capture-intent';
 import { useCaptures } from '@/contexts/CapturesContext';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
-  const { captures: allCaptures, isLoading, refresh, deleteCapture, searchCaptures } = useCaptures();
+  const { captures: allCaptures, isLoading, refresh, deleteCapture } = useCaptures();
 
-  const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[]>([]);
+  const { metaMap, error: metaError } = useCaptureMeta();
+  const [lens, setLens] = useState<ArchiveLens>('all');
   const [archiveSection, setArchiveSection] = useState<ArchiveSection | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -30,11 +34,6 @@ export default function HomeScreen() {
   const [anchorId, setAnchorId] = useState<number | null>(null);
   const [deck, setDeck] = useState(false);
   const { width } = useWindowDimensions();
-  const filtered = displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection);
-  const anchor = filtered.find(c=>c.id===anchorId) ?? sortCaptures(filtered,'recent')[0];
-  const deckCategory = archiveSection === 'all' && anchor ? classifyArchiveCapture(anchor) : archiveSection;
-  const ordered = sortCaptures(deck ? filtered.filter(c=>classifyArchiveCapture(c)===deckCategory) : filtered,sort,anchor);
-  const related = anchor ? relatedCaptures(anchor,filtered) : [];
 
   const fabScale = useRef(new Animated.Value(1)).current;
 
@@ -44,18 +43,13 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Sync display captures with context and debounced search
-  useEffect(() => {
-    const updateCaptures = async () => {
-      if (debouncedQuery) {
-        const results = await searchCaptures(debouncedQuery);
-        setDisplayCaptures(results);
-      } else {
-        setDisplayCaptures(allCaptures);
-      }
-    };
-    updateCaptures();
-  }, [allCaptures, debouncedQuery, searchCaptures]);
+  const displayCaptures = useMemo(() => selectArchiveCaptures(allCaptures, metaMap, {query:debouncedQuery,lens,section:'all'}), [allCaptures,metaMap,debouncedQuery,lens]);
+
+  const filtered = displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection);
+  const anchor = filtered.find(c=>c.id===anchorId) ?? sortCaptures(filtered,'recent')[0];
+  const deckCategory = archiveSection === 'all' && anchor ? classifyArchiveCapture(anchor) : archiveSection;
+  const ordered = sortCaptures(deck ? filtered.filter(c=>classifyArchiveCapture(c)===deckCategory) : filtered,sort,anchor);
+  const related = anchor ? relatedCaptures(anchor,filtered) : [];
 
   useFocusEffect(
     useCallback(() => {
@@ -106,10 +100,10 @@ export default function HomeScreen() {
         <ArchiveIllustration kind="add" size={96} />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
-        캡처를 시작해보세요
+        {allCaptures.length ? '조건에 맞는 캡처가 없습니다' : '첫 캡처를 추가합니다'}
       </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        스크린샷을 선택하면{'\n'}AI가 자동으로 분석해 정리해드립니다
+        {allCaptures.length ? '검색어나 분류를 바꾸면 다른 캡처를 확인할 수 있습니다.' : '스크린샷을 선택하면 내용을 분석해 정리합니다.'}
       </Text>
       <TouchableOpacity
         style={[styles.emptyButton, { backgroundColor: colors.primary }]}
@@ -135,9 +129,16 @@ export default function HomeScreen() {
             캡처로 모아 둔 일상과 취향
           </Text>
         </View>
-        <ArchiveIllustration kind="archive" size={84} />
+        <View style={{alignItems:'center'}}>
+          <ArchiveIllustration kind="archive" size={64} />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="내 가이드" onPress={()=>router.push('/guide' as never)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary,fontSize:13}}>내 가이드</Text></TouchableOpacity>
+        </View>
       </View>
 
+      <View style={styles.archiveFilters} accessibilityLabel="다시 꺼내 보기">
+        {ARCHIVE_LENSES.map(option=><TouchableOpacity key={option.id} accessibilityRole="button" accessibilityLabel={option.label} accessibilityState={{selected:lens===option.id}} onPress={()=>setLens(option.id)} style={[styles.archiveFilter,{borderBottomColor:lens===option.id?colors.primary:'transparent'}]}><Text style={{fontSize:13,color:lens===option.id?colors.text:colors.textSecondary}}>{option.label}</Text></TouchableOpacity>)}
+      </View>
+      {metaError ? <Text style={{color:colors.error,paddingHorizontal:16}}>{metaError}</Text> : null}
       <View style={styles.archiveFilters} accessibilityLabel="캡처 종류">
         {[{id:'all' as const,label:'전체'},...ARCHIVE_SECTIONS].map(section => <TouchableOpacity key={section.id} accessibilityRole="button" accessibilityState={{selected:archiveSection===section.id}} onPress={() => setArchiveSection(section.id)} style={[styles.archiveFilter, {borderBottomColor:archiveSection===section.id?colors.primary:'transparent'}]}>{section.id !== 'all' && <CategoryShape section={section.id}/>}<Text style={{fontSize: 12,color:archiveSection===section.id?colors.text:colors.textSecondary}}>{section.label} {displayCaptures.filter(item=>section.id==='all'||classifyArchiveCapture(item)===section.id).length}</Text></TouchableOpacity>)}
       </View>
@@ -183,7 +184,7 @@ export default function HomeScreen() {
             {sort==='related' && <View style={{padding:8}}><Text style={{color:colors.textSecondary,fontSize:12}}>{item.id===anchor?.id ? '연관 기준 카드' : related.find(r=>r.capture.id===item.id)?.reasons.join(' / ') ?? '연결 근거 없음'}</Text><TouchableOpacity accessibilityRole="button" onPress={()=>setAnchorId(item.id)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary}}>이 카드 기준으로 보기</Text></TouchableOpacity></View>}
           </View>
         )}
-        contentContainerStyle={displayCaptures.length === 0 ? styles.emptyContainer : styles.listContent}
+        contentContainerStyle={filtered.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
         refreshControl={
           <RefreshControl
@@ -198,6 +199,8 @@ export default function HomeScreen() {
       {/* FAB */}
       <Animated.View style={[styles.fabContainer, { transform: [{ scale: fabScale }] }]}>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="캡처 추가"
           style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={handleAddCapture}
           activeOpacity={0.8}

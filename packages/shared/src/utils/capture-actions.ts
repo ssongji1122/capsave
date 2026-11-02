@@ -58,7 +58,10 @@ const TRAVEL_KEYWORDS = [
 ];
 
 function addNextDay(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-').map(Number);
+  const parts = isoDate.split('-');
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
   const next = new Date(Date.UTC(y, m - 1, d + 1));
   return next.toISOString().slice(0, 10).replace(/-/g, '');
 }

@@ -119,7 +119,7 @@ export type { PlaceGeocodeResult } from "./utils/place-geocoding";
 export { findRouteCandidates, DEFAULT_MAX_EXTRA_MINUTES } from "./utils/route-candidates";
 export type { LatLng, RouteCandidate, RouteCandidateCapture, RouteCandidateInput } from "./utils/route-candidates";
 
-export { ARCHIVE_APPEARANCE } from './utils/archive-appearance';
+export { ARCHIVE_APPEARANCE, ARCHIVE_SHAPE_PATHS } from './utils/archive-appearance';
 
 export { STICKER_CATALOG, MAX_STICKERS, normalizeSticker, parseDecorations, stickerStorageKey } from './utils/stickers';
 export type { StickerPlacement } from './utils/stickers';
@@ -138,3 +138,5 @@ export type {
   CaptureActionItem,
   ActionableCaptureInput,
 } from './utils/capture-actions';
+
+export * from './utils/capture-intent';
