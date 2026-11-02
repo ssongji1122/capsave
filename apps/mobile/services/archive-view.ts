@@ -1,14 +1,13 @@
-import { classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
+import { classifyArchiveCapture, type ArchiveSection, type ArchiveCapture } from '../../../packages/shared/src/utils/capture-archive';
 import { filterCapturesByLens, getCaptureReasonLabels, EMPTY_CAPTURE_META, type ArchiveLens } from '../../../packages/shared/src/utils/capture-intent';
-import type { CaptureItem } from './database';
 import type { CaptureMetaMap } from './capture-meta-store';
 
 export const ARCHIVE_LENSES: {id: ArchiveLens; label: string}[] = [
   {id:'all',label:'전체'}, {id:'travel-pack',label:'여행·예약'},
   {id:'action-pending',label:'처리할 일'}, {id:'rediscover',label:'다시 보기'},
 ];
-export function selectArchiveCaptures(captures: CaptureItem[], metaMap: CaptureMetaMap,
-  {query,lens,section}: {query:string;lens:ArchiveLens;section:ArchiveSection|'all'}): CaptureItem[] {
+export function selectArchiveCaptures<T extends ArchiveCapture & {id:number}>(captures: T[], metaMap: CaptureMetaMap,
+  {query,lens,section}: {query:string;lens:ArchiveLens;section:ArchiveSection|'all'}): T[] {
   const terms = query.normalize('NFKC').trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return filterCapturesByLens(captures,metaMap,lens).filter(capture => {
     if (section !== 'all' && classifyArchiveCapture(capture) !== section) return false;

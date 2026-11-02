@@ -38,3 +38,14 @@ it('preserves an unsaved note while an action completion is persisted', async ()
  expect(tree.root.findByType(TextInput).props.value).toBe('아직 저장하지 않은 메모');
  await act(async()=>tree.unmount());
 });
+it('uses the injected platform action without changing completion state', async () => {
+ const execute=jest.fn().mockResolvedValue(undefined);
+ const update=jest.fn();
+ let tree:any;
+ await act(async()=>{tree=renderer.create(<CaptureWorkflow capture={capture} meta={EMPTY_CAPTURE_META} ready onUpdate={update} onExecute={execute}/>);});
+ const copy=tree.root.findAllByType(TouchableOpacity).find((x:any)=>x.props.accessibilityLabel==='예약·확인번호 · AB12345 복사');
+ await act(async()=>{await copy.props.onPress();});
+ expect(execute).toHaveBeenCalledWith(expect.objectContaining({kind:'reservation_code',value:'AB12345'}));
+ expect(update).not.toHaveBeenCalled();
+ await act(async()=>tree.unmount());
+});
