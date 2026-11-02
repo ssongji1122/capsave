@@ -1,0 +1,9 @@
+
+ RUN  v4.1.2 /Users/ssongji/Developer/Workspace/scrave-toss-capture-1029/packages/shared
+
+
+ Test Files  22 passed (22)
+      Tests  242 passed (242)
+   Start at  07:56:45
+   Duration  475ms (transform 790ms, setup 0ms, import 1.05s, tests 149ms, environment 1ms)
+

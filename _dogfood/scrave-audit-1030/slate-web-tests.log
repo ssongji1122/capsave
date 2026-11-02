@@ -1,0 +1,9 @@
+
+ RUN  v4.1.2 /Users/ssongji/Developer/Workspace/scrave-slate-design/apps/web
+
+
+ Test Files  68 passed (68)
+      Tests  450 passed | 3 skipped (453)
+   Start at  08:01:43
+   Duration  7.06s (transform 2.95s, setup 0ms, import 10.53s, tests 9.94s, environment 31.69s)
+

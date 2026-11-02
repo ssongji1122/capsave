@@ -1,0 +1,9 @@
+
+ RUN  v4.1.2 /Users/ssongji/Developer/Workspace/scrave-toss-capture-1029/apps/web
+
+
+ Test Files  67 passed (67)
+      Tests  447 passed | 3 skipped (450)
+   Start at  07:55:26
+   Duration  6.64s (transform 2.89s, setup 0ms, import 9.90s, tests 9.12s, environment 28.56s)
+

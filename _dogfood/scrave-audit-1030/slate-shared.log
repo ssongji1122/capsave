@@ -1,0 +1,9 @@
+
+ RUN  v4.1.2 /Users/ssongji/Developer/Workspace/scrave-slate-design/packages/shared
+
+
+ Test Files  22 passed (22)
+      Tests  242 passed (242)
+   Start at  08:01:44
+   Duration  875ms (transform 1.90s, setup 0ms, import 2.67s, tests 189ms, environment 2ms)
+

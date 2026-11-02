@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-30",
+  "live": "https://scrave.vercel.app/dashboard",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "scrollWidth": 390
+  },
+  "firstCardY": 593.390625,
+  "firstTitleY": 853.390625,
+  "headingPx": 18,
+  "viewFilterHeightPx": 30,
+  "originalTriggerHeightPx": 23,
+  "desktop": {
+    "width": 1600,
+    "scrollWidth": 1600,
+    "gridColumns": 4,
+    "cardTop": [
+      543.390625,
+      543.390625
+    ],
+    "titleTop": [
+      903.390625,
+      903.390625
+    ]
+  },
+  "originalDialog": {
+    "result": "FAIL",
+    "clippedWidthApprox": 171,
+    "clippedHeightApprox": 315,
+    "articleScaleHovered": "1.01",
+    "articleScaleAfterPointerLeft": "1",
+    "diagnosticScaleNone": {
+      "width": 390,
+      "height": 844
+    },
+    "temporaryBrowserStyleRestored": true,
+    "productionSourceModified": false
+  },
+  "pilot": {
+    "localFileSaveReload": "PASS",
+    "searchEmptyAndRecovery": "PASS",
+    "categoryFilter": "PASS",
+    "realTossHost": "NOT_TESTED"
+  },
+  "accountLogin": "NOT_TESTED",
+  "paidAnalysis": "NOT_CALLED"
+}

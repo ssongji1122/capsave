@@ -1,0 +1,24 @@
+PASS services/__tests__/server-analyzer.test.ts
+PASS services/__tests__/analyze-save-flow.test.ts
+PASS services/__tests__/guides.test.ts
+PASS services/__tests__/session-captures.test.ts
+PASS services/__tests__/geocoding.test.ts
+PASS services/__tests__/local-migration.test.ts
+PASS services/__tests__/place-reviews.test.ts
+PASS services/__tests__/google-sign-in.test.ts
+PASS services/__tests__/capture-delete-flow.test.ts
+PASS services/__tests__/map-linker.test.ts
+PASS components/__tests__/PlaceQuickSearch.test.ts
+PASS services/__tests__/auth-session.test.ts
+PASS services/__tests__/analyze-input.test.ts
+PASS config/__tests__/google-oauth.test.js
+PASS config/__tests__/metro-config.test.js
+PASS services/__tests__/normalize-result.test.ts
+PASS services/__tests__/upload-flow.test.ts
+PASS services/__tests__/mobile-save-capacity.test.ts
+
+Test Suites: 18 passed, 18 total
+Tests:       79 passed, 79 total
+Snapshots:   0 total
+Time:        1.773 s, estimated 4 s
+Ran all test suites.
