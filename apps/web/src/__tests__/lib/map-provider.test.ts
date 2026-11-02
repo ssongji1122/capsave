@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickDefaultMapProvider, resolveMapProvider } from '@/lib/map-provider';
+import { isMapContainerVisible, pickDefaultMapProvider, resolveMapProvider } from '@/lib/map-provider';
 
 const SEOUL = { lat: 37.5665, lng: 126.978 };
 const JEJU = { lat: 33.4996, lng: 126.5312 };
@@ -32,5 +32,26 @@ describe('resolveMapProvider', () => {
   it('falls back to the archive map when the requested provider failed to authenticate', () => {
     expect(resolveMapProvider('naver', new Set(['naver']))).toBe('archive');
     expect(resolveMapProvider('google', new Set(['google']))).toBe('archive');
+  });
+});
+
+describe('isMapContainerVisible', () => {
+  it('shows only the container of the provider on screen', () => {
+    expect(isMapContainerVisible('naver', 'naver')).toBe(true);
+    expect(isMapContainerVisible('google', 'naver')).toBe(false);
+    expect(isMapContainerVisible('google', 'google')).toBe(true);
+    expect(isMapContainerVisible('naver', 'google')).toBe(false);
+  });
+
+  it('hides both SDK containers while the archive map is shown', () => {
+    expect(isMapContainerVisible('naver', 'archive')).toBe(false);
+    expect(isMapContainerVisible('google', 'archive')).toBe(false);
+  });
+
+  it('hides the failed Naver container after switching to Google', () => {
+    const failed = new Set<'naver' | 'google'>(['naver']);
+    const active = resolveMapProvider('google', failed);
+    expect(isMapContainerVisible('naver', active)).toBe(false);
+    expect(isMapContainerVisible('google', active)).toBe(true);
   });
 });
