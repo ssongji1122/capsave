@@ -11,7 +11,7 @@ import { getVisibleArchiveCaptures } from '@/lib/sample-captures';
 import { BottomSheet } from './BottomSheet';
 import { PlacePopup } from './PlacePopup';
 import { StaticArchiveMap } from './StaticArchiveMap';
-import { pickDefaultMapProvider, resolveMapProvider, type MapProviderChoice, type WebMapProvider } from '@/lib/map-provider';
+import { isMapContainerVisible, pickDefaultMapProvider, resolveMapProvider, type MapProviderChoice, type WebMapProvider } from '@/lib/map-provider';
 import { requestCaptureCoordinates } from '@/lib/capture-coordinates';
 import { ARCHIVE_APPEARANCE, hasFreshCoordinates, needsGeocoding } from '@scrave/shared';
 
@@ -532,12 +532,12 @@ export function MapView() {
       </div>
 
       {/* Separate containers per SDK — never share a DOM node between map SDKs.
-          After an auth failure the SDK keeps drawing into its container, so it stays mounted and laid out under the static map. */}
+          After an auth failure the SDK keeps drawing into its container, so it stays mounted but hidden unless it is the provider on screen. */}
       {(activeProvider === 'naver' && naverReady) || (naverLoaded && failedProviders.has('naver')) ? (
-        <div ref={naverContainerRef} className="h-full w-full" />
+        <div ref={naverContainerRef} className={isMapContainerVisible('naver', activeProvider) ? 'h-full w-full' : 'hidden'} />
       ) : null}
       {(activeProvider === 'google' && googleReady) || (googleLoaded && failedProviders.has('google')) ? (
-        <div ref={googleContainerRef} className="h-full w-full" />
+        <div ref={googleContainerRef} className={isMapContainerVisible('google', activeProvider) ? 'h-full w-full' : 'hidden'} />
       ) : null}
       {(activeProvider === 'archive' || (activeProvider === 'naver' && !naverReady) || (activeProvider === 'google' && !googleReady)) && (
         <div className="absolute inset-0">

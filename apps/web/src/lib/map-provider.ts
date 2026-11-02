@@ -9,6 +9,12 @@ export function resolveMapProvider(
   return requested !== 'archive' && failed.has(requested) ? 'archive' : requested;
 }
 
+// A failed SDK keeps drawing its error tile into its container, so containers stay mounted
+// but only the one for the provider on screen may be shown.
+export function isMapContainerVisible(container: WebMapProvider, active: MapProviderChoice): boolean {
+  return container === active;
+}
+
 interface LatLng {
   lat: number;
   lng: number;

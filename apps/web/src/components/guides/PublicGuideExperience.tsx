@@ -33,6 +33,7 @@ import {
   getGuidePlaceImageReference,
   getGuideReferencePreviewImagePath,
 } from '@/lib/public-guides';
+import { formatCoordinateLabel } from '@/lib/coordinate-label';
 import { SaveGuideButton } from './SaveGuideButton';
 import { ShareGuideButton } from './ShareGuideButton';
 import styles from './PublicGuideExperience.module.css';
@@ -46,6 +47,17 @@ interface PublicGuideExperienceProps {
 }
 
 type AtlasMode = 'globe' | 'local';
+
+function CoordinateLines({ coordinates }: { coordinates: { latitude: number; longitude: number } }) {
+  const label = formatCoordinateLabel(coordinates.latitude, coordinates.longitude);
+  return (
+    <>
+      {label.latitude}
+      <br />
+      {label.longitude}
+    </>
+  );
+}
 
 const CATEGORY_LABELS: Record<GuidePlaceCategory, string> = {
   beach: 'BEACH',
@@ -493,9 +505,7 @@ export function PublicGuideExperience({
                           <ExternalLink size={12} aria-hidden="true" />
                         </span>
                         <div className={styles.visualCoordinates}>
-                          {Math.abs(place.coordinates.latitude).toFixed(3)}° S
-                          <br />
-                          {place.coordinates.longitude.toFixed(3)}° E
+                          <CoordinateLines coordinates={place.coordinates} />
                         </div>
                       </a>
                     ) : (
@@ -516,9 +526,7 @@ export function PublicGuideExperience({
                           공식 사진 없음 · 아래 자료에서 확인
                         </span>
                         <div className={styles.visualCoordinates}>
-                          {Math.abs(place.coordinates.latitude).toFixed(3)}° S
-                          <br />
-                          {place.coordinates.longitude.toFixed(3)}° E
+                          <CoordinateLines coordinates={place.coordinates} />
                         </div>
                       </div>
                     )}

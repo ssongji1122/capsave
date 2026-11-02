@@ -54,6 +54,21 @@ describe('PublicGuideExperience', () => {
     expect(screen.getAllByText(/Google 지도에서 보기/).length).toBe(ULUWATU_GUIDE.places.length);
   });
 
+  it('labels Seoul coordinates as north and east, never south', () => {
+    const seoul = {
+      ...DRAFT,
+      places: DRAFT.places.map((place) => ({
+        ...place,
+        coordinates: { latitude: 37.568, longitude: 126.832 },
+      })),
+    };
+    const { container } = render(<PublicGuideExperience guide={seoul} mode="draft" />);
+    const text = container.textContent ?? '';
+    expect(text).toContain('37.568° N');
+    expect(text).toContain('126.832° E');
+    expect(text).not.toContain('37.568° S');
+  });
+
   it('renders places without photos or references', () => {
     render(<PublicGuideExperience guide={DRAFT} mode="draft" />);
     for (const place of DRAFT.places) {

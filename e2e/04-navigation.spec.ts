@@ -61,6 +61,43 @@ test.describe('라우트 및 네비게이션', () => {
     await expect(page.getByRole('button', { name: '네이버', exact: true })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('네이버 인증 실패 뒤 구글을 고르면 네이버 실패 타일이 가려지고 구글 지도만 보인다', async ({ page }) => {
+    await seedGuestPlaceCapture(page);
+    await installMapSdkMocks(page);
+    // 실제 SDK처럼 각 SDK가 자기 컨테이너에 타일을 그립니다. 네이버는 인증 실패 타일을 남깁니다.
+    await page.addInitScript(() => {
+      const OriginalNaverMap = window.naver.maps.Map;
+      window.naver.maps.Map = class extends OriginalNaverMap {
+        constructor(el: HTMLElement, opts: object) {
+          super(el, opts);
+          const tile = document.createElement('div');
+          tile.id = 'naver-auth-failure-tile';
+          tile.textContent = '네이버 지도 Open API 인증이 실패했습니다';
+          el.appendChild(tile);
+          setTimeout(() => window.navermap_authFailure?.(), 0);
+        }
+      };
+      const OriginalGoogleMap = window.google.maps.Map;
+      window.google.maps.Map = class extends OriginalGoogleMap {
+        constructor(el: HTMLElement, opts: object) {
+          super(el, opts);
+          const root = document.createElement('div');
+          root.className = 'gm-style';
+          root.id = 'google-map-root';
+          root.textContent = 'google map';
+          el.appendChild(root);
+        }
+      };
+    });
+    await page.goto('/map');
+    await expect(page.getByRole('status').filter({ hasText: '네이버 지도를 불러오지 못해' })).toBeVisible({ timeout: 8000 });
+
+    await page.getByRole('button', { name: '구글', exact: true }).click();
+    await expect(page.getByRole('button', { name: '구글', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.gm-style')).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('#naver-auth-failure-tile')).toBeHidden();
+  });
+
   for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 }]) {
     test(`${viewport.width}px 정적 지도 안내 상자가 상단 막대와 겹치지 않는다`, async ({ page }) => {
       await page.setViewportSize(viewport);
