@@ -25,17 +25,32 @@ export function captureImages(item: CaptureItem): NonNullable<CaptureItem['galle
   const seen = new Set<string>();
   return [...images, ...linked].filter(image => image.imageUrl && !seen.has(image.imageUrl) && Boolean(seen.add(image.imageUrl)));
 }
+/** Joins summaries as paragraphs, showing each exact sentence once so a notice repeated across a post's images does not stack. */
+function uniqueSentences(texts: string[]): string {
+  const seen = new Set<string>();
+  return texts.map(text => {
+    const parts = text.split(/((?<=[.!?])\s+)/);
+    let out = '';
+    for (let i = 0; i < parts.length; i += 2) {
+      const sentence = parts[i].trim();
+      if (!sentence || seen.has(sentence)) continue;
+      seen.add(sentence);
+      out += (out ? parts[i - 1] : '') + sentence;
+    }
+    return out;
+  }).filter(Boolean).join('\n\n');
+}
 export function groupCapturePosts(items: CaptureItem[]): CaptureItem[] {
   const groups = new Map<string, CaptureItem>();
   for (const item of items) {
     const posts = [...new Set(item.links.map(canonicalInstagramPost).filter(Boolean))];
     const key = posts.length === 1 ? posts[0]! : `capture:${item.id}`;
     const previous = groups.get(key);
-    if (!previous) { groups.set(key, { ...item, gallery: captureImages(item) }); continue; }
+    if (!previous) { groups.set(key, { ...item, summary: uniqueSentences([item.summary]), gallery: captureImages(item) }); continue; }
     const places = [...previous.places, ...item.places];
     groups.set(key, {
       ...previous,
-      summary: [...new Set([previous.summary, item.summary].filter(Boolean))].join('\n\n'),
+      summary: uniqueSentences([previous.summary, item.summary]),
       extractedText: [...new Set([previous.extractedText, item.extractedText].filter(Boolean))].join('\n\n'),
       places: places.filter((place, index) => places.findIndex(p => p.name === place.name && p.address === place.address) === index),
       links: [...new Set([...previous.links, ...item.links])],

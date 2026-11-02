@@ -17,3 +17,19 @@ it('recognizes only authenticated first-party image links and deduplicates image
  expect(savedImagePath(url)).toBe('owner/2.jpg');expect(savedImagePath('https://evil.com/api/image?path=owner/2.jpg')).toBeNull();
  expect(captureImages(item(1,[url,url,'https://example.com/a.jpg']))).toHaveLength(2);
 });
+const NOTICE='원본 13장 중 장소 11곳을 정리했습니다. 주소는 게시물 기준입니다. 서울식물원 실내·서울함 내부 등 유료 구역이 있을 수 있으므로 무료 범위를 방문 전 운영기관에서 확인하십시오.';
+it('shows a sentence shared by every member of a grouped post only once',()=>{
+ const links=['https://instagram.com/p/AbCd/'];
+ const rows=[1,2,3,4,5,6,7].map(id=>({...item(id,links),summary:`${id}번째 이미지 설명입니다. ${NOTICE}`}));
+ const [group]=groupCapturePosts(rows);
+ expect(group.summary.split(NOTICE).length-1).toBe(1);
+ for(let id=1;id<=7;id++) expect(group.summary).toContain(`${id}번째 이미지 설명입니다.`);
+});
+it('shows a sentence repeated inside one summary only once and keeps decimals intact',()=>{
+ const [group]=groupCapturePosts([{...item(1),summary:`거리는 1.5km입니다. ${NOTICE} ${NOTICE}`}]);
+ expect(group.summary).toBe(`거리는 1.5km입니다. ${NOTICE}`);
+});
+it('keeps the summary untouched when no sentence repeats',()=>{
+ const [group]=groupCapturePosts([{...item(1),summary:'첫째 문장입니다.\n둘째 문장입니다.'}]);
+ expect(group.summary).toBe('첫째 문장입니다.\n둘째 문장입니다.');
+});
