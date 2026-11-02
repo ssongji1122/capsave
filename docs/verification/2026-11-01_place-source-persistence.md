@@ -25,7 +25,7 @@ Gemini 2.5 Flash 검색 응답은 2·5·7을 확인으로 주장했지만 독립
 
 ## 배포 차단
 
-커밋 83be536. 기존 Vercel 프로젝트에 배포했으나 dpl_7YFDp3guQEAuNTsiKutUANjfaQt7가 BLOCKED / TEAM_ACCESS_REQUIRED로 거절됐다. 사유: 커밋 작성자에게 해당 프로젝트 배포 권한이 없음. CLI 계정은 admin@friendspick.co.kr, 실제 커밋 작성자 이메일은 liebe129@gmail.com이다. 작성자 위장·권한 검사 우회는 하지 않았다.
+커밋 83be536. 기존 Vercel 프로젝트에 배포했으나 dpl_7YFDp3guQEAuNTsiKutUANjfaQt7가 BLOCKED / TEAM_ACCESS_REQUIRED로 거절됐다. 사유: 커밋 작성자에게 해당 프로젝트 배포 권한이 없음. CLI 계정은 팀 관리자 계정, 실제 커밋 작성자 이메일은 다른 개인 계정이다. 작성자 위장·권한 검사 우회는 하지 않았다.
 
 기존 운영 앱은 유지된다. 최신 코드의 운영 저장·재조회와 실기기 확인은 아직 완료되지 않았다. 계정 소유자가 Vercel의 GitHub 연결 또는 이메일 확인을 완료해야 재배포할 수 있다. Expo 코드 검증을 네이티브 앱 배포로 확대하지 않는다.
 
@@ -43,3 +43,10 @@ GitHub CLI의 실제 인증 사용자는 ssongji1122(ID 179897605)이며 GitHub 
 운영 QA에서 원본 팝업이 hover transform이 있는 카드 내부에 잘리는 오류를 발견했다. document.body 포털 렌더링 기대 테스트 실패 후 수정했으며 해당 3개 테스트가 통과했다. 지도 URL 재조회 시 일반 출처 라벨이 우선하는 오류도 기대 테스트 실패 후 수정했고 공통 링크 테스트 11개가 통과했다. 테스트 한 차례는 동시 빌드 중 기존 5초 제한으로 시간 초과했으며 제한 변경 없이 단독 재실행으로 통과했다.
 
 모바일 검증은 브라우저 폭 390px 기준이다. 사용자 실물 휴대폰이나 Expo 네이티브 앱의 통과로 확대하지 않는다. 계정 데이터 로딩 중 샘플 카드가 먼저 보이는 지연을 관찰했으며 최종 계정 카드 재조회와 구분한다. 이번 추가 유료 AI 호출은 0회다.
+
+
+## 최종 배포 후 확인
+
+c911282 수정본의 [운영 배포](https://vercel.com/friendspicks-projects/scrave/5gWyeQq8yxqdzAmZgDThqJxxQzwA)가 READY이고 기존 운영 별칭에 연결됐다. 390×844 화면에서 재접속한 실제 항공권의 원본 전체 확대·닫기, 출처 2개와 지도 링크 4개의 재조회·지도 라벨 유지가 통과했다. DOM에서 원본 이미지 complete=true 및 naturalWidth>0을 확인했고 전체 원본 화면을 직접 시각 검토했다. 단계 캡처는 개인 Documents/Codex/2026-11-01/scrave-production-check에 보존했다.
+
+실행 명령: `curl -s -o /dev/null -w '%{http_code}' https://scrave.vercel.app/dashboard` → `200` (PASS). 비로그인 JSON POST `/api/capture-sources` → `401` (PASS). 로컬 웹 빌드와 공통·웹·모바일 타입 검사는 통과했다. 원본 출처 후보 0건과 실물 휴대폰 미검증은 그대로 남는다.

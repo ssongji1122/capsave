@@ -20,3 +20,7 @@ status: active
 실제 분석 1회 사용: 서울 낙산공원 캡처. 추가 저장 버튼 없이 장소 분류·계정 저장·정확한 원본 게시물(DdG7y8OCSjM)·Google/Naver 지도 링크 연결을 운영 화면에서 확인했다. 현재 이미지 수집 0건을 부분 실패로 반환했다. 조사 결과 Instagram 이중 이스케이프 URL의 역슬래시가 이중 경로 구분자로 변환되어 CDN 서명이 깨지는 것을 확인했다. URL 복호화 회귀 테스트 RED→GREEN 후 같은 실제 이미지 GET HTTP 200 / image/jpeg / 376792 bytes를 확인했다. 추가 유료 분석 호출은 하지 않는다.
 
 또한 실제 모바일 화면에서 접힌 카드의 기존 CSS가 새 갤러리 div를 숨겼다. data-capture-gallery 예외를 추가했으며 운영 재배포 후 직접 표시·넘기기·재열람을 재검증한다.
+
+최종 운영 검증: 배포 dpl_H7AVGsWvJsiLnPzKaT3XAcGwEZ1t READY(9884ca5). 실제 분석 1회 후 원본 13장(기존 동일 게시물 보존 자산 재사용)+업로드 캡처 1장=14장 갤러리 확인. 새로고침 후 1/14 복원, 마지막 14/14 이미지 naturalWidth 1080 및 다음 버튼 비활성 확인. 모바일 웹 390×844, scrollWidth 384로 가로 넘침 없음. dashboard HTTP 200, 비로그인 enrich HTTP 401. 원본 Instagram 주소와 이름·주소 기반 Google/Naver 지도 검색 링크 재열람 확인. 실제 청구 금액 미확인, 추가 유료 호출 없음. 실물 폰·네이티브 미검증. 비공개/미노출/모호한 게시물은 미확인 유지.
+
+개인 단계별 화면 보고서: /Users/ssongji/Documents/Codex/2026-11-01/scrave-automatic-gallery/검증결과.md (원본 및 화면은 공개 저장소에 추가하지 않음).

@@ -41,7 +41,7 @@ import {
   type CaptureUserMeta,
 } from '@/lib/capture-intent';
 import { CaptureGallery } from './CaptureGallery';
-import { captureImages, savedImagePath } from '@scrave/shared';
+import { captureImages, savedImagePath, canonicalInstagramPost } from '@scrave/shared';
 import { ArchiveSources } from './ArchiveSources';
 import { classifyArchiveCapture, ARCHIVE_SECTIONS } from '@scrave/shared';
 import { PlaceReviews } from './PlaceReviews';
@@ -63,7 +63,11 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
   const [sourceUpdate, setSourceUpdate] = useState<Partial<CaptureItem>>({});
   const [imageIndex, setImageIndex] = useState(0);
   const item = { ...initialItem, ...sourceUpdate };
-  const images = captureImages(item);
+  const allImages = captureImages(item);
+  const sourceImages = allImages.filter(image => image.label === '게시물 원본');
+  const images = sourceImages.length ? sourceImages : allImages;
+  const originalPost = item.links.map(canonicalInstagramPost).find(Boolean);
+  const [viewCapture, setViewCapture] = useState(false);
   const displayedImage = images[Math.min(imageIndex, Math.max(0, images.length - 1))];
   const [expanded, setExpanded] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
@@ -185,7 +189,7 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
   const actions = extractCaptureActions(item);
   const pendingActionCount = actions.filter((a) => !meta.completedActions.includes(a.id)).length;
   const isTravelPack = meta.pinnedToTravelPack || isTravelPackCandidate(item);
-  const currentImageUrl = displayedImage?.imageUrl ?? item.imageUrl;
+  const currentImageUrl = viewCapture ? item.imageUrl : displayedImage?.imageUrl ?? item.imageUrl;
   const resolvedImageSrc = currentImageUrl
     ? isDataUri(currentImageUrl)
       ? currentImageUrl
@@ -213,7 +217,7 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
       {!item.imageUrl && <div className="relative w-full h-64 bg-surface-elevated"><p className="p-6 text-text-secondary">{item.title}</p><StickerDecoration target={"capture:"+item.id} label={item.title}/></div>}
       {item.imageUrl && (
         <div className="relative w-full h-64 bg-surface-elevated">
-          <CaptureGallery images={images} title={item.title} onChange={setImageIndex} onOpen={index => { setImageIndex(index); setShowOriginalModal(true); }} />
+          <CaptureGallery images={images} title={item.title} onChange={setImageIndex} onOpen={index => { setViewCapture(false); setImageIndex(index); setShowOriginalModal(true); }} />
           <StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageSrc} />
 
           {expanded && (isSample ? (
@@ -235,11 +239,13 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
       <div className="p-4">
         <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
         <p className="text-sm text-text-secondary mt-1.5 leading-5 truncate" title={item.summary}>{item.summary || primaryPlace?.name || '저장한 캡처'}</p>
+        {originalPost && <a href={originalPost} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-xs text-primary">게시물 열기 ↗</a>}
         <div data-card-actions className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
           {primaryPlace && <Link href={`/map?capture=${item.id}`} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><MapPin size={14} aria-hidden="true" />지도 보기</Link>}
-          {item.imageUrl && <button type="button" onClick={() => setShowOriginalModal(true)} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><Maximize2 size={14} aria-hidden="true" />원본 보기</button>}
+          {item.imageUrl && <button type="button" onClick={() => { setViewCapture(false); setShowOriginalModal(true); }} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><Maximize2 size={14} aria-hidden="true" />{originalPost ? '사진 확대' : '원본 보기'}</button>}
           <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="inline-flex min-h-11 items-center gap-1 text-xs text-text-secondary">{expanded ? '접기' : '더 보기'}<ChevronDown size={13} aria-hidden="true" /></button>
         </div>
+        {sourceImages.length > 0 && <button type="button" onClick={() => { setViewCapture(true); setShowOriginalModal(true); }} className="min-h-11 text-xs text-text-secondary">내 캡처 보기</button>}
         {/* Expanded: full details */}
         {expanded && (
           <>

@@ -17,3 +17,9 @@ it('keeps summary and primary actions visible, with details behind more',()=>{
  fireEvent.click(screen.getByRole('button',{name:'접기'}));
  expect(screen.queryByText('상세 출처')).toBeNull();
 });
+it('counts source images separately and preserves access to the uploaded capture',()=>{
+ const item:any={id:8,title:'게시물',summary:'요약',category:'text',imageUrl:'owner/capture.jpg',places:[],links:['https://scrave.vercel.app/api/image?path=owner%2Foriginal.jpg'],tags:[],extractedText:'',createdAt:'2026-11-01'};
+ render(<CaptureCard item={item} onDelete={vi.fn()}/>);
+ expect(screen.getByRole('img').getAttribute('alt')).toContain('1/1');
+ expect(screen.getByRole('button',{name:'내 캡처 보기'})).toBeTruthy();
+});
