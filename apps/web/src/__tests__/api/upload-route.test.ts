@@ -103,6 +103,19 @@ describe('POST /api/upload', () => {
     expect(mocks.upload).not.toHaveBeenCalled();
   });
 
+  it('returns user guidance when storage fails with a meaningless "<none>" message', async () => {
+    const storageError = Object.assign(new Error('<none>'), { status: 520 });
+    mocks.upload.mockResolvedValue({ error: storageError });
+    const file = new File([new Uint8Array([1, 2, 3])], 'capture.png', { type: 'image/png' });
+
+    const { POST } = await import('@/app/api/upload/route');
+    const response = await POST(uploadRequest(file));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe('이미지를 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+  });
+
   it('fails closed before storage upload when free-limit check fails', async () => {
     mocks.countUserCaptures.mockRejectedValue(new Error('count failed'));
     const file = new File([new Uint8Array([1, 2, 3])], 'capture.png', { type: 'image/png' });

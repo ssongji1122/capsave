@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAuthUserAndTouch } from '@/lib/api-auth';
 import { validateUploadFile } from '@/lib/upload-validation';
 import { isOwnedCaptureStoragePath } from '@/lib/storage-ownership';
+import { toUploadErrorMessage } from '@/lib/upload-error-message';
 
 async function checkFreeTierLimit(userId: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<boolean> {
   const count = await countUserCaptures(supabase, userId);
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { error: toUploadErrorMessage(error) },
       { status: 500 }
     );
   }
