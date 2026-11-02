@@ -1,0 +1,13 @@
+{
+  "artifact": "2026-10-30_scrave_app-audit_v1.html",
+  "designGate": "PASS",
+  "featureRows": 18,
+  "searchFilter": "PASS",
+  "missingFeatureFilter": "PASS",
+  "viewport390NoPageOverflow": "PASS",
+  "documentRootText200PercentNoPageOverflow": "PASS after search input width repair",
+  "reducedMotion": "static document; no animations",
+  "imageFiles": "PASS",
+  "voiceGate": "no errors; checklist repetition and explicit diagnostic boundary warnings reviewed",
+  "nativeAppEntire200Percent": "NOT_TESTED"
+}
