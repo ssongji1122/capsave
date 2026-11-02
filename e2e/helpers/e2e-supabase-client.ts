@@ -126,6 +126,7 @@ export async function installSupabaseClientMock(page: Page) {
           },
           error: null,
         }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
         signOut: async () => ({ error: null }),
       },
       from: createQuery,

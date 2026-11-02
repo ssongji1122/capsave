@@ -168,7 +168,10 @@ test.describe('게스트 업로드 & AI 분석', () => {
       expect(dialog.message()).toContain('삭제');
       await dialog.accept();
     });
-    await page.getByRole('button', { name: '테스트 장소 삭제' }).click();
+    // 카드 기본 화면에는 삭제가 없고 「더 보기」를 연 뒤에 나타납니다(DECISIONS.md 2026-11-01).
+    const card = page.locator('article').filter({ hasText: '테스트 장소' });
+    await card.getByRole('button', { name: '더 보기' }).click();
+    await card.getByRole('button', { name: '테스트 장소 삭제' }).click();
 
     await expect(page.getByText('체험 3회 남음')).toBeVisible();
     await expect(page.getByText('테스트 장소')).toHaveCount(0);
