@@ -1,0 +1,21 @@
+{
+  "name": "@scrave/toss",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4168 --strictPort",
+    "build:web": "vite build",
+    "build:toss-web": "vite build --mode toss",
+    "build": "vite build",
+    "build:toss": "vite build --mode toss && ait build",
+    "test": "node --test src/__tests__/*.test.js"
+  },
+  "engines": { "node": ">=24" },
+  "dependencies": {
+    "@apps-in-toss/web-framework": "3.9.0"
+  },
+  "devDependencies": {
+    "vite": "6.4.5"
+  }
+}
