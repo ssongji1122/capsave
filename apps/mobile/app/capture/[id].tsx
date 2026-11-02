@@ -1,4 +1,8 @@
-import { buildCaptureReviewTopic } from '@scrave/shared';
+import {
+  buildCaptureReviewTopic,
+  extractCaptureActions,
+  type CaptureActionItem,
+} from '@scrave/shared';
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, ActionSheetIOS, Platform, Clipboard, StatusBar, Modal } from 'react-native';
 import { Text } from '@/components/ScraveText';
@@ -7,6 +11,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { CaptureWorkflow } from '@/components/CaptureWorkflow';
+import { useCaptureMeta } from '@/contexts/CaptureMetaContext';
+import { EMPTY_CAPTURE_META } from '../../../../packages/shared/src/utils/capture-intent';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { getMapLinks, openMap, openUrl, sortByPreferredProvider } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
@@ -23,11 +30,13 @@ export default function CaptureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { captures, deleteCapture } = useCaptures();
+  const { metaMap, ready: metaReady, error: metaError, updateMeta } = useCaptureMeta();
   const item = captures.find((c) => c.id === Number(id));
 
   const [showOriginal, setShowOriginal] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedActionId, setCopiedActionId] = useState<string | null>(null);
 
   const isPlace = item?.category === 'place';
   const resolvedImageUri = useSignedImage(item?.imageUri);
@@ -75,6 +84,12 @@ export default function CaptureDetailScreen() {
     setTimeout(() => setCopied(false), 2000);
   }, [item]);
 
+  const handleCopyActionValue = useCallback((action: CaptureActionItem) => {
+    Clipboard.setString(action.value);
+    setCopiedActionId(action.id);
+    setTimeout(() => setCopiedActionId(null), 1800);
+  }, []);
+
   const handleDelete = () => {
     Alert.alert('삭제', '이 캡처를 삭제하시겠습니까?', [
       { text: '취소', style: 'cancel' },
@@ -119,6 +134,8 @@ export default function CaptureDetailScreen() {
       </View>
     );
   }
+
+  const actions = extractCaptureActions(item);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -193,7 +210,81 @@ export default function CaptureDetailScreen() {
             <Text style={[styles.summary, { color: colors.textSecondary }]}>{item.summary}</Text>
           ) : null}
 
+          {/* Post-Capture Extracted Actions Bar (Track 3 sync with web) */}
+          {actions.length > 0 && (
+            <View style={[styles.section, { borderTopColor: colors.border }]}>
+              <Text style={[styles.sectionLabel, { color: colors.primary }]}>
+                발견한 행동 · 원본 대조
+              </Text>
+              <View style={styles.actionsList}>
+                {actions.map((action) => (
+                  <View
+                    key={action.id}
+                    style={[
+                      styles.actionRowItem,
+                      {
+                        backgroundColor: colors.surfaceElevated,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.actionLabelText, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {action.label}
+                    </Text>
+                    <View style={styles.actionBtnGroup}>
+                      <TouchableOpacity
+                        style={[
+                          styles.actionSmallBtn,
+                          { backgroundColor: colors.surface, borderColor: colors.border },
+                        ]}
+                        onPress={() => handleCopyActionValue(action)}
+                      >
+                        <Ionicons name="copy-outline" size={12} color={colors.textSecondary} />
+                        <Text style={[styles.actionSmallBtnText, { color: colors.textSecondary }]}>
+                          {copiedActionId === action.id ? '복사됨' : '복사'}
+                        </Text>
+                      </TouchableOpacity>
+                      {action.href ? (
+                        <TouchableOpacity
+                          style={[
+                            styles.actionSmallBtn,
+                            { backgroundColor: colors.primary, borderColor: colors.primary },
+                          ]}
+                          onPress={() => openUrl(action.href!)}
+                        >
+                          <Ionicons
+                            name={
+                              action.kind === 'phone'
+                                ? 'call-outline'
+                                : action.kind === 'date'
+                                  ? 'calendar-outline'
+                                  : 'open-outline'
+                            }
+                            size={12}
+                            color={colors.background}
+                          />
+                          <Text style={[styles.actionSmallBtnText, { color: colors.background }]}>
+                            {action.kind === 'phone'
+                              ? '전화'
+                              : action.kind === 'date'
+                                ? '일정 추가'
+                                : '열기'}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
           <ArchiveSources capture={item} />
+          {metaError ? <Text style={{color:colors.error}}>{metaError}</Text> : null}
+          <CaptureWorkflow key={item.id} capture={item} meta={metaMap[item.id] ?? EMPTY_CAPTURE_META} ready={metaReady} onUpdate={change=>updateMeta(item.id,change)} />
           {/* Places */}
           {isPlace && item.places.length > 0 && (
             <View style={[styles.section, { borderTopColor: colors.border }]}>
@@ -456,6 +547,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 10,
+  },
+  actionsList: {
+    gap: 8,
+  },
+  actionRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  actionLabelText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'monospace' as never,
+  },
+  actionBtnGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionSmallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  actionSmallBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   placeRow: {
     flexDirection: 'row',

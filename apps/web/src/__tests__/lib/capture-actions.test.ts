@@ -128,3 +128,18 @@ it('keeps gallery image links out of the source-action checklist', () => {
   const item = { id: 1, title: '카페', category: 'place', summary: '', extractedText: '', tags: [], places: [], links: ['https://scrave.vercel.app/api/image?path=owner%2Foriginal.jpg'] } as any;
   expect(extractCaptureActions(item).some(action => action.value.includes('/api/image'))).toBe(false);
 });
+
+
+it('exposes the same capture actions through the shared package for mobile', async () => {
+  const shared = await import('@scrave/shared');
+  const item = makeCapture({
+    extractedText: '예약번호: AB12CD · 010-1234-5678 · 2026-11-03',
+    places: [{ name: '호텔', address: '서울 중구', date: '2026-11-03' }],
+    links: ['https://example.com/booking'],
+  });
+  expect(shared.extractCaptureActions(item)).toEqual(extractCaptureActions(item));
+  expect(shared.isTravelPackCandidate(item)).toBe(isTravelPackCandidate(item));
+  expect(shared.buildGoogleCalendarUrl('숙박', '2026-11-03')).toBe(
+    buildGoogleCalendarUrl('숙박', '2026-11-03'),
+  );
+});
