@@ -13,9 +13,16 @@ test.use({
   },
 });
 
+const ANALYZE_DELAY_MS = 800;
+
 test.describe('인증 사용자 핵심 플로우', () => {
   test('대시보드에서 AI 분석 결과를 저장하고 목록에 반영한다', async ({ page }) => {
     await mockAuthenticatedBackend(page, createCaptureRows());
+    // 분석 중 모달을 관찰할 수 있도록 분석 응답을 잠시 늦춥니다(응답 본문은 헬퍼의 모킹을 그대로 사용).
+    await page.route('**/api/analyze', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, ANALYZE_DELAY_MS));
+      await route.fallback();
+    });
     await page.goto('/dashboard');
 
     const imgPath = await createTinyPng('scrave_authenticated_save.png');
@@ -27,12 +34,12 @@ test.describe('인증 사용자 핵심 플로우', () => {
 
     const dialog = page.getByRole('dialog', { name: 'AI 분석 결과' });
     await expect(dialog).toBeVisible({ timeout: 15000 });
-    await expect(dialog.getByText('AI 저장 테스트 장소')).toBeVisible({ timeout: 15000 });
-    await dialog.getByRole('button', { name: '저장하기' }).click();
 
-    await expect(dialog).toHaveCount(0);
+    // 로그인 상태에서는 분석이 끝나면 저장 버튼 없이 자동 저장되고 모달이 닫힙니다(commit 8672047).
+    await expect(dialog).toHaveCount(0, { timeout: 15000 });
     await expect(page.getByText('AI 저장 테스트 장소')).toBeVisible();
-    await expect(page.getByAltText('AI 저장 테스트 장소 - AI 테스트 카페')).toBeVisible();
+    // 카드 사진 대체 텍스트는 갤러리 형식(제목 · 이미지 종류 번호/전체)을 따릅니다(CaptureGallery.tsx).
+    await expect(page.getByAltText('AI 저장 테스트 장소 · 올린 캡처 1/1')).toBeVisible();
   });
 
   test('장소마다 협찬·AI 음성·얼굴 위주를 거른 후기와 영상을 불러온다', async ({ page }) => {
@@ -70,8 +77,10 @@ test.describe('인증 사용자 핵심 플로우', () => {
     });
 
     await page.goto('/places');
-    await page.getByText('성수 카페 저장').click();
-    await page.getByRole('button', { name: /이 장소의 후기·영상/ }).first().click();
+    // 후기·영상은 카드의 「더 보기」 안에 있습니다(DECISIONS.md 2026-11-01).
+    const card = page.locator('article').filter({ hasText: '성수 카페 저장' });
+    await card.getByRole('button', { name: '더 보기' }).click();
+    await card.getByRole('button', { name: /이 장소의 후기·영상/ }).first().click();
 
     await expect(page.getByRole('link', { name: '성수 테스트 카페 내돈내산 후기' })).toBeVisible();
     await expect(page.getByText('YouTube API 키가 아직 없어 골라 드리지 못했습니다.')).toBeVisible();

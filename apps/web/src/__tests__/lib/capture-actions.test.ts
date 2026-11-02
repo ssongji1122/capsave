@@ -123,3 +123,8 @@ describe('buildGoogleCalendarUrl', () => {
     expect(new URL(url).searchParams.get('details')).toBe('국립현대미술관');
   });
 });
+
+it('keeps gallery image links out of the source-action checklist', () => {
+  const item = { id: 1, title: '카페', category: 'place', summary: '', extractedText: '', tags: [], places: [], links: ['https://scrave.vercel.app/api/image?path=owner%2Foriginal.jpg'] } as any;
+  expect(extractCaptureActions(item).some(action => action.value.includes('/api/image'))).toBe(false);
+});

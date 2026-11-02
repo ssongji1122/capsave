@@ -1,0 +1,11 @@
+# Native build dependencies are not used by the Next.js deployment.
+apps/mobile/ios/Pods
+apps/mobile/ios/build
+apps/mobile/android/.gradle
+apps/mobile/android/app/build
+apps/mobile/.expo
+# Runtime secrets are provided by the existing Vercel project settings.
+.env
+.env.*
+**/.env
+**/.env.*

@@ -95,6 +95,7 @@ describe('dashboard search results', () => {
     await waitFor(() => expect(searchCaptures).toHaveBeenCalledWith('삭제'));
     await screen.findByText('삭제할 검색 결과');
 
+    fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
     fireEvent.click(screen.getByRole('button', { name: '삭제할 검색 결과 삭제' }));
 
     await waitFor(() => expect(deleteCapture).toHaveBeenCalledWith(1));
@@ -103,7 +104,7 @@ describe('dashboard search results', () => {
     });
   });
 
-  it('shows read-only samples when there are no saved captures yet', () => {
+  it('shows a login entry instead of samples in an empty archive', () => {
     mocks.useCaptures.mockReturnValue({
       captures: [],
       isLoading: false,
@@ -122,14 +123,11 @@ describe('dashboard search results', () => {
 
     render(React.createElement(HomePage));
 
-    expect(screen.getByText('성수 브런치 저장 샘플')).toBeTruthy();
-    expect(screen.getByText('오브젝트 성수')).toBeTruthy();
-    expect(screen.getByText('여행 준비 메모 샘플')).toBeTruthy();
-    expect(screen.getByText(/제주 동쪽 여행 준비/)).toBeTruthy();
-    expect(screen.getAllByText('샘플').length).toBeGreaterThan(0);
+    expect(screen.queryByText('성수 브런치 저장 샘플')).toBeNull();
+    expect(screen.getByRole('link', {name:'로그인해서 내 캡처 불러오기'})).toBeTruthy();
   });
 
-  it('searches the sample captures before the user saves anything', async () => {
+  it('never injects samples into empty archive search', async () => {
     mocks.useCaptures.mockReturnValue({
       captures: [],
       isLoading: false,
@@ -152,7 +150,7 @@ describe('dashboard search results', () => {
       target: { value: '우도' },
     });
 
-    await screen.findByText('여행 준비 메모 샘플');
+    expect(screen.queryByText('여행 준비 메모 샘플')).toBeNull();
     await waitFor(() => {
       expect(screen.queryByText('성수 브런치 저장 샘플')).toBeNull();
     });
@@ -188,6 +186,7 @@ describe('dashboard search results', () => {
     await waitFor(() => expect(searchCaptures).toHaveBeenCalledWith('삭제 실패'));
     await screen.findByText('삭제 실패 검색 결과');
 
+    fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
     fireEvent.click(screen.getByRole('button', { name: '삭제 실패 검색 결과 삭제' }));
 
     await waitFor(() => expect(deleteCapture).toHaveBeenCalledWith(3));
@@ -238,7 +237,7 @@ describe('dashboard search results', () => {
     await waitFor(() => {
       expect(screen.queryByText('확인 필요')).toBeNull();
     });
-    expect(screen.getAllByText('장소 1개').length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: '지도 보기' })).toBeTruthy();
   });
 
   it('finds guest captures with the same dashboard search box', async () => {

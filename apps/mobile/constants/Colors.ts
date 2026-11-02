@@ -2,20 +2,20 @@
 export const Colors = {
   // Primary dark theme
   dark: {
-    background: '#F3EFE6', // Scrave background
-    surface: '#F3EFE6',
-    surfaceElevated: '#EAE4D7',
-    border: '#DDD7CC',
-    borderLight: '#CCC4B6',
+    background: '#FFFFFF', // Scrave background
+    surface: '#FFFFFF',
+    surfaceElevated: '#F3F6FA',
+    border: '#DFE6EE',
+    borderLight: '#BCCAD9',
 
-    text: '#161513',
-    textSecondary: '#6B675E',
-    textTertiary: '#716C62',
+    text: '#24354A',
+    textSecondary: '#53667D',
+    textTertiary: '#607187',
 
     // Scrave accents
-    primary: '#A83F20', // Warm Coral
-    primaryLight: '#8D331A',
-    primaryDark: '#8D331A',
+    primary: '#526985', // Warm Coral
+    primaryLight: '#405671',
+    primaryDark: '#405671',
 
     // Track colors (Categorization)
     placeAccent: '#26715B', // Mint/Green (Calm/Growth)
@@ -36,9 +36,9 @@ export const Colors = {
     error: '#F87171', // Coral/Red
 
     // Tab bar
-    tabBar: '#F3EFE6',
-    tabIconDefault: '#6B675E',
-    tabIconSelected: '#161513',
+    tabBar: '#FFFFFF',
+    tabIconDefault: '#53667D',
+    tabIconSelected: '#24354A',
 
     // Gradient
     gradientStart: '#F4845F',
@@ -47,19 +47,19 @@ export const Colors = {
 
   // Keep light mode for future
   light: {
-    background: '#F3EFE6',
-    surface: '#F3EFE6',
-    surfaceElevated: '#EAE4D7',
-    border: '#DDD7CC',
-    borderLight: '#CCC4B6',
+    background: '#FFFFFF',
+    surface: '#FFFFFF',
+    surfaceElevated: '#F3F6FA',
+    border: '#DFE6EE',
+    borderLight: '#BCCAD9',
 
-    text: '#161513',
-    textSecondary: '#6B675E',
-    textTertiary: '#716C62',
+    text: '#24354A',
+    textSecondary: '#53667D',
+    textTertiary: '#607187',
 
-    primary: '#A83F20',
-    primaryLight: '#8D331A',
-    primaryDark: '#8D331A',
+    primary: '#526985',
+    primaryLight: '#405671',
+    primaryDark: '#405671',
 
     placeAccent: '#26715B',
     placeAccentLight: '#55EFC4',
@@ -77,9 +77,9 @@ export const Colors = {
     warning: '#FDCB6E',
     error: '#FF6B6B',
 
-    tabBar: '#F3EFE6',
-    tabIconDefault: '#6B675E',
-    tabIconSelected: '#161513',
+    tabBar: '#FFFFFF',
+    tabIconDefault: '#53667D',
+    tabIconSelected: '#24354A',
 
     gradientStart: '#6C5CE7',
     gradientEnd: '#0984E3',

@@ -41,8 +41,8 @@ describe('CaptureCard post-capture actions, original zoom, and intent saving', (
     const item = makeCapture();
     render(React.createElement(CaptureCard, { item, onDelete: vi.fn() }));
 
-    // Expand card by clicking title
-    fireEvent.click(screen.getByText('공항 리무진 및 숙소 체크인 안내'));
+    // Expand details using the explicit more button
+    fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
 
     expect(screen.getByText(/예약·확인번호 · KX9482M/)).toBeTruthy();
     expect(screen.getByText(/전화 · 010-8765-4321/)).toBeTruthy();
@@ -69,7 +69,7 @@ describe('CaptureCard post-capture actions, original zoom, and intent saving', (
       }),
     );
 
-    fireEvent.click(screen.getByText('발리 우붓 레퍼런스'));
+    fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
 
     const reasonBtn = screen.getByRole('button', { name: '작업·디자인 참고' });
     fireEvent.click(reasonBtn);
@@ -87,10 +87,10 @@ describe('CaptureCard post-capture actions, original zoom, and intent saving', (
     const item = makeCapture({ id: 503, title: '비자 원본 확인서' });
     render(React.createElement(CaptureCard, { item, onDelete: vi.fn() }));
 
-    const zoomBtn = screen.getByRole('button', { name: '비자 원본 확인서 원본 확대' });
+    const zoomBtn = screen.getByRole('button', { name: '원본 보기' });
     fireEvent.click(zoomBtn);
 
-    expect(screen.getByRole('dialog', { name: '비자 원본 확인서 원본 이미지' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '비자 원본 확인서 원본 이미지' }).parentElement).toBe(document.body);
 
     const closeBtn = screen.getByRole('button', { name: '원본 확대 닫기' });
     fireEvent.click(closeBtn);

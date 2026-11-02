@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { StickerDecoration } from '../stickers/StickerDecoration';
 import { CategoryShape } from './CategoryShape';
 import Link from 'next/link';
 import {
@@ -38,6 +40,8 @@ import {
   type CaptureRevisitContext,
   type CaptureUserMeta,
 } from '@/lib/capture-intent';
+import { CaptureGallery } from './CaptureGallery';
+import { captureImages, savedImagePath, canonicalInstagramPost } from '@scrave/shared';
 import { ArchiveSources } from './ArchiveSources';
 import { classifyArchiveCapture, ARCHIVE_SECTIONS } from '@scrave/shared';
 import { PlaceReviews } from './PlaceReviews';
@@ -55,7 +59,16 @@ const PROVIDER_DOT_CLASS: Record<string, string> = {
 };
 const COLLAPSED_TEXT_PREVIEW_LENGTH = 96;
 
-export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) {
+export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: CaptureCardProps) {
+  const [sourceUpdate, setSourceUpdate] = useState<Partial<CaptureItem>>({});
+  const [imageIndex, setImageIndex] = useState(0);
+  const item = { ...initialItem, ...sourceUpdate };
+  const allImages = captureImages(item);
+  const sourceImages = allImages.filter(image => image.label === '게시물 원본');
+  const images = sourceImages.length ? sourceImages : allImages;
+  const originalPost = item.links.map(canonicalInstagramPost).find(Boolean);
+  const [viewCapture, setViewCapture] = useState(false);
+  const displayedImage = images[Math.min(imageIndex, Math.max(0, images.length - 1))];
   const [expanded, setExpanded] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -176,14 +189,15 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
   const actions = extractCaptureActions(item);
   const pendingActionCount = actions.filter((a) => !meta.completedActions.includes(a.id)).length;
   const isTravelPack = meta.pinnedToTravelPack || isTravelPackCandidate(item);
-  const resolvedImageSrc = item.imageUrl
-    ? isDataUri(item.imageUrl)
-      ? item.imageUrl
-      : `/api/image?path=${encodeURIComponent(extractStoragePath(item.imageUrl))}`
+  const currentImageUrl = viewCapture ? item.imageUrl : displayedImage?.imageUrl ?? item.imageUrl;
+  const resolvedImageSrc = currentImageUrl
+    ? isDataUri(currentImageUrl)
+      ? currentImageUrl
+      : `/api/image?path=${encodeURIComponent(extractStoragePath(currentImageUrl))}`
     : '';
 
   const handleDelete = () => {
-    if (confirm('이 캡처를 삭제하시겠습니까?')) {
+    if (confirm(images.some(image => image.captureId !== item.id) ? '이 대표 캡처만 삭제합니다. 같은 게시물의 다른 캡처는 보존됩니다. 삭제하시겠습니까?' : '이 캡처와 연결된 이미지 보기를 삭제하시겠습니까?')) {
       onDelete(item.id);
     }
   };
@@ -200,49 +214,13 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
   return (
     <article data-expanded={expanded} className={`rounded-3xl overflow-hidden border ${borderColor} bg-surface transition-all duration-200 hover:scale-[1.01] hover:border-border-light`}>
       {/* Image */}
+      {!item.imageUrl && <div className="relative w-full h-64 bg-surface-elevated"><p className="p-6 text-text-secondary">{item.title}</p><StickerDecoration target={"capture:"+item.id} label={item.title}/></div>}
       {item.imageUrl && (
         <div className="relative w-full h-64 bg-surface-elevated">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={resolvedImageSrc}
-            alt={altText}
-            className="w-full h-full object-contain cursor-pointer"
-            onClick={() => setExpanded(!expanded)}
-            loading={isDataUri(item.imageUrl) ? undefined : 'lazy'}
-          />
-          <div className="absolute top-3 left-3 flex items-center gap-1.5">
-            <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${surfaceBg} ${accentColor} backdrop-blur-sm`}>
-              <span style={{ fontFamily: 'var(--font-label)' }}>{isPlace ? `장소 ${item.places.length}개` : '텍스트'}</span>
-            </div>
-            {isTravelPack && (
-              <div className="px-2 py-0.5 rounded-full bg-primary-surface border border-primary-border text-[10px] font-semibold text-primary backdrop-blur-sm">
-                여행·예약
-              </div>
-            )}
-          </div>
+          <CaptureGallery images={images} title={item.title} onChange={setImageIndex} onOpen={index => { setViewCapture(false); setImageIndex(index); setShowOriginalModal(true); }} />
+          <StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageSrc} />
 
-          {/* Confidence badge */}
-          {item.confidence != null && (
-            <div className="absolute bottom-2 left-3 px-2 py-0.5 rounded-full bg-surface/95 backdrop-blur-sm text-[10px] font-mono text-ai-accent">
-              AI {Math.round(item.confidence * 100)}%
-            </div>
-          )}
-
-          {/* Original image uncropped zoom trigger */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowOriginalModal(true);
-            }}
-            aria-label={`${item.title} 원본 확대`}
-            className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-surface/95 px-2.5 py-1 text-[10px] font-semibold text-text-primary backdrop-blur-sm hover:bg-surface-elevated transition-colors"
-          >
-            <Maximize2 size={12} aria-hidden="true" />
-            원본
-          </button>
-
-          {isSample ? (
+          {expanded && (isSample ? (
             <div className="absolute top-3 right-3 rounded-full bg-surface/95 px-2.5 py-1 text-[10px] font-semibold text-primary backdrop-blur-sm">
               샘플
             </div>
@@ -254,71 +232,20 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
             >
               <X size={18} aria-hidden="true" />
             </button>
-          )}
+          ))}
         </div>
       )}
 
-      <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="w-full min-h-11 text-left text-sm text-primary border-b border-border-light py-3"><CategoryShape section={classifyArchiveCapture(item)} /> {ARCHIVE_SECTIONS.find(section => section.id === classifyArchiveCapture(item))?.label} · {expanded ? '정리한 내용 접기' : '정리한 내용·출처 보기'}</button>
-      {/* Clickable body */}
-      <div className="p-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
-          <ChevronDown
-            size={14}
-            className={`text-text-tertiary transition-transform ml-2 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
+      <div className="p-4">
+        <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
+        <p className="text-sm text-text-secondary mt-1.5 leading-5 truncate" title={item.summary}>{item.summary || primaryPlace?.name || '저장한 캡처'}</p>
+        {originalPost && <a href={originalPost} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-xs text-primary">게시물 열기 ↗</a>}
+        <div data-card-actions className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+          {primaryPlace && <Link href={`/map?capture=${item.id}`} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><MapPin size={14} aria-hidden="true" />지도 보기</Link>}
+          {item.imageUrl && <button type="button" onClick={() => { setViewCapture(false); setShowOriginalModal(true); }} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><Maximize2 size={14} aria-hidden="true" />{originalPost ? '사진 확대' : '원본 보기'}</button>}
+          <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="inline-flex min-h-11 items-center gap-1 text-xs text-text-secondary">{expanded ? '접기' : '더 보기'}<ChevronDown size={13} aria-hidden="true" /></button>
         </div>
-
-        {/* Collapsed: summary preview */}
-        {!expanded && item.summary && (
-          <p className="text-sm text-text-secondary mt-1.5 leading-5 line-clamp-2">{item.summary}</p>
-        )}
-
-        {!expanded && primaryPlace && (
-          <div className="mt-2 flex items-center gap-3 rounded-2xl border border-place-border bg-place-surface px-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-text-primary truncate">{primaryPlace.name}</p>
-              {primaryPlace.address && (
-                <p className="mt-0.5 text-xs text-text-tertiary font-mono truncate">{primaryPlace.address}</p>
-              )}
-            </div>
-            <Link
-              href={`/map?capture=${item.id}`}
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`${item.title} 지도에서 보기`}
-              className="inline-flex min-h-9 flex-shrink-0 items-center gap-1.5 rounded-xl border border-place-border bg-background/50 px-2.5 text-xs font-semibold text-place-accent transition-colors hover:bg-place-surface"
-            >
-              <MapPin size={13} aria-hidden="true" />
-              지도
-            </Link>
-          </div>
-        )}
-
-        {!expanded && textPreview && (
-          <p className="mt-2 rounded-2xl border border-[rgba(125,211,252,0.20)] bg-text-surface px-3 py-2 text-xs leading-5 text-text-secondary line-clamp-2">
-            {textPreview}
-          </p>
-        )}
-
-        {/* Collapsed: compact place count / tag / action badge preview */}
-        {!expanded && (
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex flex-wrap items-center gap-1.5" style={{ fontFamily: 'var(--font-label)' }}>
-              {isPlace && <span className="text-xs text-place-accent">장소 {item.places.length}개</span>}
-              {pendingActionCount > 0 && (
-                <span className="rounded-full bg-primary-surface border border-primary-border px-2 py-0.5 text-[10px] font-semibold text-primary">
-                  행동 {pendingActionCount}건
-                </span>
-              )}
-              {item.tags.slice(0, 3).map((tag, i) => (
-                <span key={i} className="text-xs text-text-tertiary">#{tag}</span>
-              ))}
-            </div>
-            <span className="text-xs text-text-tertiary" style={{ fontFamily: 'var(--font-label)' }}>{formatDate(item.createdAt)}</span>
-          </div>
-        )}
-
+        {sourceImages.length > 0 && <button type="button" onClick={() => { setViewCapture(true); setShowOriginalModal(true); }} className="min-h-11 text-xs text-text-secondary">내 캡처 보기</button>}
         {/* Expanded: full details */}
         {expanded && (
           <>
@@ -538,11 +465,11 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
               </div>
             )}
 
-            <ArchiveSources capture={item} />
+            <ArchiveSources capture={item} onEnriched={links => setSourceUpdate({ links })} />
             {/* Links */}
             {item.links.length > 0 && (
               <div className="mt-3 flex flex-col gap-1.5">
-                {item.links.map((link, i) => (
+                {item.links.filter(link => !savedImagePath(link)).map((link, i) => (
                   <a
                     key={i}
                     href={link}
@@ -689,7 +616,7 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
       </div>
 
       {/* Uncropped Original Image Zoom Modal */}
-      {showOriginalModal && item.imageUrl && (
+      {showOriginalModal && item.imageUrl && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -705,8 +632,8 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <p className="text-sm font-bold text-text-primary">{item.title}</p>
-              <p className="text-xs text-text-secondary">
+              <p className="text-sm font-bold text-white">{item.title}</p>
+              <p className="text-xs text-white/70">
                 글자와 예약번호·QR 코드가 잘리지 않는 원본 전체 화면입니다
               </p>
             </div>
@@ -730,7 +657,8 @@ export function CaptureCard({ item, onDelete, onMetaChange }: CaptureCardProps) 
               className="mx-auto max-h-[76vh] w-auto object-contain"
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </article>
   );

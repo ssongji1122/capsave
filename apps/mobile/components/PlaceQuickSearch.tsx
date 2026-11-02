@@ -1,14 +1,6 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Alert,
-  ActionSheetIOS,
-  Platform,
-  Linking,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS, Platform, Linking } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { openMap, getMapLinks } from '@/services/map-linker';

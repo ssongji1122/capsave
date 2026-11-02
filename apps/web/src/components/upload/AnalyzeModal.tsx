@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Bot, CircleX, FileText, MapPin } from 'lucide-react';
 import { AnalysisResult, PlaceInfo } from '@scrave/shared';
-import { createJpegUploadFile, fileToBase64, resizeImageFile } from '@/lib/image-utils';
+import { fileToBase64, resizeImageFile } from '@/lib/image-utils';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import {
   analyzeSingleCaptureFile,
@@ -93,33 +93,25 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
       setImageUrl(analyzed.imageUrl);
       setResult(analyzed.result);
       setStatus('done');
+      if (!isGuest) await persistResult(analyzed.result, analyzed.imageUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류');
       setStatus('error');
     }
   }
 
-  async function handleSaveClick() {
-    if (!result || isSaving) return;
-
+  async function persistResult(value: AnalysisResult, savedImageUrl: string) {
     setIsSaving(true);
     try {
-      await saveSingleCaptureFile({
-        file,
-        isGuest,
-        result,
-        imageUrl,
-        prepareUploadFile: createJpegUploadFile,
-        uploadFile,
-        onSave,
-        deleteUploadedFile,
-      });
+      await saveSingleCaptureFile({file,isGuest,result:value,imageUrl:savedImageUrl,uploadFile,onSave,deleteUploadedFile});
     } catch (err) {
       setError(err instanceof Error ? err.message : '저장 중 오류가 발생했습니다');
       setStatus('error');
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
+  }
+  async function handleSaveClick() {
+    if (!result || isSaving) return;
+    await persistResult(result, imageUrl);
   }
 
   const isPlace = result?.category === 'place';
@@ -154,13 +146,13 @@ export function AnalyzeModal({ file, onSave, onCancel, isGuest = false, queueInf
           {status === 'error' && (
             <div className="text-center py-8">
               <CircleX size={40} className="text-error mx-auto mb-4" aria-hidden="true" />
-              <p className="text-error font-semibold">분석 실패</p>
+              <p className="text-error font-semibold">{result ? '저장 실패' : '분석 실패'}</p>
               <p className="text-text-tertiary text-sm mt-1">{error}</p>
               <div className="flex gap-3 mt-6 justify-center">
                 <button onClick={onCancel} className="px-6 py-2.5 rounded-xl bg-surface-elevated text-text-secondary font-medium">
                   닫기
                 </button>
-                <button onClick={analyzeImage} className="px-6 py-2.5 rounded-xl bg-primary text-black font-semibold">
+                <button onClick={result ? handleSaveClick : analyzeImage} className="px-6 py-2.5 rounded-xl bg-primary text-black font-semibold">
                   재시도
                 </button>
               </div>

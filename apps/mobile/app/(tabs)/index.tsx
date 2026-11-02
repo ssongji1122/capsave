@@ -1,22 +1,15 @@
+import { StickerDecoration } from '@/components/StickerDecoration';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  TextInput,
-  Animated,
-  StatusBar,
-  RefreshControl,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
-import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
+import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection, CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, type CaptureSort } from '@scrave/shared';
+import { ArchiveIllustration } from '@/components/ArchiveIllustration';
 import { CategoryShape } from '@/components/CategoryShape';
 import { CaptureCard } from '@/components/CaptureCard';
 import { useCaptures } from '@/contexts/CapturesContext';
@@ -32,6 +25,16 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  const [sort, setSort] = useState<CaptureSort>('recent');
+  const [anchorId, setAnchorId] = useState<number | null>(null);
+  const [deck, setDeck] = useState(false);
+  const { width } = useWindowDimensions();
+  const filtered = displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection);
+  const anchor = filtered.find(c=>c.id===anchorId) ?? sortCaptures(filtered,'recent')[0];
+  const deckCategory = archiveSection === 'all' && anchor ? classifyArchiveCapture(anchor) : archiveSection;
+  const ordered = sortCaptures(deck ? filtered.filter(c=>classifyArchiveCapture(c)===deckCategory) : filtered,sort,anchor);
+  const related = anchor ? relatedCaptures(anchor,filtered) : [];
 
   const fabScale = useRef(new Animated.Value(1)).current;
 
@@ -100,7 +103,7 @@ export default function HomeScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={[styles.emptyIcon, { backgroundColor: colors.surfaceElevated }]}>
-        <Ionicons name="camera-outline" size={48} color={colors.textTertiary} />
+        <ArchiveIllustration kind="add" size={96} />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
         캡처를 시작해보세요
@@ -123,17 +126,20 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header,{position:"relative",minHeight:170}]}>
+        <StickerDecoration target="archive" label="보관함"/>
         <View>
+          <Text style={[styles.brand, { color: colors.primary }]}>scrave</Text>
           <Text style={[styles.headerTitle, { color: colors.text }]}>my craves</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            scrap, save your crave
+            캡처로 모아 둔 일상과 취향
           </Text>
         </View>
+        <ArchiveIllustration kind="archive" size={84} />
       </View>
 
       <View style={styles.archiveFilters} accessibilityLabel="캡처 종류">
-        {[{id:'all' as const,label:'전체'},...ARCHIVE_SECTIONS].map(section => <TouchableOpacity key={section.id} accessibilityRole="button" accessibilityState={{selected:archiveSection===section.id}} onPress={() => setArchiveSection(section.id)} style={[styles.archiveFilter, {borderBottomColor:archiveSection===section.id?colors.primary:'transparent'}]}>{section.id !== 'all' && <CategoryShape section={section.id}/>}<Text style={{fontSize:12,color:archiveSection===section.id?colors.text:colors.textSecondary}}>{section.label} {displayCaptures.filter(item=>section.id==='all'||classifyArchiveCapture(item)===section.id).length}</Text></TouchableOpacity>)}
+        {[{id:'all' as const,label:'전체'},...ARCHIVE_SECTIONS].map(section => <TouchableOpacity key={section.id} accessibilityRole="button" accessibilityState={{selected:archiveSection===section.id}} onPress={() => setArchiveSection(section.id)} style={[styles.archiveFilter, {borderBottomColor:archiveSection===section.id?colors.primary:'transparent'}]}>{section.id !== 'all' && <CategoryShape section={section.id}/>}<Text style={{fontSize: 12,color:archiveSection===section.id?colors.text:colors.textSecondary}}>{section.label} {displayCaptures.filter(item=>section.id==='all'||classifyArchiveCapture(item)===section.id).length}</Text></TouchableOpacity>)}
       </View>
       {/* Search Bar */}
       <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -153,14 +159,29 @@ export default function HomeScreen() {
         )}
       </View>
 
+      <View style={{paddingHorizontal:16, gap:8, paddingBottom:12}}>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}} accessibilityLabel="카드 정렬">
+          {CAPTURE_SORT_OPTIONS.map(option=><TouchableOpacity key={option.id} accessibilityRole="button" accessibilityState={{selected:sort===option.id}} onPress={()=>setSort(option.id)} style={{minHeight:44,justifyContent:'center',paddingHorizontal:10,borderRadius:12,borderWidth:1,borderColor:sort===option.id?colors.primary:colors.border}}><Text style={{color:colors.text,fontSize:12}}>{option.label}</Text></TouchableOpacity>)}
+          <TouchableOpacity accessibilityRole="button" onPress={()=>setDeck(!deck)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary}}>{deck?'모아보기':'한 장씩'}</Text></TouchableOpacity>
+        </View>
+        {deck && <Text style={{color:colors.textSecondary,fontSize:12}}>같은 카테고리의 카드만 좌우로 넘깁니다. 다른 종류는 위에서 선택하세요.</Text>}
+        {sort==='upcoming' && <Text style={{color:colors.textSecondary,fontSize:12}}>캡처에서 읽은 오늘 이후 날짜를 먼저 보여줍니다. 변경 여부는 원본에서 확인하세요.</Text>}
+        {sort==='related' && anchor && <Text style={{color:colors.textSecondary,fontSize:12}}>연관 기준: {anchor.title} · 같은 카테고리의 태그·장소·출처 계정을 비교합니다.</Text>}
+      </View>
       {/* List */}
       <FlatList
-        numColumns={2}
-        columnWrapperStyle={{ gap: 14, paddingHorizontal: 16 }}
-        data={displayCaptures.filter(item=>archiveSection==='all'||classifyArchiveCapture(item)===archiveSection)}
+        key={`${deck ? 'deck' : 'grid'}:${sort}:${archiveSection}:${anchor?.id ?? ''}`}
+        numColumns={deck ? 1 : 2}
+        horizontal={deck}
+        pagingEnabled={deck}
+        columnWrapperStyle={deck ? undefined : { gap: 14, paddingHorizontal: 16 }}
+        data={ordered}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <CaptureCard compact item={item} onDelete={handleDelete} />
+          <View style={deck ? {width,paddingHorizontal:16} : {flex:1,maxWidth:'50%'}}>
+            <CaptureCard compact fillWidth item={item} onDelete={handleDelete} />
+            {sort==='related' && <View style={{padding:8}}><Text style={{color:colors.textSecondary,fontSize:12}}>{item.id===anchor?.id ? '연관 기준 카드' : related.find(r=>r.capture.id===item.id)?.reasons.join(' / ') ?? '연결 근거 없음'}</Text><TouchableOpacity accessibilityRole="button" onPress={()=>setAnchorId(item.id)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary}}>이 카드 기준으로 보기</Text></TouchableOpacity></View>}
+          </View>
         )}
         contentContainerStyle={displayCaptures.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={isLoading ? null : renderEmptyState}
@@ -177,7 +198,7 @@ export default function HomeScreen() {
       {/* FAB */}
       <Animated.View style={[styles.fabContainer, { transform: [{ scale: fabScale }] }]}>
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.text }]}
+          style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={handleAddCapture}
           activeOpacity={0.8}
         >
@@ -194,20 +215,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  brand: { fontFamily: 'SUIT-SemiBold', fontSize: 24, letterSpacing: -1, marginBottom: 12 },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 12,
   },
   headerTitle: {
-    fontSize: 21,
-    fontWeight: '700',
+    fontSize: 28,
+    fontFamily: 'SUIT-SemiBold',
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 15,
-    marginTop: 4,
-    fontWeight: '500',
+    fontSize: 13,
+    marginTop: 6,
+    fontFamily: 'SUIT-Medium',
   },
   statsBar: {
     flexDirection: 'row',
@@ -224,12 +249,12 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'SUIT-SemiBold',
   },
   statLabel: {
     fontSize: 11,
     marginTop: 2,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
   statDivider: {
     width: 1,
@@ -247,6 +272,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: {
+    fontFamily: 'SUIT-Regular',
     flex: 1,
     fontSize: 15,
     height: 24,
@@ -274,10 +300,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     marginBottom: 8,
   },
   emptySubtitle: {
+    fontFamily: 'SUIT-Regular',
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
@@ -294,7 +321,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   fabContainer: {
     position: 'absolute',
@@ -307,9 +334,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FFB800',
+    shadowColor: '#526985',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 8,
   },

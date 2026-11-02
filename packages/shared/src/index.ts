@@ -120,3 +120,10 @@ export { findRouteCandidates, DEFAULT_MAX_EXTRA_MINUTES } from "./utils/route-ca
 export type { LatLng, RouteCandidate, RouteCandidateCapture, RouteCandidateInput } from "./utils/route-candidates";
 
 export { ARCHIVE_APPEARANCE } from './utils/archive-appearance';
+
+export { STICKER_CATALOG, MAX_STICKERS, normalizeSticker, parseDecorations, stickerStorageKey } from './utils/stickers';
+export type { StickerPlacement } from './utils/stickers';
+export { CAPTURE_SORT_OPTIONS, sortCaptures, relatedCaptures, nextCaptureDate } from './utils/capture-discovery';
+export type { CaptureSort } from './utils/capture-discovery';
+
+export { canonicalInstagramPost, groupCapturePosts, captureImages, savedImagePath } from './utils/capture-gallery';

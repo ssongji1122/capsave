@@ -1,4 +1,4 @@
-import type { CaptureItem } from '@scrave/shared';
+import { savedImagePath, type CaptureItem } from '@scrave/shared';
 
 export type CaptureActionKind =
   | 'phone'
@@ -165,7 +165,7 @@ export function extractCaptureActions(item: CaptureItem): CaptureActionItem[] {
   }
 
   // 5. Original links
-  for (const link of item.links) {
+  for (const link of item.links.filter(link => !savedImagePath(link))) {
     if (link && link.trim()) {
       const clean = link.trim();
       pushUnique({

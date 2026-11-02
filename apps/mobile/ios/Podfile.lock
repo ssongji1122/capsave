@@ -164,7 +164,7 @@ PODS:
     - React-utils
     - ReactNativeDependencies
     - Yoga
-  - React-Core-prebuilt (0.83.2):
+  - React-Core-prebuilt (0.83.6):
     - ReactNativeDependencies
   - React-Core/CoreModulesHeaders (0.83.6):
     - hermes-engine
@@ -2590,7 +2590,7 @@ SPEC CHECKSUMS:
   ExpoSymbols: 896159288ad708e1a32dc12c92fe5f90bff01126
   ExpoWebBrowser: 5847267c496125abe38afccae97d34cb6ecc5340
   FBLazyVector: 427fa1856a481856091061293ce865a75aa4f20f
-  hermes-engine: d4c97f56a788dbad97feb6771adcbccead81d79d
+  hermes-engine: 2d30f62df867ef9a7bfa3a95b395833279f89286
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -2602,7 +2602,7 @@ SPEC CHECKSUMS:
   React: 9b033c7a99e1c8eec40960b6b2e6844e011e8bd1
   React-callinvoker: f64c8d57f45173835b6b9891cda27f1625551972
   React-Core: 341863a2597c4a2320f916b4232d280cb8a28e4b
-  React-Core-prebuilt: 313bf0dabad296a79bd25b537982dbc73d3c047d
+  React-Core-prebuilt: 95b94a08d8004023685cf50ce730a1f813debffa
   React-CoreModules: 9370769c9b2b1732c58960687f4d50d9d3510efc
   React-cxxreact: 41ae74bd9eab80af9c5da6a9b4934eb97e2c7569
   React-debug: eb0f19ff879ad3870dc760b6c21ad56cbb3e4b98
@@ -2666,7 +2666,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 3ec8fc5d32ad422f5b805523a5a5ea5556d8b3a2
   ReactCodegen: c09b3834bfb3d9bfc459dec95f0e8451f4798605
   ReactCommon: ba28cd4e7d9e24014d2772a80e32da020c732b00
-  ReactNativeDependencies: c75dab55349185c0b7449c4881f7eb59f1b83783
+  ReactNativeDependencies: 269cfb3f2424c071cb1e5a4f1e43532c93e947ea
   RNReanimated: 55f3c45edaee604ad1f1447cb13e928cb6e21660
   RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
   RNWorklets: 7a182b959563d4307562463f0618464bba735947

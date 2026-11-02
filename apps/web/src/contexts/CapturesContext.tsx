@@ -38,6 +38,7 @@ interface CapturesContextValue {
   freeRemaining: number;
   isAuthenticated: boolean;
   isAuthReady: boolean;
+  loadError: string | null;
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
   deleteCapture: (id: number) => Promise<boolean>;
@@ -68,6 +69,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => createClient());
   const [userId, setUserId] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -79,7 +81,8 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const refresh = useCallback(async () => {
-    if (!isAuthReady || !userId) {
+    if (!isAuthReady) return;
+    if (!userId) {
       setCaptures([]);
       setHasMore(false);
       setNextCursor(null);
@@ -89,11 +92,13 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setIsLoading(true);
+      setLoadError(null);
       const result = await getAllCaptures(client);
       setCaptures(result.items);
       setHasMore(result.hasMore);
       setNextCursor(result.nextCursor);
     } catch (error) {
+      setLoadError('보관함을 불러오지 못했습니다. 다시 시도해 주세요.');
       console.error('Failed to load captures:', error);
       showErrorToast('캡처를 불러오지 못했습니다.');
     } finally {
@@ -237,6 +242,15 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         ...(result.relatedSearchTerms && { relatedSearchTerms: result.relatedSearchTerms }),
       };
       setCaptures((prev) => [enriched, ...prev]);
+      // Source discovery is bounded and free; analysis remains the existing single paid call.
+      try {
+        const response = await fetch('/api/capture-enrich', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({captureId:newCapture.id})});
+        if (response.ok) {
+          const source = await response.json();
+          if (Array.isArray(source.links)) setCaptures(prev => prev.map(c => c.id === newCapture.id ? {...c,links:source.links} : c));
+        }
+      } catch { /* The original remains saved; its source panel offers retry. */ }
+
       // Best-effort: store coordinates now so the map and route checks can reuse them.
       if (newCapture.category === 'place' && newCapture.places.length > 0) {
         void requestCaptureCoordinates(newCapture.id).then((places) => {
@@ -262,6 +276,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
         freeRemaining: Math.max(0, MAX_FREE_CAPTURES - captures.length),
         isAuthenticated: userId !== null,
         isAuthReady,
+        loadError,
         loadMore,
         refresh,
         deleteCapture: handleDelete,

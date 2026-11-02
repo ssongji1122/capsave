@@ -2,18 +2,18 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Flow 6: UI / 디자인 시스템 검증
- * - 밝은 크림 배경색 확인 (DESIGN.md 2026-10-28 A안)
+ * - 흰 바탕 확인 (DESIGN.md 2026-10-29 현행 기준)
  * - 반응형: 모바일(375px) vs 데스크탑(1280px)
  * - 핵심 색상 토큰 적용 여부
  */
 test.describe('UI & 반응형', () => {
-  test('랜딩 — 크림 배경 적용', async ({ page }) => {
+  test('랜딩 — 흰 바탕 적용', async ({ page }) => {
     await page.goto('/');
     const bg = await page.evaluate(() =>
       getComputedStyle(document.body).backgroundColor
     );
-    // #F3EFE6 → rgb(243, 239, 230)
-    expect(bg).toMatch(/rgb\(243,\s*239,\s*230\)/);
+    // #FFFFFF → rgb(255, 255, 255)
+    expect(bg).toMatch(/rgb\(255,\s*255,\s*255\)/);
   });
 
   test('랜딩 — Scrave 로고가 Primary 색상', async ({ page }) => {
@@ -21,8 +21,8 @@ test.describe('UI & 반응형', () => {
     const color = await page.locator('h1').first().evaluate(
       (el) => getComputedStyle(el).color
     );
-    // #A83F20 → rgb(168, 63, 32)
-    expect(color).toMatch(/rgb\(168,\s*63,\s*32\)/);
+    // #526985 → rgb(82, 105, 133)
+    expect(color).toMatch(/rgb\(82,\s*105,\s*133\)/);
   });
 
   test('모바일(375px) — 레이아웃 오버플로우 없음', async ({ page }) => {

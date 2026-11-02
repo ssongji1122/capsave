@@ -9,6 +9,7 @@ import {
   UpdateGuideInput,
 } from '../types/guide';
 import { mapCaptureToRow, mapRowToCapture } from './mappers';
+import { buildArchiveLinks } from '../utils/capture-archive';
 import { extractStoragePath } from '../utils/storage';
 
 export const MAX_FREE_CAPTURES = 100;
@@ -133,7 +134,7 @@ export async function saveCapture(
     summary: analysis.summary,
     places: analysis.places,
     extractedText: analysis.extractedText,
-    links: analysis.links,
+    links: [...new Set([...analysis.links, ...buildArchiveLinks(analysis).filter(link => link.kind === 'map').map(link => link.url)])],
     tags: analysis.tags,
     source: analysis.source,
     imageUrl,

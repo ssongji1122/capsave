@@ -3,16 +3,14 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
-import { Home, MapPin, FileText, Map, Compass, Settings, LogOut } from 'lucide-react';
+import { Home, Plus, MapPin, FileText, Map, Compass, Settings, LogOut } from 'lucide-react';
 
-const BRAND_MARK_COLOR = '#F2622E';
+const BRAND_MARK_COLOR = '#526985';
 
 const navItems = [
-  { href: '/dashboard', label: '홈', icon: Home, description: '전체 캡처' },
-  { href: '/places', label: '장소', icon: MapPin, description: '맛집·카페·여행지' },
-  { href: '/guides', label: '가이드', icon: Compass, description: '여행 동선 노트' },
-  { href: '/texts', label: '텍스트', icon: FileText, description: 'AI·코드·레시피' },
-  { href: '/map', label: '지도', icon: Map, description: '저장 장소 지도' },
+  { href: '/dashboard', label: '보관함', icon: Home, description: 'my craves' },
+  { href: '/dashboard#add-capture', label: '추가', icon: Plus, description: '캡처 추가하기' },
+  { href: '/map', label: '지도', icon: Map, description: '저장한 장소' },
 ];
 
 export function Sidebar() {

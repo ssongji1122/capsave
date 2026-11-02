@@ -36,3 +36,25 @@ it('does not send an old flight timestamp to map search as an address',()=>{
  const links=buildArchiveLinks({...base,title:'항공권',places:[{name:'인천공항',address:'2026-11-05 20:20'}]});
  expect(links.filter(x=>x.kind==='map').every(x=>!decodeURIComponent(x.url).includes('2026-11-05'))).toBe(true);
 });
+
+ it('searches a place with its address to disambiguate branches', () => {
+  expect(buildSourceQuery({...base, category:'place',title:'조용한 카페',places:[{name:'렉커피',address:'후쿠오카 텐진 1-11-1'}]})).toBe('렉커피 후쿠오카 텐진 1-11-1');
+ });
+ it('uses a supplied public address when a place name is empty', () => {
+  expect(buildSourceQuery({...base,category:'place',title:'저장한 장소',places:[{name:'',address:'서울 성동구 성덕정15길 12'}]})).toBe('서울 성동구 성덕정15길 12');
+ });
+ it('keeps schedule timestamps out of source searches', () => {
+  expect(buildSourceQuery({...base,category:'place',places:[{name:'인천공항',address:'2026-11-05 20:20'}]})).toBe('인천공항');
+ });
+
+it('keeps map labels after generated map URLs are saved and reloaded',()=>{
+ const capture={...base,places:[{name:'인천공항'}]};
+ const generated=buildArchiveLinks(capture).filter(x=>x.kind==='map');
+ const reopened=buildArchiveLinks({...capture,links:generated.map(x=>x.url)});
+ expect(reopened.filter(x=>x.kind==='map')).toEqual(generated);
+});
+
+it('keeps command-line terminal instructions out of travel',()=>{
+ expect(classifyArchiveCapture({...base,title:'Artemis',extractedText:'터미널에서 아래 입력 git clone'})).toBe('questions');
+ expect(classifyArchiveCapture({...base,title:'인천공항 1터미널'})).toBe('travel');
+});

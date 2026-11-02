@@ -1,13 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  ActionSheetIOS,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, ActionSheetIOS, Platform } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import Constants from 'expo-constants';
 import { PlaceInfo } from '@/services/analyzers/types';

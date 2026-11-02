@@ -37,6 +37,9 @@ const ScraveDarkTheme = {
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'SUIT-Regular': require('../assets/fonts/SUIT-Regular.ttf'),
+    'SUIT-Medium': require('../assets/fonts/SUIT-Medium.ttf'),
+    'SUIT-SemiBold': require('../assets/fonts/SUIT-SemiBold.ttf'),
   });
 
   useEffect(() => {

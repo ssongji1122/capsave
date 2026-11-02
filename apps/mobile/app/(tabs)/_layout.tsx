@@ -25,7 +25,7 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontFamily: 'SUIT-SemiBold',
         },
         headerStyle: {
           backgroundColor: colors.background,
@@ -34,7 +34,7 @@ export default function TabLayout() {
         },
         headerTintColor: colors.text,
         headerTitleStyle: {
-          fontWeight: '700',
+          fontFamily: 'SUIT-SemiBold',
           fontSize: 18,
         },
       }}
@@ -42,7 +42,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: '홈',
+          title: 'my craves',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),

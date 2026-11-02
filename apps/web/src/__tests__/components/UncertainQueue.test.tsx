@@ -5,7 +5,12 @@ import { UncertainQueue } from '@/components/captures/UncertainQueue';
 import type { CaptureItem } from '@scrave/shared';
 
 const mocks = vi.hoisted(() => ({
-  createClient: vi.fn(() => ({})),
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+    },
+  })),
   reclassifyCapture: vi.fn().mockResolvedValue(null),
 }));
 

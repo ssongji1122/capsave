@@ -257,6 +257,9 @@ describe('saveCapture', () => {
     expect(insertCall).toContain('https://safe.example/article');
     expect(insertCall).toContain('https://safe.example/place');
     expect(insertCall).not.toContain('javascript:alert');
+    expect(insertCall).toContain('https://www.google.com/maps/search/');
+    expect(insertCall).toContain('https://map.naver.com/p/search/');
+    expect(insertCall).toContain('user-1/capture.jpg');
   });
 });
 

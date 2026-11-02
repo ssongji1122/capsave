@@ -1,13 +1,7 @@
+import { StickerDecoration } from './StickerDecoration';
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActionSheetIOS,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, ActionSheetIOS, Platform } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,9 +17,10 @@ interface CaptureCardProps {
   item: CaptureItem;
   onDelete?: (id: number) => void;
   compact?: boolean;
+  fillWidth?: boolean;
 }
 
-export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProps) {
+export function CaptureCard({ item, onDelete, compact = false, fillWidth = false }: CaptureCardProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
@@ -96,8 +91,8 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
     const section = classifyArchiveCapture(item);
     const appearance = ARCHIVE_APPEARANCE[section];
     const icons = { blob: 'flower', cross: 'add', x: 'close', star: 'star' } as const;
-    return <TouchableOpacity style={styles.photoCard} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
-      {resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]} contentFit="contain" cachePolicy="memory-disk" />}
+    return <TouchableOpacity style={[styles.photoCard, fillWidth && {maxWidth:'100%',width:'100%'}]} accessibilityRole="button" accessibilityLabel={`${item.title} 정리 내용과 출처 보기`} onPress={() => router.push(`/capture/${item.id}`)} onLongPress={handleDelete}>
+      <View style={[styles.photoImage, { backgroundColor: colors.surfaceElevated }]}>{resolvedImageUri && <Image source={{ uri: resolvedImageUri }} style={{width:'100%',height:'100%'}} contentFit="contain" cachePolicy="memory-disk" />}<StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageUri??undefined}/></View>
       <Text style={[styles.photoTitle, {color: colors.text}]} numberOfLines={2}>{item.title}</Text>
       <View style={styles.photoMeta}><Ionicons name={icons[appearance.shape]} size={12} color={appearance.color}/><Text style={{color: colors.textSecondary, fontSize: 11}}>{ARCHIVE_SECTIONS.find(s=>s.id===section)?.label}</Text></View>
     </TouchableOpacity>;
@@ -132,14 +127,15 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
       </View>
 
       {/* Image Preview */}
+      {!resolvedImageUri && <View style={{position:"relative",height:200,backgroundColor:colors.surfaceElevated}}><Text style={{padding:20,color:colors.textSecondary}}>{item.title}</Text><StickerDecoration target={"capture:"+item.id} label={item.title}/></View>}
       {resolvedImageUri && (
-        <Image
+        <View style={{position:"relative"}}><Image
           source={{ uri: resolvedImageUri }}
           style={styles.cardImage}
           contentFit="contain"
           transition={200}
           cachePolicy="memory-disk"
-        />
+        /><StickerDecoration target={"capture:"+item.id} label={item.title} preview={resolvedImageUri}/></View>
       )}
 
       {/* Title & Summary */}
@@ -213,8 +209,8 @@ export function CaptureCard({ item, onDelete, compact = false }: CaptureCardProp
 
 const styles = StyleSheet.create({
   photoCard: { flex: 1, maxWidth: '48%', minWidth: 0, marginBottom: 20 },
-  photoImage: { width: '100%', height: 220, borderRadius: 14 },
-  photoTitle: { fontSize: 14, fontWeight: '600', marginTop: 10, lineHeight: 20 },
+  photoImage: { width: '100%', height: 200, borderRadius: 14, borderWidth: 1, borderColor: Colors.light.border },
+  photoTitle: { fontSize: 14, fontFamily: 'SUIT-SemiBold', marginTop: 10, lineHeight: 20, minHeight: 40 },
   photoMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
   card: {
     borderRadius: 0,
@@ -241,7 +237,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
   },
   headerRight: {
     flexDirection: 'row',
@@ -260,7 +256,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 28,
-    fontWeight: '400',
+    fontFamily: 'SUIT-Regular',
     lineHeight: 36,
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -294,7 +290,7 @@ const styles = StyleSheet.create({
   },
   placeName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   placeAddress: {
     fontSize: 12,
@@ -332,6 +328,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'SUIT-Medium',
   },
 });

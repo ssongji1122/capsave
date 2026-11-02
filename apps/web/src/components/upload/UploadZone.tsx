@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Clipboard, Images } from 'lucide-react';
+import { ArchiveIllustration } from '@/components/captures/ArchiveIllustration';
 import { MAX_BATCH_FILES } from '@/lib/constants';
 import { validateSelectedImageFile } from '@/lib/upload-validation';
 
@@ -120,7 +121,7 @@ export function UploadZone({ onImageSelected, onMultipleSelected, multiple = fal
       `}
     >
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary-border bg-primary-surface text-primary transition-transform group-hover:scale-105">
-        <Camera size={28} aria-hidden="true" />
+        <ArchiveIllustration kind="add" size={54} />
       </div>
       <p className="text-lg font-bold text-text-primary">스크린샷 추가</p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-secondary">

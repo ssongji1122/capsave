@@ -1,5 +1,6 @@
 'use client';
 
+import { StickerDecoration } from '@/components/stickers/StickerDecoration';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useCaptures, MAX_FREE_CAPTURES } from '@/contexts/CapturesContext';
 import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
@@ -24,6 +25,7 @@ import { Bookmark, Camera, CheckCircle2, Compass, Layers } from 'lucide-react';
 
 import { ARCHIVE_SECTIONS, classifyArchiveCapture, type ArchiveSection } from '@scrave/shared';
 import { ArchiveSections } from '@/components/captures/ArchiveSections';
+import { ArchiveIllustration } from '@/components/captures/ArchiveIllustration';
 import editorial from '@/components/captures/EditorialArchive.module.css';
 
 const CONFIDENCE_THRESHOLD = 0.5;
@@ -56,7 +58,7 @@ const LENS_TABS: {
 ];
 
 export default function HomePage() {
-  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, reclassifyCapture, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated, isAuthReady } = useCaptures();
+  const { captures, isLoading, hasMore, isLoadingMore, loadMore, deleteCapture, searchCaptures, reclassifyCapture, saveCapture, isFreeLimitReached, freeRemaining, isAuthenticated, isAuthReady, loadError, refresh } = useCaptures();
   const {
     guestCaptures,
     remainingSlots,
@@ -79,7 +81,7 @@ export default function HomePage() {
     [captures, guestCaptures],
   );
   const visibleArchiveCaptures = useMemo(
-    () => getVisibleArchiveCaptures(archiveCaptures),
+    () => archiveCaptures,
     [archiveCaptures],
   );
 
@@ -99,7 +101,7 @@ export default function HomePage() {
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
     if (query) {
-      const sampleResults = archiveCaptures.length === 0
+      const sampleResults = false
         ? filterCapturesByArchiveQuery(SAMPLE_CAPTURES, query)
         : [];
       const guestResults = filterCapturesByArchiveQuery(guestCaptures, query);
@@ -249,48 +251,22 @@ export default function HomePage() {
   return (
     <div className={`${editorial.archive} pb-20 lg:pb-8`}>
       {/* Header */}
-      <div className="px-5 pt-8 pb-3 lg:pt-10">
+      <div className={editorial.archiveHeader} style={{position:"relative",minHeight:180}}>
+
+        <div>
         <p className={editorial.eyebrow}>scrave</p>
         <h1>my craves</h1>
-        <p className="text-text-secondary text-sm mt-4">scrap, save your crave</p>
+        <p>캡처로 모아 둔 일상과 취향</p>
+        <a href="/settings" className="inline-flex min-h-11 items-center text-sm">설정</a>
+        </div>
+        <ArchiveIllustration kind="archive" size={112} />
       </div>
 
       <ArchiveSections value={archiveSection} onChange={setArchiveSection} counts={{ all: baseShown.length, ...Object.fromEntries(ARCHIVE_SECTIONS.map(section => [section.id, baseShown.filter(item => classifyArchiveCapture(item) === section.id).length])) } as Record<ArchiveSection | 'all', number>} />
-      {/* Free plan limit bar */}
-      <div className="mx-4 mb-3">
-        <div className="flex items-center justify-between text-xs text-text-tertiary mb-1.5">
-          <span>무료 플랜</span>
-          <span className={isUploadBlocked ? 'text-error font-semibold' : ''}>
-            {shownLimitCount} / {shownMaxCount}
-          </span>
-        </div>
-        <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${isUploadBlocked ? 'bg-error' : 'bg-primary'}`}
-            style={{ width: `${Math.min(100, (shownLimitCount / shownMaxCount) * 100)}%` }}
-          />
-        </div>
-        {isFreeLimitReached && (
-          <p className="text-xs text-error mt-1">한도에 도달했습니다. 오래된 캡처를 정리하거나 플랜을 업그레이드하세요.</p>
-        )}
-        {!isAuthenticated && isGuestFull && (
-          <p className="text-xs text-error mt-1">한도에 도달했습니다. 로그인하면 계속 저장할 수 있습니다.</p>
-        )}
-        {!isSearching && freeRemaining > 0 && freeRemaining <= 20 && captures.length >= 5 && (
-          <button
-            onClick={handleCleanupOldest}
-            disabled={isCleaningUp}
-            className="mt-2 w-full text-left px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary hover:border-primary/40 hover:bg-surface-elevated transition-colors disabled:opacity-50"
-          >
-            {isCleaningUp
-              ? '오래된 캡처 정리 중…'
-              : `${freeRemaining}개 남았습니다. 가장 오래된 ${Math.min(5, captures.length)}개를 정리하기 →`}
-          </button>
-        )}
-      </div>
-
-      {/* Upload */}
-      <div data-archive-upload className={`px-4 mb-4 ${isUploadBlocked || !isAuthReady ? 'opacity-50 pointer-events-none' : ''}`}>
+      {loadError && <div role="alert" className="p-4">{loadError}<button type="button" onClick={() => refresh()} className="min-h-11 underline ml-3">다시 불러오기</button></div>}
+      {!isAuthReady && <p role="status" className="p-4">보관함을 불러오고 있습니다.</p>}
+      {isAuthReady && !isAuthenticated && <p className="px-4 py-3 text-sm">이 기기의 보관함입니다. <a href="/login" className="underline">로그인해서 내 캡처 불러오기</a></p>}
+      <div id="add-capture" data-archive-upload className={`px-4 mb-4 ${isUploadBlocked || !isAuthReady ? 'opacity-50 pointer-events-none' : ''}`}>
         <UploadZone
           onImageSelected={handleSingleFile}
           onMultipleSelected={handleMultipleFiles}
@@ -298,42 +274,10 @@ export default function HomePage() {
         />
       </div>
 
+      <div className="px-4 mb-4"><a href="/import" className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4">정리한 캡처 가져오기</a></div>
+
       {/* Search */}
       <SearchBar onSearch={handleSearch} />
-
-      {/* Scrave Action & Rediscovery Lens Filter Bar */}
-      <div className="px-4 mt-2 mb-1">
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="캡처 활용 관점 필터">
-          {LENS_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeLens === tab.id;
-            const count = lensCounts[tab.id];
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setActiveLens(tab.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  active
-                    ? 'border-primary-border bg-primary-surface text-primary'
-                    : 'border-border bg-surface text-text-secondary hover:border-border-light hover:text-text-primary'
-                }`}
-              >
-                <Icon size={13} aria-hidden="true" />
-                <span>{tab.label}</span>
-                <span className="font-mono text-[10px] opacity-80">{count}</span>
-              </button>
-            );
-          })}
-        </div>
-        {activeLens !== 'all' && activeLensMeta && (
-          <p className="mt-1.5 text-xs text-text-tertiary px-1">
-            {activeLensMeta.description}
-          </p>
-        )}
-      </div>
 
       {/* Uncertain queue */}
       {uncertain.length > 0 && (
@@ -347,10 +291,10 @@ export default function HomePage() {
       {/* List */}
       <CaptureList
         captures={confident}
-        isLoading={visibleArchiveCaptures.length === 0 && isLoading}
+        isLoading={!isAuthReady || (visibleArchiveCaptures.length === 0 && isLoading)}
         onDelete={handleDelete}
         onMetaChange={handleMetaChange}
-        emptyIcon={<Camera size={40} className="text-primary" />}
+        emptyIcon={<ArchiveIllustration kind="add" size={88} />}
         emptyTitle="캡처를 시작해보세요"
         emptySubtitle={'스크린샷을 업로드하면\nAI가 자동으로 분석해 정리해드립니다'}
         hasMore={isAuthenticated ? hasMore : false}

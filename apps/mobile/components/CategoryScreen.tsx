@@ -1,12 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  StatusBar,
-  RefreshControl,
-} from 'react-native';
+import { View, StyleSheet, FlatList, StatusBar, RefreshControl } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';

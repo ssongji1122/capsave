@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
   },
   loadButtonText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
   },
   panel: {
     marginTop: 10,
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'SUIT-SemiBold',
     marginBottom: 4,
   },
   sectionGap: {
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'SUIT-SemiBold',
     lineHeight: 18,
   },
   meta: {

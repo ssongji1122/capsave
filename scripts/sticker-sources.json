@@ -1,0 +1,52 @@
+[
+  {
+    "name": "01-record",
+    "subjects": "screenshot card, hand adding screenshot to tray, open archive box, connected source page, calendar, clipboard, bookmark ribbon, photo strip, envelope, small diary",
+    "path": "apps/web/public/stickers/01-record.png"
+  },
+  {
+    "name": "02-stationery",
+    "subjects": "pencil, fountain pen, washi tape roll, scissors, paper clips, open notebook, rubber stamp, sticky notes, pencil case, glue stick",
+    "path": "apps/web/public/stickers/02-stationery.png"
+  },
+  {
+    "name": "03-cafe",
+    "subjects": "espresso cup, iced latte, hand drip coffee set, coffee beans bag, moka pot, lemonade glass with lemon slice, lemon soda bottle, teapot, matcha cup, cocoa mug",
+    "path": "apps/web/public/stickers/03-cafe.png"
+  },
+  {
+    "name": "04-sweets",
+    "subjects": "strawberry shortcake slice, whole birthday cake, lemon cake slice, chocolate cake, cheesecake slice, croissant, cinnamon roll, macaron pair, pudding, ice cream sundae",
+    "path": "apps/web/public/stickers/04-sweets.png"
+  },
+  {
+    "name": "05-autumn",
+    "subjects": "red maple leaf, golden ginkgo leaf, small acorns, pine cone, persimmon, pumpkin, chestnuts, autumn tree, wool scarf, fallen leaves in a small basket",
+    "path": "apps/web/public/stickers/05-autumn.png"
+  },
+  {
+    "name": "06-outdoors",
+    "subjects": "fishing rod and line, fishing float and tiny fish, fishing tackle box, hiking boots, backpack with trekking poles, mountain trail, trail signpost, camping tent, camping lantern, thermos",
+    "path": "apps/web/public/stickers/06-outdoors.png"
+  },
+  {
+    "name": "07-ai-study",
+    "subjects": "open laptop showing simple connected AI nodes without letters, study notebook with small robot doodle, desk lamp and book, headphones and tablet, flashcard stack, hourglass beside textbook, keyboard and mouse, small friendly robot head, mind map on paper, graduation cap on books",
+    "path": "apps/web/public/stickers/07-ai-study.png"
+  },
+  {
+    "name": "08-travel",
+    "subjects": "airplane and ticket, suitcase, passport cover without text, folded map with pin, train, camera, beach umbrella, hotel key, bicycle, little cafe building",
+    "path": "apps/web/public/stickers/08-travel.png"
+  },
+  {
+    "name": "09-home",
+    "subjects": "shopping bag with lamp, parcel box, watering can, potted plant, headphones and music player, knitting yarn, paint palette and brush, sneakers, reading chair, small vase of flowers",
+    "path": "apps/web/public/stickers/09-home.png"
+  },
+  {
+    "name": "10-nature",
+    "subjects": "sun peeking from cloud, crescent moon and stars, rainbow, rainy umbrella, snowflake and mitten, seashell, ocean wave, wildflower bouquet, butterfly, pair of cherries",
+    "path": "apps/web/public/stickers/10-nature.png"
+  }
+]
