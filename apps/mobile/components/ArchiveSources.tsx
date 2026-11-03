@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Text } from '@/components/ScraveText';
-import Constants from 'expo-constants';
 import { buildArchiveLinks, buildSourceQuery, safeArchiveUrl, type ArchiveCapture } from '@scrave/shared';
 import { getSupabaseClient } from '@/services/supabase';
 import { openUrl } from '@/services/map-linker';
 import { ArchiveIllustration } from '@/components/ArchiveIllustration';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { getMobileServerUrl } from '@/services/server-url';
 export function ArchiveSources({ capture }: { capture: ArchiveCapture }) {
   const supabase = getSupabaseClient();
   const colors = Colors[useColorScheme() ?? 'dark'];
@@ -23,9 +23,8 @@ export function ArchiveSources({ capture }: { capture: ArchiveCapture }) {
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const serverUrl = Constants.expoConfig?.extra?.serverUrl;
-        if (!session?.access_token || !serverUrl) throw new Error();
-        const response = await fetch(`${String(serverUrl).replace(/\/$/, '')}/api/capture-sources`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(capture.id ? { captureId: capture.id } : { query }), signal: controller.signal });
+        if (!session?.access_token) throw new Error();
+        const response = await fetch(`${getMobileServerUrl()}/api/capture-sources`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(capture.id ? { captureId: capture.id } : { query }), signal: controller.signal });
         if (!response.ok) throw new Error();
         const data = await response.json();
         if (controller.signal.aborted) return;

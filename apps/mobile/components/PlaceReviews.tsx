@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
-import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import type { CaptureReviewTopic, PlaceReviewResult } from '@scrave/shared';
 import { Colors } from '@/constants/Colors';
@@ -10,6 +9,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { openUrl } from '@/services/map-linker';
 import { describeReviewSource, fetchPlaceReviews, formatSceneLine } from '@/services/place-reviews';
 import { getSupabaseClient } from '@/services/supabase';
+import { getMobileServerUrl } from '@/services/server-url';
 
 interface PlaceReviewsProps {
   placeName: string;
@@ -34,14 +34,12 @@ export function PlaceReviews({ placeName, topic }: PlaceReviewsProps) {
   const [showDropped, setShowDropped] = useState(false);
 
   const load = async () => {
-    const serverUrl = Constants.expoConfig?.extra?.serverUrl;
-    if (!serverUrl) {
-      setState({ status: 'error', message: '서버 주소가 설정되지 않았습니다.' });
-      return;
-    }
     setState({ status: 'loading' });
     try {
-      const result = await fetchPlaceReviews(topic?.query ?? placeName, { serverUrl, getToken });
+      const result = await fetchPlaceReviews(topic?.query ?? placeName, {
+        serverUrl: getMobileServerUrl(),
+        getToken,
+      });
       setState({ status: 'loaded', result });
     } catch (error) {
       setState({

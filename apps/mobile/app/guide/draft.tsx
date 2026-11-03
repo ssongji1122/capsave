@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Share, Alert, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/ScraveText';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { PlaceReviews } from '@/components/PlaceReviews';
 import { getSupabaseClient } from '@/services/supabase';
+import { getMobileServerUrl } from '@/services/server-url';
 import {
   getCurrentMobileGuideDraft,
   moveMobileGuidePlace,
@@ -19,14 +19,6 @@ import {
 async function getToken(): Promise<string | null> {
   const { data } = await getSupabaseClient().auth.getSession();
   return data.session?.access_token ?? null;
-}
-
-function getServerUrl(): string {
-  return (
-    (Constants.expoConfig?.extra?.serverUrl as string | undefined) ||
-    process.env.EXPO_PUBLIC_API_URL ||
-    'https://scrave.vercel.app'
-  );
 }
 
 export default function MobileGuideDraftScreen() {
@@ -81,7 +73,7 @@ export default function MobileGuideDraftScreen() {
         guide,
         unlisted ? 'unlisted' : 'private',
         {
-          serverUrl: getServerUrl(),
+          serverUrl: getMobileServerUrl(),
           getToken,
         },
       );

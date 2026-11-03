@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, StatusBar, RefreshControl, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/ScraveText';
-import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -11,6 +10,7 @@ import { PlacesMapView } from '@/components/PlacesMapView';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { PlaceInfo } from '@/services/analyzers/types';
 import { getSupabaseClient } from '@/services/supabase';
+import { getMobileServerUrl } from '@/services/server-url';
 import {
   MIN_GUIDE_CAPTURES,
   createMobileGuideDraft,
@@ -23,14 +23,6 @@ type ViewMode = 'map' | 'list';
 async function getToken(): Promise<string | null> {
   const { data } = await getSupabaseClient().auth.getSession();
   return data.session?.access_token ?? null;
-}
-
-function getServerUrl(): string {
-  return (
-    (Constants.expoConfig?.extra?.serverUrl as string | undefined) ||
-    process.env.EXPO_PUBLIC_API_URL ||
-    'https://scrave.vercel.app'
-  );
 }
 
 export default function PlacesScreen() {
@@ -92,7 +84,7 @@ export default function PlacesScreen() {
     setIsCreatingGuide(true);
     try {
       const draft = await createMobileGuideDraft(selectedCaptureIds, 0, {
-        serverUrl: getServerUrl(),
+        serverUrl: getMobileServerUrl(),
         getToken,
       });
       setCurrentMobileGuideDraft(draft);

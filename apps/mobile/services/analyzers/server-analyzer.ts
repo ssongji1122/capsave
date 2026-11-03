@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
-import Constants from 'expo-constants';
 import { AnalysisResult, ImageAnalyzer } from './types';
 import { normalizeAnalysisResult } from './normalize-result';
+import { getMobileServerUrl } from '../server-url';
 
 export function getAnalyzeStatusErrorMessage(status: number): string | null {
   if (status === 401) {
@@ -21,11 +21,7 @@ export class ServerAnalyzer implements ImageAnalyzer {
   private getToken: () => Promise<string | null>;
 
   constructor(getToken: () => Promise<string | null>) {
-    const url = Constants.expoConfig?.extra?.serverUrl;
-    if (!url) {
-      throw new Error('서버 URL이 설정되지 않았습니다. app.json의 extra.serverUrl을 확인해주세요.');
-    }
-    this.serverUrl = url;
+    this.serverUrl = getMobileServerUrl();
     this.getToken = getToken;
   }
 

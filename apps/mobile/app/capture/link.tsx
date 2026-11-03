@@ -1,5 +1,4 @@
 import React from 'react';
-import Constants from 'expo-constants';
 
 import { SocialLinkCapture } from '@/components/SocialLinkCapture';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,14 +10,7 @@ import {
   type MobileSocialLinkCapture,
 } from '@/services/social-link-intake';
 import { deleteImageFromStorage, getSupabaseClient } from '@/services/supabase';
-
-function getServerUrl(): string {
-  return (
-    (Constants.expoConfig?.extra?.serverUrl as string | undefined) ||
-    process.env.EXPO_PUBLIC_API_URL ||
-    'https://scrave.vercel.app'
-  );
-}
+import { getMobileServerUrl } from '@/services/server-url';
 
 async function getToken(): Promise<string | null> {
   const { data } = await getSupabaseClient().auth.getSession();
@@ -28,7 +20,7 @@ async function getToken(): Promise<string | null> {
 export default function SocialLinkCaptureScreen() {
   const { session } = useAuth();
   const { refresh, saveCapture } = useCaptures();
-  const apiOptions = { serverUrl: getServerUrl(), getToken };
+  const apiOptions = { serverUrl: getMobileServerUrl(), getToken };
 
   const inspect = (url: string) => inspectMobileSocialLink(url, apiOptions);
 
