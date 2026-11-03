@@ -108,6 +108,7 @@ test.describe('인증 사용자 핵심 플로우', () => {
   });
 
   test('대시보드에서 AI 분석 결과를 저장하고 목록에 반영한다', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 812 });
     await mockAuthenticatedBackend(page, createCaptureRows());
     // 분석 중 모달을 관찰할 수 있도록 분석 응답을 잠시 늦춥니다(응답 본문은 헬퍼의 모킹을 그대로 사용).
     await page.route('**/api/analyze', async (route) => {
@@ -123,14 +124,18 @@ test.describe('인증 사용자 핵심 플로우', () => {
     ]);
     await fileChooser.setFiles(imgPath);
 
-    const dialog = page.getByRole('dialog', { name: 'AI 분석 결과' });
+    const dialog = page.getByRole('dialog', { name: '분석 내용을 확인해 주세요' });
     await expect(dialog).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
-    // 로그인 상태에서는 분석이 끝나면 저장 버튼 없이 자동 저장되고 모달이 닫힙니다(commit 8672047).
+    await dialog.getByRole('button', { name: '내용 수정' }).click();
+    await dialog.getByLabel('제목').fill('사용자가 고친 장소');
+    await dialog.getByRole('button', { name: '수정 완료' }).click();
+    await dialog.getByRole('button', { name: '확인하고 저장' }).click();
     await expect(dialog).toHaveCount(0, { timeout: 15000 });
-    await expect(page.getByText('AI 저장 테스트 장소')).toBeVisible();
+    await expect(page.getByText('사용자가 고친 장소')).toBeVisible();
     // 카드 사진 대체 텍스트는 갤러리 형식(제목 · 이미지 종류 번호/전체)을 따릅니다(CaptureGallery.tsx).
-    await expect(page.getByAltText('AI 저장 테스트 장소 · 올린 캡처 1/1')).toBeVisible();
+    await expect(page.getByAltText('사용자가 고친 장소 · 올린 캡처 1/1')).toBeVisible();
   });
 
   test('장소마다 협찬·AI 음성·얼굴 위주를 거른 후기와 영상을 불러온다', async ({ page }) => {

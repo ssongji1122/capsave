@@ -268,7 +268,12 @@ function LandingContent() {
           files={batchFiles}
           onSave={handleBatchSave}
           onCancel={() => setBatchFiles(null)}
+          onCapacityExceeded={() => {
+            setBatchFiles(null);
+            setShowSignupPrompt(true);
+          }}
           isGuest
+          maxSaveCount={remainingSlots}
         />
       )}
     </div>

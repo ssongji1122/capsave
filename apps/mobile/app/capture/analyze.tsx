@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Alert, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Alert, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,7 +18,15 @@ import {
   CaptureSaveLimitError,
   saveAnalyzedCapture,
 } from '@/services/analyze-save-flow';
-import { MAX_FREE_CAPTURES, countUserCaptures, type MapProvider } from '@scrave/shared';
+import {
+  MAX_FREE_CAPTURES,
+  countUserCaptures,
+  prepareAnalysisForSave,
+  validateAnalysisDraft,
+  type AnalysisDraftError,
+  type MapProvider,
+} from '@scrave/shared';
+import { AnalysisResultEditor } from '@/components/AnalysisResultEditor';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
 type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
@@ -48,6 +56,9 @@ export default function AnalyzeScreen() {
 
   const [status, setStatus] = useState<AnalyzeStatus>('analyzing');
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [draft, setDraft] = useState<AnalysisResult | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftError, setDraftError] = useState<AnalysisDraftError | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -128,6 +139,9 @@ export default function AnalyzeScreen() {
       };
       const analysisResult = await analyzeImage(imageUri!, getToken);
       setResult(analysisResult);
+      setDraft(analysisResult);
+      setDraftError(null);
+      setIsEditing(false);
       setStatus('done');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.');
@@ -138,7 +152,16 @@ export default function AnalyzeScreen() {
   };
 
   const handleSave = async () => {
-    if (!result) return;
+    if (!draft) return;
+
+    const validationError = validateAnalysisDraft(draft);
+    if (validationError) {
+      setDraftError(validationError);
+      setIsEditing(true);
+      return;
+    }
+
+    const preparedDraft = prepareAnalysisForSave(draft);
 
     setIsSaving(true);
     try {
@@ -150,7 +173,7 @@ export default function AnalyzeScreen() {
       }
 
       const saved = await saveAnalyzedCapture({
-        result,
+        result: preparedDraft,
         imageUri,
         userId,
         localCaptureCount: captures.length,
@@ -177,13 +200,47 @@ export default function AnalyzeScreen() {
     }
   };
 
-  const isPlace = result?.category === 'place';
+  const finishEditing = () => {
+    if (!draft) return;
+    const validationError = validateAnalysisDraft(draft);
+    setDraftError(validationError);
+    if (!validationError) setIsEditing(false);
+  };
+
+  const cancelEditing = () => {
+    if (!result || !draft) return;
+    const reset = () => {
+      setDraft(result);
+      setDraftError(null);
+      setIsEditing(false);
+    };
+
+    if (JSON.stringify(result) === JSON.stringify(draft)) {
+      reset();
+      return;
+    }
+
+    Alert.alert(
+      '수정한 내용을 버릴까요?',
+      'AI가 처음 읽은 내용으로 돌아갑니다.',
+      [
+        { text: '계속 수정', style: 'cancel' },
+        { text: '수정 내용 버리기', style: 'destructive', onPress: reset },
+      ]
+    );
+  };
+
+  const activeResult = draft ?? result;
+  const isPlace = activeResult?.category === 'place';
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
   const surfaceColor = isPlace ? colors.placeSurface : colors.textSurface;
   const borderColor = isPlace ? colors.placeBorder : colors.textBorder;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <StatusBar barStyle="light-content" />
 
       {/* Nav Bar */}
@@ -197,7 +254,11 @@ export default function AnalyzeScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Image Preview */}
         <View style={styles.imageContainer}>
           {imageUri ? (
@@ -253,8 +314,55 @@ export default function AnalyzeScreen() {
         )}
 
         {/* Result */}
-        {status === 'done' && result && (
+        {status === 'done' && result && activeResult && (
           <Animated.View style={[styles.resultSection, { opacity: fadeAnim }]}>
+            <View style={styles.reviewHeader}>
+              <View style={styles.reviewCopy}>
+                <Text style={[styles.reviewTitle, { color: colors.text }]}>분석 내용을 확인해 주세요</Text>
+                <Text style={[styles.reviewDescription, { color: colors.textSecondary }]}>
+                  AI가 읽은 내용입니다. 원본과 다른 부분은 저장 전에 고쳐 주세요.
+                </Text>
+              </View>
+              {!isEditing ? (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="결과 수정"
+                  onPress={() => {
+                    setDraftError(null);
+                    setIsEditing(true);
+                  }}
+                  style={[styles.editButton, { borderColor: colors.border }]}
+                >
+                  <Ionicons name="create-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.editButtonText, { color: colors.primary }]}>결과 수정</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {isEditing ? (
+              <>
+                <AnalysisResultEditor value={activeResult} onChange={setDraft} error={draftError} />
+                <View style={styles.editActions}>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="수정 취소"
+                    onPress={cancelEditing}
+                    style={[styles.secondaryButton, { borderColor: colors.border }]}
+                  >
+                    <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>수정 취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="수정 완료"
+                    onPress={finishEditing}
+                    style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                  >
+                    <Text style={styles.primaryButtonText}>수정 완료</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
             {/* Category Badge */}
             <View style={[styles.categoryRow, { backgroundColor: surfaceColor, borderColor }]}>
               <Ionicons
@@ -264,26 +372,26 @@ export default function AnalyzeScreen() {
               />
               <View style={styles.categoryInfo}>
                 <Text style={[styles.categoryLabel, { color: accentColor }]}>
-                  {isPlace ? `장소 ${result.places.length}개` : '텍스트 정보'}
+                  {isPlace ? `장소 ${activeResult.places.length}개` : '텍스트 정보'}
                 </Text>
-                {result.source !== 'other' && (
+                {activeResult.source !== 'other' && (
                   <Text style={[styles.sourceLabel, { color: colors.textTertiary }]}>
-                    출처: {result.source}
+                    출처: {activeResult.source}
                   </Text>
                 )}
               </View>
             </View>
 
             {/* Title & Summary */}
-            <Text style={[styles.resultTitle, { color: colors.text }]}>{result.title}</Text>
-            {result.summary && (
+            <Text style={[styles.resultTitle, { color: colors.text }]}>{activeResult.title}</Text>
+            {activeResult.summary && (
               <Text style={[styles.resultSummary, { color: colors.textSecondary }]}>
-                {result.summary}
+                {activeResult.summary}
               </Text>
             )}
 
             {/* Places */}
-            {isPlace && result.places.length > 0 && result.places.map((place: PlaceInfo, idx: number) => (
+            {isPlace && activeResult.places.length > 0 && activeResult.places.map((place: PlaceInfo, idx: number) => (
               <View key={idx} style={[styles.placeCard, { backgroundColor: surfaceColor, borderColor }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <View style={[styles.placeIndex, { backgroundColor: accentColor }]}>
@@ -323,24 +431,24 @@ export default function AnalyzeScreen() {
             ))}
 
             {/* Extracted Text */}
-            {result.extractedText && (
+            {activeResult.extractedText && (
               <View style={[styles.textCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
                   추출된 텍스트
                 </Text>
                 <Text style={[styles.extractedText, { color: colors.text }]}>
-                  {result.extractedText}
+                  {activeResult.extractedText}
                 </Text>
               </View>
             )}
 
             {/* Links */}
-            {result.links.length > 0 && (
+            {activeResult.links.length > 0 && (
               <View style={styles.linksSection}>
                 <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
                   관련 링크
                 </Text>
-                {result.links.map((link, index) => (
+                {activeResult.links.map((link, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[styles.linkBtn, { backgroundColor: surfaceColor, borderColor }]}
@@ -357,11 +465,11 @@ export default function AnalyzeScreen() {
             )}
 
             {/* Tags */}
-            {result.tags.length > 0 && (
+            {activeResult.tags.length > 0 && (
               <View style={styles.tagsSection}>
                 <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>태그</Text>
                 <View style={styles.tagsRow}>
-                  {result.tags.map((tag, index) => (
+                  {activeResult.tags.map((tag, index) => (
                     <View key={index} style={[styles.tag, { backgroundColor: colors.surfaceElevated }]}>
                       <Text style={[styles.tagText, { color: colors.textSecondary }]}>#{tag}</Text>
                     </View>
@@ -399,17 +507,19 @@ export default function AnalyzeScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={22} color="#FFF" />
-                    <Text style={styles.saveText}>저장하기</Text>
+                    <Text style={styles.saveText}>확인하고 저장</Text>
                   </>
                 )}
               </TouchableOpacity>
+            )}
+              </>
             )}
           </Animated.View>
         )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -520,6 +630,71 @@ const styles = StyleSheet.create({
   resultSection: {
     paddingHorizontal: 16,
     paddingTop: 20,
+  },
+  reviewHeader: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  reviewCopy: {
+    gap: 6,
+  },
+  reviewTitle: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontFamily: 'SUIT-SemiBold',
+  },
+  reviewDescription: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  editButton: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+  },
+  editButtonText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: 'SUIT-SemiBold',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+  secondaryButton: {
+    minHeight: 48,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: 'SUIT-SemiBold',
+  },
+  primaryButton: {
+    minHeight: 48,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: 'SUIT-SemiBold',
   },
   categoryRow: {
     flexDirection: 'row',

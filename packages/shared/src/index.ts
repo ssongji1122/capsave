@@ -41,6 +41,18 @@ export type { ColorScheme, ThemeColors } from './tokens/colors';
 // Utilities
 export { isUrlSafe, sanitizeUrl, MOBILE_DEEP_LINK_SCHEMES } from './utils/url-validator';
 export { getMapLinks, getReviewLinks, getMobileMapLinks, isMapProvider } from './utils/map-linker';
+export {
+  addAnalysisPlace,
+  prepareAnalysisForSave,
+  removeAnalysisPlace,
+  updateAnalysisCategory,
+  updateAnalysisPlace,
+  validateAnalysisDraft,
+} from './utils/analysis-editor';
+export type {
+  AnalysisDraftError,
+  EditablePlaceField,
+} from './utils/analysis-editor';
 export type {
   MapProvider,
   MapLink,

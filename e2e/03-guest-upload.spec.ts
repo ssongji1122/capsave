@@ -86,9 +86,9 @@ async function uploadTinyPngAndSave(page: Page, fileName: string) {
     page.getByRole('button', { name: '스크린샷 업로드' }).click(),
   ]);
   await fileChooser.setFiles(imgPath);
-  const dialog = page.getByRole('dialog', { name: 'AI 분석 결과' });
+  const dialog = page.getByRole('dialog', { name: '분석 내용을 확인해 주세요' });
   await expect(dialog).toBeVisible({ timeout: 20000 });
-  const saveBtn = dialog.getByRole('button', { name: /^저장/ });
+  const saveBtn = dialog.getByRole('button', { name: '확인하고 저장' });
   await expect(saveBtn).toBeVisible({ timeout: 20000 });
   await saveBtn.click();
   await expect(dialog).toHaveCount(0);
@@ -131,7 +131,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
 
     // 모달 등장 확인 (AI 분석 중 or 완료 or 에러)
     await expect(
-      page.getByRole('dialog', { name: 'AI 분석 결과' })
+      page.getByRole('dialog', { name: '분석 내용을 확인해 주세요' })
     ).toBeVisible({ timeout: 15000 });
   });
 
@@ -146,7 +146,7 @@ test.describe('게스트 업로드 & AI 분석', () => {
     await fileChooser.setFiles(textPath);
 
     await expect(page.getByText('지원하지 않는 파일 형식입니다. jpeg, png, webp만 가능합니다.')).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'AI 분석 결과' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: '분석 내용을 확인해 주세요' })).toHaveCount(0);
   });
 
   test('게스트 업로드 후 캡처 수 증가', async ({ page }) => {
@@ -210,8 +210,8 @@ test.describe('게스트 업로드 & AI 분석', () => {
     ]);
     await fileChooser.setFiles([firstPath, secondPath]);
 
-    await expect(page.getByRole('dialog', { name: '통합 분석 결과' })).toBeVisible({ timeout: 15000 });
-    const saveAllButton = page.getByRole('button', { name: '2개 모두 저장' });
+    await expect(page.getByRole('dialog', { name: 'AI가 나눈 결과를 확인해 주세요' })).toBeVisible({ timeout: 15000 });
+    const saveAllButton = page.getByRole('button', { name: '2개 확인하고 저장' });
     await expect(saveAllButton).toBeVisible({ timeout: 20000 });
     await saveAllButton.click();
 
@@ -238,8 +238,8 @@ test.describe('게스트 업로드 & AI 분석', () => {
     ]);
     await fileChooser.setFiles([firstPath, secondPath]);
 
-    await expect(page.getByRole('dialog', { name: '통합 분석 결과' })).toBeVisible({ timeout: 15000 });
-    await page.getByRole('button', { name: '2개 모두 저장' }).click();
+    await expect(page.getByRole('dialog', { name: 'AI가 나눈 결과를 확인해 주세요' })).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: '2개 확인하고 저장' }).click();
 
     await expect(page.getByRole('heading', { name: '캡처 3개를 분석했어요!' })).toBeVisible();
     await expect(page.getByText('첫 번째 장소')).toHaveCount(0);
