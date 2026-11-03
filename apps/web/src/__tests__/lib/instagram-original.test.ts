@@ -4,8 +4,8 @@ import { parseInstagramOriginal, originalMatchesCapture, findInstagramOriginal, 
 const capture={sourceAccountId:'seoulpick._',title:'낙산공원 가을 명소',extractedText:'서울 무료 명소 낙산공원 가을',summary:'서울 무료 명소',links:[],places:[{name:'낙산공원'}]};
 const html='<a data-log-event="captionProfileClick">seoulpick._</a><div class="Caption">서울 무료 명소 낙산공원 가을<div class="CaptionComments">'+JSON.stringify({is_video:false,display_url:'https://scontent.cdninstagram.com/one.jpg'})+JSON.stringify({is_video:false,display_url:'https://scontent.cdninstagram.com/two.jpg'});
 it('extracts ordered image previews only from trusted Instagram CDN hosts',()=>{
- const post=parseInstagramOriginal('https://instagram.com/p/Abcd/',html+JSON.stringify({is_video:false,display_url:'http://127.0.0.1/private.jpg'}));
- expect(post.images).toHaveLength(2);expect(post.author).toBe('seoulpick._');expect(originalMatchesCapture(capture,post)).toBe(true);
+ const post=parseInstagramOriginal('https://instagram.com/p/Abcd/?img_index=2',html+JSON.stringify({is_video:false,display_url:'http://127.0.0.1/private.jpg'}));
+ expect(post.images).toHaveLength(2);expect(post.author).toBe('seoulpick._');expect(post.selectedIndex).toBe(2);expect(originalMatchesCapture(capture,post)).toBe(true);
 });
 it('does not confirm account alone or generic café words, and rejects unrelated caption',()=>{
  const post=parseInstagramOriginal('https://instagram.com/p/Abcd/',html);

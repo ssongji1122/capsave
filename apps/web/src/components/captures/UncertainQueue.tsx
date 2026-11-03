@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { AlertTriangle, ChevronDown } from 'lucide-react';
-import { CaptureItem, CaptureCategory, PlaceInfo } from '@scrave/shared';
+import { CaptureItem, CaptureCategory, PlaceInfo, groupCapturePosts } from '@scrave/shared';
 import { CaptureCard } from './CaptureCard';
 
 interface UncertainQueueProps {
@@ -18,12 +18,17 @@ interface UncertainQueueProps {
 export function UncertainQueue({ captures, onDelete, onReclassify }: UncertainQueueProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [reclassifying, setReclassifying] = useState<number | null>(null);
+  const groupedCaptures = groupCapturePosts(captures);
 
-  const handleReclassify = async (id: number, category: CaptureCategory) => {
-    setReclassifying(id);
+  const handleReclassify = async (item: CaptureItem, category: CaptureCategory) => {
+    setReclassifying(item.id);
     try {
-      const capture = captures.find((c) => c.id === id);
-      await onReclassify(id, category, capture?.places ?? null);
+      const gallery = item.gallery?.length ? item.gallery : [{ captureId: item.id }];
+      const memberIds = [...new Set(gallery.map((image) => image.captureId))];
+      for (const id of memberIds) {
+        const capture = captures.find((candidate) => candidate.id === id);
+        await onReclassify(id, category, capture?.places ?? item.places ?? null);
+      }
     } catch {
       // The state owner handles user-facing error feedback.
     } finally {
@@ -53,21 +58,21 @@ export function UncertainQueue({ captures, onDelete, onReclassify }: UncertainQu
 
       {isOpen && (
         <div className="mt-3 space-y-3">
-          {captures.map((item) => (
+          {groupedCaptures.map((item) => (
             <div key={item.id} className="relative">
               <CaptureCard item={item} onDelete={onDelete} />
               {/* Reclassify actions */}
               <div className="flex gap-2 px-4 pb-4 -mt-1">
                 <span className="text-xs text-text-tertiary self-center mr-1">분류 변경:</span>
                 <button
-                  onClick={() => handleReclassify(item.id, 'place')}
+                  onClick={() => handleReclassify(item, 'place')}
                   disabled={reclassifying === item.id}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium border border-place-border text-place-accent hover:bg-place-surface transition-colors disabled:opacity-50"
                 >
                   장소
                 </button>
                 <button
-                  onClick={() => handleReclassify(item.id, 'text')}
+                  onClick={() => handleReclassify(item, 'text')}
                   disabled={reclassifying === item.id}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium border border-text-border text-text-accent hover:bg-text-surface transition-colors disabled:opacity-50"
                 >

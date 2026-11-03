@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import path from 'path';
 import {
   createCaptureRows,
   createTinyPng,
@@ -16,6 +17,94 @@ test.use({
 const ANALYZE_DELAY_MS = 800;
 
 test.describe('인증 사용자 핵심 플로우', () => {
+  test('Instagram 링크의 원문과 전체 미디어를 순서대로 검사하고 저장한다', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 812 });
+    await mockAuthenticatedBackend(page, createCaptureRows());
+    const downloaded: string[] = [];
+    let uploadCount = 0;
+
+    await page.route('https://scontent.cdninstagram.com/**', async (route) => {
+      const fixture = route.request().url().includes('two.jpg') ? '11-live-place-filter.jpg' : '15-live-map.jpg';
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/jpeg',
+        path: path.join(process.cwd(), 'apps/web/public/reports/sticker-check-assets', fixture),
+      });
+    });
+    await page.route('**/api/social-link?src=**', async (route) => {
+      const sourceUrl = new URL(route.request().url()).searchParams.get('src') ?? '';
+      downloaded.push(sourceUrl);
+      const fixture = sourceUrl.includes('two.jpg') ? '11-live-place-filter.jpg' : '15-live-map.jpg';
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/jpeg',
+        path: path.join(process.cwd(), 'apps/web/public/reports/sticker-check-assets', fixture),
+      });
+    });
+    await page.route('**/api/social-link', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          post: {
+            url: 'https://www.instagram.com/p/Abcd/',
+            author: 'seoulpick',
+            caption: '서울 카페 여행 기록',
+            selectedIndex: 2,
+            images: [
+              { url: 'https://scontent.cdninstagram.com/one.jpg', kind: 'image' },
+              { url: 'https://scontent.cdninstagram.com/two.jpg', kind: 'video-preview' },
+            ],
+          },
+          captures: [0, 1].map((index) => ({
+            imageUrl: `https://scontent.cdninstagram.com/${index === 0 ? 'one' : 'two'}.jpg`,
+            imageKind: index === 0 ? 'image' : 'video-preview',
+            selected: index === 1,
+            analysis: {
+              category: 'place', title: '서울 카페 여행 기록', summary: '서울 카페 여행 기록',
+              extractedText: '서울 카페 여행 기록', tags: ['수집됨', '검증 전', '여행·장소'],
+              links: ['https://www.instagram.com/p/Abcd/'], places: [], source: 'instagram',
+              confidence: 0, sourceAccountId: 'seoulpick', sourceIndices: [index],
+            },
+          })),
+        }),
+      });
+    });
+    await page.route('**/api/upload', async (route) => {
+      if (route.request().method() === 'POST') uploadCount += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ path: `e2e-user-1/link-${uploadCount}.png` }),
+      });
+    });
+
+    await page.goto('/import');
+    await page.getByLabel('Instagram 게시물 링크').fill('https://instagram.com/p/Abcd/?img_index=2');
+    await page.getByRole('button', { name: '링크 확인' }).click();
+
+    await expect(page.getByText('@seoulpick')).toBeVisible();
+    await expect(page.getByText('2 / 2 · 선택한 이미지')).toBeVisible();
+    await expect(page.getByText('수집됨 · 확인 전')).toBeVisible();
+    expect(await page.evaluate(() => document.body.scrollWidth > document.body.clientWidth)).toBe(false);
+    if (process.env.SCRAVE_CAPTURE_STATUS_SCREENSHOT === '1') {
+      await page.screenshot({
+        path: '_dogfood/assets/2026-11-04_scrave-product-status/link-import-mobile.png',
+        fullPage: true,
+      });
+    }
+
+    await page.getByRole('button', { name: '원본 2장 계정에 저장' }).click();
+    await expect(page.getByText('원본 2장과 본문·작성자·출처 링크를 보관함에 저장했습니다. 아직 확인 전 자료입니다.')).toBeVisible();
+    expect(downloaded).toEqual([
+      'https://scontent.cdninstagram.com/two.jpg',
+      'https://scontent.cdninstagram.com/one.jpg',
+    ]);
+    await page.getByRole('link', { name: '보관함에서 보기' }).click();
+    await expect(page.getByText('서울 카페 여행 기록').first()).toBeVisible();
+    await expect(page.getByAltText('서울 카페 여행 기록 · 올린 캡처 1/2')).toBeVisible();
+  });
+
   test('대시보드에서 AI 분석 결과를 저장하고 목록에 반영한다', async ({ page }) => {
     await mockAuthenticatedBackend(page, createCaptureRows());
     // 분석 중 모달을 관찰할 수 있도록 분석 응답을 잠시 늦춥니다(응답 본문은 헬퍼의 모킹을 그대로 사용).

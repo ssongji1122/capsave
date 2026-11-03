@@ -274,7 +274,7 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="px-4 mb-4"><a href="/import" className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4">정리한 캡처 가져오기</a></div>
+      <div className="px-4 mb-4"><a href="/import" className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4">링크와 정리 파일 가져오기</a></div>
 
       {/* Search */}
       <SearchBar onSearch={handleSearch} />

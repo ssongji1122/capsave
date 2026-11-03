@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UncertainQueue } from '@/components/captures/UncertainQueue';
 import type { CaptureItem } from '@scrave/shared';
 
@@ -26,9 +26,9 @@ vi.mock('@scrave/shared', async () => {
   };
 });
 
-function capture(): CaptureItem {
+function capture(id = 10): CaptureItem {
   return {
-    id: 10,
+    id,
     title: '낮은 신뢰도 캡처',
     category: 'text',
     summary: '분류 확인이 필요한 캡처',
@@ -46,6 +46,8 @@ function capture(): CaptureItem {
     sourceAccountId: null,
   };
 }
+
+afterEach(() => cleanup());
 
 describe('UncertainQueue', () => {
   it('delegates reclassification to the parent state owner', async () => {
@@ -65,5 +67,37 @@ describe('UncertainQueue', () => {
       ]);
     });
     expect(mocks.reclassifyCapture).not.toHaveBeenCalled();
+  });
+
+  it('groups one Instagram post and reclassifies every preserved media row', async () => {
+    const onReclassify = vi.fn().mockResolvedValue(undefined);
+    const first = {
+      ...capture(11),
+      title: '서울 카페 여행 기록',
+      imageUrl: 'owner/one.jpg',
+      links: ['https://www.instagram.com/p/Abcd/'],
+      places: [],
+    };
+    const second = {
+      ...capture(12),
+      title: '서울 카페 여행 기록',
+      imageUrl: 'owner/two.jpg',
+      links: ['https://www.instagram.com/p/Abcd/'],
+      places: [],
+    };
+
+    render(React.createElement(UncertainQueue, {
+      captures: [first, second],
+      onDelete: vi.fn(),
+      onReclassify,
+    }));
+
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByAltText('서울 카페 여행 기록 · 올린 캡처 1/2')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '장소' }));
+
+    await waitFor(() => expect(onReclassify).toHaveBeenCalledTimes(2));
+    expect(onReclassify).toHaveBeenNthCalledWith(1, 11, 'place', []);
+    expect(onReclassify).toHaveBeenNthCalledWith(2, 12, 'place', []);
   });
 });

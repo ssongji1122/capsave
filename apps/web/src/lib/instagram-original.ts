@@ -5,7 +5,7 @@ const MAX_HTML_BYTES = 4 * 1024 * 1024;
 const MAX_POST_INSPECTIONS = 3;
 const IG_TIMEOUT_MS = 10_000;
 interface SourceCapture { sourceAccountId?: string | null; title: string; summary: string; extractedText: string; links: string[]; places: { name: string }[] }
-export interface InstagramOriginal { url: string; author: string; caption: string; images: { url: string; kind: 'image' | 'video-preview' }[] }
+export interface InstagramOriginal { url: string; author: string; caption: string; selectedIndex: number; images: { url: string; kind: 'image' | 'video-preview' }[] }
 const generic = new Set(['카페','여행','서울','명소','무료','사진','정보','추천','저장','장소','인스타그램','instagram','reel','카드','콘텐츠']);
 const words = (text: string) => [...new Set(text.toLowerCase().match(/[가-힣a-z0-9]{2,}/g) ?? [])].filter(word => !generic.has(word));
 const plain = (html: string) => html.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g,' ').trim();
@@ -22,6 +22,8 @@ export async function readBoundedResponse(response: Response, maxBytes: number):
 }
 export function parseInstagramOriginal(value: string, html: string): InstagramOriginal {
   const url = canonicalInstagramPost(value); if (!url) throw new Error('인스타그램 게시물 주소가 아닙니다.');
+  const requestedIndex = Number.parseInt(new URL(value).searchParams.get('img_index') ?? '', 10);
+  const selectedIndex = Number.isSafeInteger(requestedIndex) && requestedIndex > 0 ? requestedIndex : 1;
   const author = plain(html.match(/data-log-event="captionProfileClick"[^>]*>([^<]+)<\/a>/i)?.[1] ?? '');
   const caption = plain(html.match(/<div class="Caption">([\s\S]*?)<div class="CaptionComments">/i)?.[1] ?? '');
   const images: InstagramOriginal['images'] = []; const seen = new Set<string>();
@@ -36,7 +38,7 @@ export function parseInstagramOriginal(value: string, html: string): InstagramOr
     seen.add(key); images.push({url:imageUrl,kind:match[1] === 'true' ? 'video-preview' : 'image'});
     if (images.length === MAX_POST_IMAGES) break;
   }
-  return { url, author, caption, images };
+  return { url, author, caption, selectedIndex, images };
 }
 export function originalMatchesCapture(capture: SourceCapture, post: InstagramOriginal): boolean {
   const account = capture.sourceAccountId?.replace(/^@/,'').toLowerCase();
