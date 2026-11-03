@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Scrave 제품 완성 현황 · 2026-11-04</title>
+  <style>
+    @font-face {
+      font-family: "SUIT";
+      src: url("../apps/web/public/fonts/SUIT-Regular.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "SUIT";
+      src: url("../apps/web/public/fonts/SUIT-SemiBold.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+    }
+    :root {
+      --c-bg: #ffffff;
+      --c-paper: #faf9f6;
+      --c-ink: #11110f;
+      --c-ink-2: #474640;
+      --c-ink-3: #55534e;
+      --c-line: #eceae5;
+      --c-accent: #475b4f;
+      --c-success: #5c7a3e;
+      --c-warn: #b8862b;
+      --c-error: #a8412c;
+      --c-info: #3e6b64;
+      --f-display: Georgia, "Nanum Myeongjo", serif;
+      --f-body: "SUIT", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --f-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      --fs-2xs: 0.6875rem;
+      --fs-xs: 0.8125rem;
+      --fs-sm: 0.875rem;
+      --fs-base: clamp(0.9375rem, 0.4vw + 0.875rem, 1rem);
+      --fs-md: clamp(1rem, 0.5vw + 0.9375rem, 1.125rem);
+      --fs-lg: clamp(1.125rem, 0.6vw + 1rem, 1.3125rem);
+      --fs-xl: clamp(1.25rem, 0.8vw + 1.125rem, 1.5rem);
+      --fs-2xl: clamp(1.5rem, 1vw + 1.25rem, 1.875rem);
+      --fs-3xl: clamp(1.875rem, 2.3vw + 1.25rem, 3rem);
+      --fs-display: clamp(2.5rem, 7vw, 6.5rem);
+      --lh-tight: 1.14;
+      --lh-normal: 1.72;
+      --s-1: 0.25rem;
+      --s-2: 0.5rem;
+      --s-3: 1rem;
+      --s-4: 1.5rem;
+      --s-5: 2rem;
+      --s-6: 3rem;
+      --s-7: 4rem;
+      --s-8: 6rem;
+      --r-sm: 0.125rem;
+      --r-md: 0.25rem;
+      --r-lg: 0.625rem;
+      --page: 84rem;
+      --read: 46rem;
+      --border: 0.0625rem solid var(--c-line);
+      --focus: 0 0 0 0.1875rem rgba(71, 91, 79, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--c-bg);
+      color: var(--c-ink);
+      font-family: var(--f-body);
+      font-size: var(--fs-base);
+      line-height: var(--lh-normal);
+      letter-spacing: -0.01em;
+      word-break: keep-all;
+    }
+    button, a { font: inherit; }
+    button:focus-visible, a:focus-visible, summary:focus-visible { outline: none; box-shadow: var(--focus); }
+    a { color: var(--c-accent); text-underline-offset: 0.2em; }
+    img { display: block; max-width: 100%; }
+    .page { width: min(100% - var(--s-5), var(--page)); margin-inline: auto; }
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s-5);
+      align-items: flex-start;
+      padding-block: var(--s-5);
+      border-bottom: var(--border);
+    }
+    .brand { font-family: var(--f-mono); font-size: var(--fs-sm); letter-spacing: 0.06em; }
+    .stamp { color: var(--c-ink-3); font-size: var(--fs-xs); text-align: right; }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+      gap: var(--s-7);
+      padding-block: var(--s-8);
+      border-bottom: var(--border);
+    }
+    .hero h1 {
+      max-width: 12ch;
+      margin: 0;
+      font-family: var(--f-display);
+      font-size: var(--fs-display);
+      font-weight: 400;
+      line-height: 0.94;
+      letter-spacing: -0.045em;
+    }
+    .hero-lede { max-width: 42rem; margin: var(--s-5) 0 0; color: var(--c-ink-2); font-size: var(--fs-lg); }
+    .verdict {
+      align-self: end;
+      padding: var(--s-5) 0 var(--s-3) var(--s-5);
+      border-left: 0.1875rem solid var(--c-warn);
+    }
+    .verdict strong { display: block; margin-bottom: var(--s-2); font-size: var(--fs-2xl); line-height: var(--lh-tight); }
+    .verdict p { margin: 0; color: var(--c-ink-2); }
+    .signal { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--c-warn); font-size: var(--fs-sm); font-weight: 600; }
+    .signal::before { content: ""; width: 0.65em; height: 0.65em; border-radius: 50%; background: currentColor; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-bottom: var(--border);
+    }
+    .metric { min-height: 11rem; padding: var(--s-5); border-right: var(--border); }
+    .metric:last-child { border-right: 0; }
+    .metric b { display: block; font-family: var(--f-display); font-size: var(--fs-3xl); font-weight: 400; line-height: 1; }
+    .metric span { display: block; margin-top: var(--s-3); color: var(--c-ink-2); }
+    .section { padding-block: var(--s-8); border-bottom: var(--border); }
+    .section-head { display: grid; grid-template-columns: minmax(12rem, 0.35fr) minmax(0, 1fr); gap: var(--s-6); margin-bottom: var(--s-6); }
+    .section h2 { margin: 0; font-family: var(--f-display); font-size: var(--fs-3xl); font-weight: 400; line-height: var(--lh-tight); }
+    .section-intro { max-width: var(--read); margin: 0; color: var(--c-ink-2); font-size: var(--fs-md); }
+    .filters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-5); }
+    .filter {
+      min-height: 2.75rem;
+      padding: var(--s-2) var(--s-3);
+      border: var(--border);
+      border-radius: var(--r-md);
+      background: var(--c-bg);
+      color: var(--c-ink-2);
+      cursor: pointer;
+    }
+    .filter[aria-pressed="true"] { background: var(--c-accent); color: white; border-color: var(--c-accent); }
+    .matrix { border-top: var(--border); }
+    .item {
+      display: grid;
+      grid-template-columns: 8rem minmax(12rem, 0.75fr) minmax(0, 1.25fr);
+      gap: var(--s-5);
+      padding: var(--s-5) 0;
+      border-bottom: var(--border);
+    }
+    .item[hidden] { display: none; }
+    .status { align-self: start; width: fit-content; padding: var(--s-1) var(--s-2); border: 0.0625rem solid currentColor; border-radius: var(--r-sm); font-size: var(--fs-xs); font-weight: 600; }
+    .status.done { color: var(--c-success); }
+    .status.partial { color: var(--c-warn); }
+    .status.blocked { color: var(--c-error); }
+    .item h3 { margin: 0; font-size: var(--fs-lg); line-height: 1.4; }
+    .item p { margin: 0; color: var(--c-ink-2); }
+    .evidence { margin-top: var(--s-2); color: var(--c-ink-3); font-family: var(--f-mono); font-size: var(--fs-xs); letter-spacing: 0; }
+    .journey { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: var(--border); border-left: var(--border); }
+    .journey-step { min-height: 12rem; padding: var(--s-4); border-right: var(--border); border-bottom: var(--border); }
+    .journey-step b { display: block; margin-bottom: var(--s-3); font-size: var(--fs-md); }
+    .journey-step p { margin: 0; color: var(--c-ink-2); font-size: var(--fs-sm); }
+    .journey-step small { display: block; margin-top: var(--s-4); color: var(--c-success); font-weight: 600; }
+    .screens { display: grid; grid-template-columns: 1.4fr 0.6fr; gap: var(--s-4); align-items: start; }
+    figure { margin: 0; }
+    figure img { width: 100%; border: var(--border); background: var(--c-paper); }
+    figcaption { margin-top: var(--s-2); color: var(--c-ink-3); font-size: var(--fs-sm); }
+    .phone img { max-height: 45rem; object-fit: contain; object-position: top; }
+    .brief {
+      position: relative;
+      max-width: 64rem;
+      padding: var(--s-6);
+      background: var(--c-paper);
+      border: var(--border);
+    }
+    .brief h3 { margin: 0 4rem var(--s-4) 0; font-size: var(--fs-xl); }
+    .brief blockquote { margin: 0; color: var(--c-ink-2); }
+    .copy {
+      position: absolute;
+      top: var(--s-3);
+      right: var(--s-3);
+      width: 2.75rem;
+      height: 2.75rem;
+      display: grid;
+      place-items: center;
+      border: var(--border);
+      border-radius: var(--r-md);
+      background: var(--c-bg);
+      color: var(--c-accent);
+      cursor: pointer;
+    }
+    .copy svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.7; }
+    .copy-state { min-height: 1.5rem; margin-top: var(--s-3); color: var(--c-info); font-size: var(--fs-sm); }
+    .next { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: var(--border); border-left: var(--border); }
+    .next article { min-height: 15rem; padding: var(--s-5); border-right: var(--border); border-bottom: var(--border); }
+    .next span { font-family: var(--f-display); font-size: var(--fs-2xl); color: var(--c-ink-3); }
+    .next h3 { margin: var(--s-5) 0 var(--s-3); font-size: var(--fs-lg); }
+    .next p { margin: 0; color: var(--c-ink-2); }
+    footer { display: flex; justify-content: space-between; gap: var(--s-5); padding-block: var(--s-5); color: var(--c-ink-3); font-size: var(--fs-sm); }
+    .sr-only { position: absolute; width: 0.0625rem; height: 0.0625rem; padding: 0; margin: -0.0625rem; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 64rem) {
+      .hero { grid-template-columns: 1fr; }
+      .verdict { max-width: var(--read); }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n+2) { border-bottom: var(--border); }
+      .section-head { grid-template-columns: 1fr; gap: var(--s-4); }
+      .journey { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .next { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 44rem) {
+      .page { width: min(100% - var(--s-4), var(--page)); }
+      .hero, .section { padding-block: var(--s-7); }
+      .masthead { align-items: flex-end; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { min-height: auto; border-right: 0; border-bottom: var(--border); }
+      .metric:last-child { border-bottom: 0; }
+      .item { grid-template-columns: 1fr; gap: var(--s-3); }
+      .journey { grid-template-columns: 1fr; }
+      .journey-step { min-height: auto; }
+      .screens { grid-template-columns: 1fr; }
+      .phone img { max-height: none; }
+      .brief { padding: var(--s-5) var(--s-4); }
+      .next { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page masthead">
+    <div class="brand">SCRAVE · PRODUCT FINISH BOARD</div>
+    <div class="stamp">감사 기준 2026-11-04<br>origin/main 000e7a0</div>
+  </header>
+
+  <main>
+    <section class="page hero" aria-labelledby="title">
+      <div>
+        <h1 id="title">앱은 이미 있다. 이제 완성 조건을 닫는다.</h1>
+        <p class="hero-lede">Scrave는 웹·모바일·설치형 웹앱·앱인토스 시제품까지 구현돼 있습니다. 지금 필요한 일은 새 껍데기를 만드는 것이 아니라, 실제 계정·실기기·오프라인·출시 조건의 빈틈을 증거로 닫는 일입니다.</p>
+      </div>
+      <aside class="verdict" aria-label="현재 판정">
+        <span class="signal">부분 완료</span>
+        <strong>핵심 기능은 동작합니다.</strong>
+        <p>자동 테스트와 브라우저 여정은 통과했습니다. 네이티브 출시 신원, 실기기 인증·권한·오프라인, 일부 기기 간 동기화는 아직 완료로 셀 수 없습니다.</p>
+      </aside>
+    </section>
+
+    <section class="page metrics" aria-label="검증 수치">
+      <div class="metric"><b>880</b><span>공통·웹·모바일 자동 테스트 통과</span></div>
+      <div class="metric"><b>51</b><span>Chromium 핵심 사용자 여정 통과</span></div>
+      <div class="metric"><b>3/3</b><span>작업공간 타입 검사 통과</span></div>
+      <div class="metric"><b>37</b><span>웹 프로덕션 경로 빌드 완료</span></div>
+    </section>
+
+    <section class="page section" aria-labelledby="journey-title">
+      <div class="section-head">
+        <h2 id="journey-title">핵심 사용자 여정</h2>
+        <p class="section-intro">게스트와 로그인 사용자 모두에서 저장부터 재발견까지 브라우저 자동 여정이 이어집니다. 각 단계는 단위 테스트만이 아니라 실제 화면 조작으로 다시 확인했습니다.</p>
+      </div>
+      <div class="journey">
+        <div class="journey-step"><b>1. 가져오기</b><p>이미지 한 장·여러 장, 붙여넣기, 비지원 파일 차단</p><small>브라우저 통과</small></div>
+        <div class="journey-step"><b>2. 분석</b><p>장소·텍스트 분류, 결과 확인, 자동 저장과 실패 처리</p><small>모킹 여정 통과</small></div>
+        <div class="journey-step"><b>3. 보관</b><p>원본 유지, 계정 저장, 기기 보관함, 삭제와 한도</p><small>코드·여정 통과</small></div>
+        <div class="journey-step"><b>4. 다시 찾기</b><p>검색·카테고리·시간·연관성·같은 분류 넘기기</p><small>자동 테스트 통과</small></div>
+        <div class="journey-step"><b>5. 활용</b><p>지도·후기·출처·행동·가이드·공개 공유</p><small>브라우저 통과</small></div>
+        <div class="journey-step"><b>6. 꾸미기</b><p>100종 스티커, 이동·크기·회전·저장·취소</p><small>로컬 저장 통과</small></div>
+      </div>
+    </section>
+
+    <section class="page section" aria-labelledby="matrix-title">
+      <div class="section-head">
+        <h2 id="matrix-title">완료와 보완을 분리한 판</h2>
+        <p class="section-intro">문서의 과거 완료 표시를 그대로 믿지 않고 최신 코드, 테스트, 빌드, 화면을 대조했습니다. 필터를 누르면 해당 판정만 볼 수 있습니다.</p>
+      </div>
+      <div class="filters" role="group" aria-label="진행 상태 필터">
+        <button class="filter" type="button" data-filter="all" aria-pressed="true">전체 12</button>
+        <button class="filter" type="button" data-filter="done" aria-pressed="false">되어 있음 6</button>
+        <button class="filter" type="button" data-filter="partial" aria-pressed="false">보완 필요 4</button>
+        <button class="filter" type="button" data-filter="blocked" aria-pressed="false">외부 열쇠 2</button>
+      </div>
+      <div class="matrix" id="status-matrix">
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>웹 보관함과 설치형 웹앱</h3><div><p>게스트 체험, 로그인, 단일·배치 업로드, 분석, 저장, 삭제, 검색, 반응형 레이아웃이 연결돼 있습니다.</p><div class="evidence">Playwright 01–06 · manifest · dashboard</div></div></article>
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>Expo 모바일 앱과 네이티브 산출물</h3><div><p>사진 선택, 분석·저장, 보관함, 상세, 장소·텍스트, 지도, 가이드 화면과 서버 세션 연결 코드가 있습니다. Expo 번들과 iOS Simulator 앱도 실제로 빌드했습니다.</p><div class="evidence">Jest 91 · Expo export · Xcode BUILD SUCCEEDED</div></div></article>
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>분류·검색·재발견</h3><div><p>물건·갈 곳·궁금한 정보·여행 분류, 최근·일정·연관 정렬, 연관 근거, 같은 분류 카드 넘기기를 공통 코드로 사용합니다.</p><div class="evidence">@scrave/shared · Vitest 263 passed</div></div></article>
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>원본·출처·지도·후기</h3><div><p>원본 확대, 출처 후보 상태, 좌표 캐시, 지도 인증 실패의 정적 지도 전환, 후기·영상 후보가 구현돼 있습니다.</p><div class="evidence">E2E map/authenticated flows</div></div></article>
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>가이드와 공유</h3><div><p>장소 선택, 초안, 저장·수정·삭제, 공개 가이드, 공유 미리보기와 모바일 넘침 검증이 있습니다.</p><div class="evidence">/guides · /g/[slug] · Playwright 08</div></div></article>
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>슬레이트 디자인과 꾸미기</h3><div><p>흰 바탕·슬레이트 블루·SUIT, 모바일 2열·웹 3~4열, 손그림과 100종 스티커 편집을 유지합니다.</p><div class="evidence">DESIGN.md · PR #36 · sticker tests</div></div></article>
+
+        <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>링크 인입을 앱 안에서 끝내기</h3><div><p>링크 인입 계약과 Instagram 검사 스크립트는 있지만, 링크 하나를 앱에서 붙여 넣고 원문·미디어 보존과 분류까지 끝내는 웹·네이티브 공통 여정은 완결되지 않았습니다.</p><div class="evidence">docs/link-intake-contract.md · scripts/inspect-social-link.mjs</div></div></article>
+        <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>웹·모바일 데이터 완전 동기화</h3><div><p>로그인 캡처는 서버로 연결되지만 스티커 배치와 일부 메모·행동 상태는 기기 로컬 범위입니다. 화면에 범위는 표시되지만 기기 간 동일 상태는 아닙니다.</p><div class="evidence">DECISIONS 2026-10-30 · local stores</div></div></article>
+        <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>실기기 오프라인과 권한 거부</h3><div><p>SQLite·로컬 저장·오류 단위 테스트는 있으나 네트워크 단절, 앱 종료·재실행, 사진 권한 거부 뒤 복구를 실제 iPhone에서 연속 통과한 증거가 없습니다.</p><div class="evidence">final-acceptance C14–C18 · native QA pending</div></div></article>
+        <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>의존성 보안과 반복 품질 게이트</h3><div><p><code>verify:core</code>와 <code>test:e2e</code>를 추가하고 웹의 치명적 경고를 제거했습니다. 남은 경고는 Expo SDK·React Native 큰 버전 이동이 필요해 별도 마이그레이션과 실기기 회귀 검증이 필요합니다.</p><div class="evidence">npm audit: 47→41 · critical 2→0 · scripts verified</div></div></article>
+
+        <article class="item" data-status="blocked"><span class="status blocked">외부 열쇠</span><h3>앱스토어 출시 신원</h3><div><p>iOS 번들 식별자가 <code>com.anonymous.scrave</code>라 출시용 신원이 아닙니다. Apple Developer에 실제 식별자를 등록한 뒤 네이티브 프로젝트와 OAuth 구성을 함께 바꿔야 합니다.</p><div class="evidence">apps/mobile/app.config.ts · Apple account action</div></div></article>
+        <article class="item" data-status="blocked"><span class="status blocked">외부 열쇠</span><h3>실제 유료 AI·네이티브 계정 검수</h3><div><p>테스트는 외부 비용이 없는 모킹으로 통과했습니다. 실제 Gemini 호출, 네이티브 Google 로그인, 앱인토스 콘솔 등록은 비용·본인 인증·계정 작업이라 별도 결재가 필요합니다.</p><div class="evidence">paid call 0 · native OAuth pending</div></div></article>
+      </div>
+    </section>
+
+    <section class="page section" aria-labelledby="screens-title">
+      <div class="section-head">
+        <h2 id="screens-title">현재 실제 화면</h2>
+        <p class="section-intro">최신 main을 로컬 프로덕션 빌드로 실행해 전체와 모바일 근접 화면을 다시 캡처했습니다. 빈 상태도 정상적인 제품 상태로 확인합니다.</p>
+      </div>
+      <div class="screens">
+        <figure>
+          <img src="assets/2026-11-04_scrave-product-status/dashboard-desktop.png" alt="Scrave 데스크톱 보관함 전체 화면. 왼쪽 내비게이션과 빈 보관함, 스크린샷 추가 영역이 보입니다.">
+          <figcaption>데스크톱 전체 · 1440×1000 · 보관함 빈 상태</figcaption>
+        </figure>
+        <figure class="phone">
+          <img src="assets/2026-11-04_scrave-product-status/dashboard-mobile.png" alt="Scrave 모바일 보관함 화면. 두 열 분류 탭, 스크린샷 추가, 하단 탭바가 보입니다.">
+          <figcaption>모바일 근접 · 390×844 viewport · 하단 탭과 빈 상태</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="page section" aria-labelledby="next-title">
+      <div class="section-head">
+        <h2 id="next-title">이번 라운드 결과와 다음 순서</h2>
+        <p class="section-intro">검증 자동화·모바일 빌드·웹 보안 패치는 완료했습니다. 이제 실제 기기와 계정이 필요한 단계부터 남습니다.</p>
+      </div>
+      <div class="next">
+        <article><span>✓</span><h3>검증 명령 고정</h3><p><code>verify:core</code>로 880개 테스트와 타입 검사, <code>test:e2e</code>로 51개 브라우저 여정을 재현합니다.</p></article>
+        <article><span>✓</span><h3>모바일 산출물 확인</h3><p>Expo iOS 내보내기와 Xcode arm64 시뮬레이터 앱 빌드가 모두 성공했습니다.</p></article>
+        <article><span>✓</span><h3>치명적 보안 경고 제거</h3><p>Next.js·sharp·PostCSS·shell-quote를 호환 수정판으로 올리고 전체 회귀 검증을 통과했습니다.</p></article>
+        <article><span>1</span><h3>실기기와 출시 신원</h3><p>Apple 번들 식별자를 등록한 뒤 실제 iPhone에서 로그인·사진 권한 거부·오프라인·재실행을 연속 검수합니다.</p></article>
+      </div>
+    </section>
+
+    <section class="page section" aria-labelledby="brief-title">
+      <div class="section-head">
+        <h2 id="brief-title">최종 목표 프롬프트</h2>
+        <p class="section-intro">이 문장을 같은 채팅이나 새 실행 세션에 붙이면 범위가 기능 하나로 축소되지 않고 완성 조건까지 이어집니다.</p>
+      </div>
+      <div class="brief">
+        <button class="copy" type="button" aria-label="Scrave 최종 목표 프롬프트 복사" title="프롬프트 복사">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="1"></rect><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path></svg>
+        </button>
+        <h3>Scrave 완성 목표</h3>
+        <blockquote id="goal-prompt">Scrave를 실제로 매일 사용할 수 있는 완성형 개인 아카이브 제품으로 만들어 줘. 먼저 현재 저장소·열린 PR·최근 main·결정 원장·통합 작업판·디자인 시스템을 감사해서, 이미 된 것·부분 완료·미구현·막힌 것을 근거와 함께 한 화면의 진행 사이트로 만들어. 그다음 그 판을 기준으로 웹과 모바일 앱을 TDD로 완성해. 핵심 흐름은 이미지·스크린샷·링크 저장, AI 분석 결과 확인·수정, 장소/텍스트/카테고리 분류, 검색·필터·재발견, 원본 보존, 웹·모바일 동기화야. 모호한 제품 방향·비용·보안·데이터 마이그레이션만 내 결재를 받고, 그 외 구현·테스트·리팩터링·커밋·PR·CI·기존 배포 경로·배포 후 확인은 자율 진행해. 가짜 데이터나 껍데기 화면, TODO, 부분 구현은 금지하고, 실제 데이터와 실패·빈 상태·오프라인·권한 거부·재시도까지 검증해. 각 단계마다 수락 기준과 실측 증거를 진행 사이트에 갱신하고, 부족한 부분을 계속 찾아 고쳐서 핵심 사용자 시나리오가 실제 기기 또는 동등한 실행 환경에서 처음부터 끝까지 통과할 때만 완료로 선언해. 기존 사용자 변경과 시크릿은 보존하고, 유료 API·외부 공개·파괴적 변경은 사전 결재를 받아.</blockquote>
+        <div class="copy-state" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page">
+    <span>근거: DECISIONS.md · final-acceptance · 실제 테스트·빌드·화면</span>
+    <span>현재 브랜치 codex/scrave-product-finish</span>
+  </footer>
+
+  <script>
+    const filters = document.querySelectorAll('.filter');
+    const items = document.querySelectorAll('.item');
+    filters.forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.filter;
+        filters.forEach((candidate) => candidate.setAttribute('aria-pressed', String(candidate === button)));
+        items.forEach((item) => { item.hidden = selected !== 'all' && item.dataset.status !== selected; });
+      });
+    });
+
+    const copyButton = document.querySelector('.copy');
+    const copyState = document.querySelector('.copy-state');
+    copyButton.addEventListener('click', async () => {
+      const text = document.querySelector('#goal-prompt').textContent.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        copyState.textContent = '복사했습니다.';
+        copyButton.setAttribute('aria-label', 'Scrave 최종 목표 프롬프트 복사 완료');
+      } catch (error) {
+        copyState.textContent = '복사하지 못했습니다. 본문을 선택해 직접 복사해 주세요.';
+      }
+    });
+  </script>
+</body>
+</html>

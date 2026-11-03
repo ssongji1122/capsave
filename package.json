@@ -10,11 +10,18 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "test": "npm run build:shared && npm run test --workspace=@scrave/shared && npm run test --workspace=@scrave/web && npm run test --workspace=@scrave/mobile -- --runInBand",
+    "test:e2e": "playwright test",
     "typecheck": "turbo typecheck",
+    "verify:core": "npm run test && npm run typecheck",
     "lint": "turbo lint",
     "dev:web": "turbo dev --filter=@scrave/web",
     "dev:mobile": "cd apps/mobile && npx expo start",
     "build:shared": "turbo build --filter=@scrave/shared"
+  },
+  "overrides": {
+    "postcss": "8.5.32",
+    "shell-quote": "1.12.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
