@@ -88,9 +88,11 @@ test.describe('인증 사용자 핵심 플로우', () => {
     await expect(page.getByText('수집됨 · 확인 전')).toBeVisible();
     expect(await page.evaluate(() => document.body.scrollWidth > document.body.clientWidth)).toBe(false);
     if (process.env.SCRAVE_CAPTURE_STATUS_SCREENSHOT === '1') {
-      await page.screenshot({
+      await page.locator('nav').last().evaluate((element) => {
+        (element as HTMLElement).style.display = 'none';
+      });
+      await page.getByRole('region', { name: 'Instagram 게시물 저장' }).screenshot({
         path: '_dogfood/assets/2026-11-04_scrave-product-status/link-import-mobile.png',
-        fullPage: true,
       });
     }
 

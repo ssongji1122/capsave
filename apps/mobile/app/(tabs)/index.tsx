@@ -131,6 +131,7 @@ export default function HomeScreen() {
         </View>
         <View style={{alignItems:'center'}}>
           <ArchiveIllustration kind="archive" size={64} />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Instagram 링크 저장" onPress={()=>router.push('/capture/link' as never)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary,fontSize:13}}>링크 저장</Text></TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="내 가이드" onPress={()=>router.push('/guide' as never)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary,fontSize:13}}>내 가이드</Text></TouchableOpacity>
         </View>
       </View>

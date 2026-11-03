@@ -1,10 +1,12 @@
 export function buildStoragePath(
   userId: string,
   now: () => number = Date.now,
-  randomSuffix: () => string = defaultRandom
+  randomSuffix: () => string = defaultRandom,
+  extension = 'jpg'
 ): string {
   if (!userId) throw new Error('userId required');
-  return `${userId}/${now()}_${randomSuffix()}.jpg`;
+  if (!['jpg', 'png', 'webp'].includes(extension)) throw new Error('unsupported image extension');
+  return `${userId}/${now()}_${randomSuffix()}.${extension}`;
 }
 
 function defaultRandom(): string {
