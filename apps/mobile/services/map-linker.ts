@@ -24,6 +24,14 @@ export function sortByPreferredProvider<T extends { provider: MapProvider }>(
   });
 }
 
+export function getPreferredMapLinks(
+  placeName: string,
+  address: string | null | undefined,
+  preferred: MapProvider | null | undefined
+) {
+  return sortByPreferredProvider(getMapLinks(placeName, address), preferred);
+}
+
 export async function openMap(
   provider: MapProvider,
   placeName: string,

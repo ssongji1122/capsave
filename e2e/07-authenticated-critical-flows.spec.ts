@@ -218,4 +218,20 @@ test.describe('인증 사용자 핵심 플로우', () => {
     await page.getByRole('button', { name: /구글/ }).click();
     await expect(page.getByText('2개 장소')).toBeVisible();
   });
+
+  test('기본 내비게이션 앱을 저장하고 새로고침 뒤에도 같은 선택을 복원한다', async ({ page }) => {
+    await mockAuthenticatedBackend(page, createCaptureRows());
+    await page.goto('/settings');
+
+    const naver = page.getByRole('radio', { name: '네이버 지도' });
+    const google = page.getByRole('radio', { name: 'Google Maps' });
+    await expect(naver).toHaveAttribute('aria-checked', 'true');
+
+    await google.click();
+    await expect(page.getByRole('status')).toContainText('기본 지도 앱을 Google Maps로 저장했습니다.');
+    await expect(google).toHaveAttribute('aria-checked', 'true');
+
+    await page.reload();
+    await expect(page.getByRole('radio', { name: 'Google Maps' })).toHaveAttribute('aria-checked', 'true');
+  });
 });

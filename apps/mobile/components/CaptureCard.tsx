@@ -9,7 +9,7 @@ import { ARCHIVE_APPEARANCE, ARCHIVE_SECTIONS, classifyArchiveCapture } from '@s
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CaptureItem } from '@/services/database';
-import { getMapLinks, openMap, openUrl, sortByPreferredProvider } from '@/services/map-linker';
+import { getPreferredMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { useSignedImage } from '@/hooks/useSignedImage';
 import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 
@@ -33,7 +33,7 @@ export function CaptureCard({ item, onDelete, compact = false, fillWidth = false
   const { preferredNavApp } = useUserPreferences();
 
   const handleMapPicker = useCallback((place: typeof item.places[0]) => {
-    const links = sortByPreferredProvider(getMapLinks(place.name, place.address), preferredNavApp);
+    const links = getPreferredMapLinks(place.name, place.address, preferredNavApp);
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {

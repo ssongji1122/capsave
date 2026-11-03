@@ -15,7 +15,7 @@ import { CaptureWorkflow } from '@/components/CaptureWorkflow';
 import { useCaptureMeta } from '@/contexts/CaptureMetaContext';
 import { EMPTY_CAPTURE_META } from '../../../../packages/shared/src/utils/capture-intent';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { getMapLinks, openMap, openUrl, sortByPreferredProvider } from '@/services/map-linker';
+import { getPreferredMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { PlaceQuickSearch } from '@/components/PlaceQuickSearch';
 import { ArchiveSources } from '@/components/ArchiveSources';
 import { PlaceReviews } from '@/components/PlaceReviews';
@@ -47,7 +47,7 @@ export default function CaptureDetailScreen() {
 
   const handleMapPicker = useCallback((place: NonNullable<typeof item>['places'][0]) => {
     if (!item) return;
-    const links = sortByPreferredProvider(getMapLinks(place.name, place.address), preferredNavApp);
+    const links = getPreferredMapLinks(place.name, place.address, preferredNavApp);
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {

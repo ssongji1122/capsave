@@ -1,4 +1,4 @@
-import { openMap, openUrl } from '../map-linker';
+import { getPreferredMapLinks, openMap, openUrl, sortByPreferredProvider } from '../map-linker';
 
 const mockCanOpenURL = jest.fn();
 const mockOpenURL = jest.fn();
@@ -19,6 +19,9 @@ jest.mock('@scrave/shared', () => ({
   isUrlSafe: (url: string) => url.startsWith('https://') || url.startsWith('kakaomap://'),
   MOBILE_DEEP_LINK_SCHEMES: ['kakaomap'],
   getMobileMapLinks: () => [
+    { provider: 'tmap', label: 'T map', appUrl: 'tmap://search', webUrl: 'https://tmap.life' },
+    { provider: 'naver', label: '네이버 지도', appUrl: 'nmap://search', webUrl: 'https://map.naver.com' },
+    { provider: 'google', label: 'Google Maps', appUrl: 'geo:0,0', webUrl: 'https://maps.google.com' },
     {
       provider: 'kakao',
       label: '카카오맵',
@@ -66,5 +69,20 @@ describe('openUrl', () => {
       expect.stringMatching(/openUrl/i),
       expect.any(Error)
     );
+  });
+});
+
+describe('preferred map provider order', () => {
+  it.each(['tmap', 'naver', 'google', 'kakao'] as const)(
+    'puts %s first in every mobile map menu',
+    (provider) => {
+      expect(getPreferredMapLinks('서울시청', '서울 중구', provider)[0]?.provider).toBe(provider);
+    }
+  );
+
+  it('keeps the original order when the preferred provider is unavailable', () => {
+    const googleOnly = [{ provider: 'google' as const, label: 'Google Maps' }];
+
+    expect(sortByPreferredProvider(googleOnly, 'naver')).toEqual(googleOnly);
   });
 });

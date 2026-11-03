@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { getMapLinks, getReviewLinks, getMobileMapLinks, MapProvider } from '../utils/map-linker';
+import { getMapLinks, getReviewLinks, getMobileMapLinks, isMapProvider, MapProvider } from '../utils/map-linker';
+
+describe('isMapProvider', () => {
+  it.each(['tmap', 'naver', 'google', 'kakao'])('accepts %s', (provider) => {
+    expect(isMapProvider(provider)).toBe(true);
+  });
+
+  it.each([null, '', 'unknown-map', 1])('rejects %j', (provider) => {
+    expect(isMapProvider(provider)).toBe(false);
+  });
+});
 
 describe('getMapLinks', () => {
   it('returns 4 providers', () => {

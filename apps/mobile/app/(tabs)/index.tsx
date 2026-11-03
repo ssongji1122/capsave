@@ -146,7 +146,17 @@ export default function HomeScreen() {
         <StickerDecoration target="archive" label="보관함"/>
         <View>
           <Text style={[styles.brand, { color: colors.primary }]}>scrave</Text>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>my craves</Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>my craves</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="설정 열기"
+              onPress={() => router.push('/settings' as never)}
+              style={styles.settingsButton}
+            >
+              <Ionicons name="settings-outline" size={21} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             캡처로 모아 둔 일상과 취향
           </Text>
@@ -248,6 +258,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   brand: { fontFamily: 'SUIT-SemiBold', fontSize: 24, letterSpacing: -1, marginBottom: 12 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  settingsButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

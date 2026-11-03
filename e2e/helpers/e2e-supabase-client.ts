@@ -78,6 +78,10 @@ export async function installSupabaseClientMock(page: Page) {
           state.single = true;
           return builder;
         },
+        maybeSingle() {
+          state.single = true;
+          return builder;
+        },
         insert(payload) {
           state.action = 'insert';
           state.payload = payload;
@@ -100,9 +104,28 @@ export async function installSupabaseClientMock(page: Page) {
       return builder;
     }
 
+    function readPreferredNavApp() {
+      try {
+        return window.localStorage.getItem('scrave-e2e-preferred-nav-app') ?? 'naver';
+      } catch {
+        return 'naver';
+      }
+    }
+
+    function writePreferredNavApp(provider) {
+      try {
+        window.localStorage.setItem('scrave-e2e-preferred-nav-app', provider);
+      } catch {
+        // The current document may not have a persistent origin yet.
+      }
+    }
+
     function executeQuery(table, state) {
       if (table === 'user_preferences') {
-        return { data: { preferred_nav_app: 'naver' }, error: null };
+        if (state.action === 'upsert' && state.payload?.preferred_nav_app) {
+          writePreferredNavApp(state.payload.preferred_nav_app);
+        }
+        return { data: { preferred_nav_app: readPreferredNavApp() }, error: null };
       }
       if (table !== 'captures') {
         return { data: state.single ? null : [], error: null, count: 0 };

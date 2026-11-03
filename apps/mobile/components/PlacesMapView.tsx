@@ -7,7 +7,8 @@ import { buildMapHtml } from '@/services/map-html';
 import { PlaceInfo } from '@/services/analyzers/types';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { getMapLinks, openMap } from '@/services/map-linker';
+import { getPreferredMapLinks, openMap } from '@/services/map-linker';
+import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 
 interface PlacesMapViewProps {
   places: PlaceInfo[];
@@ -21,6 +22,7 @@ const KAKAO_JS_KEY: string =
 export function PlacesMapView({ places }: PlacesMapViewProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
+  const { preferredNavApp } = useUserPreferences();
   const htmlContent = useMemo(() => buildMapHtml(places, KAKAO_JS_KEY), [places]);
 
   const handleMessage = useCallback((event: WebViewMessageEvent) => {
@@ -29,7 +31,7 @@ export function PlacesMapView({ places }: PlacesMapViewProps) {
       if (data.type !== 'place_tap') return;
 
       const { name, address } = data as { type: string; name: string; address: string };
-      const links = getMapLinks(name, address || null);
+      const links = getPreferredMapLinks(name, address || null, preferredNavApp);
 
       if (Platform.OS === 'ios') {
         ActionSheetIOS.showActionSheetWithOptions(
@@ -61,7 +63,7 @@ export function PlacesMapView({ places }: PlacesMapViewProps) {
     } catch {
       // ignore malformed messages
     }
-  }, []);
+  }, [preferredNavApp]);
 
   if (places.length === 0) {
     return (

@@ -3,9 +3,10 @@ import { View, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS, Platform, Li
 import { Text } from '@/components/ScraveText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { openMap, getMapLinks } from '@/services/map-linker';
+import { getPreferredMapLinks, openMap } from '@/services/map-linker';
 import { isUrlSafe } from '@scrave/shared';
 import { Ionicons } from '@expo/vector-icons';
+import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 
 interface PlaceQuickSearchProps {
   placeName: string;
@@ -75,6 +76,7 @@ async function openSearchUrl(
 export function PlaceQuickSearch({ placeName, address, reviewQuery }: PlaceQuickSearchProps) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
+  const { preferredNavApp } = useUserPreferences();
 
   const query = address ? `${placeName} ${address}` : placeName;
 
@@ -89,7 +91,7 @@ export function PlaceQuickSearch({ placeName, address, reviewQuery }: PlaceQuick
   );
 
   const handleMapOpen = useCallback(() => {
-    const links = getMapLinks(placeName, address);
+    const links = getPreferredMapLinks(placeName, address, preferredNavApp);
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -117,7 +119,7 @@ export function PlaceQuickSearch({ placeName, address, reviewQuery }: PlaceQuick
         ]
       );
     }
-  }, [placeName, address]);
+  }, [placeName, address, preferredNavApp]);
 
   return (
     <View style={styles.row}>

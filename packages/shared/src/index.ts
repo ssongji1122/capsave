@@ -40,7 +40,7 @@ export type { ColorScheme, ThemeColors } from './tokens/colors';
 
 // Utilities
 export { isUrlSafe, sanitizeUrl, MOBILE_DEEP_LINK_SCHEMES } from './utils/url-validator';
-export { getMapLinks, getReviewLinks, getMobileMapLinks } from './utils/map-linker';
+export { getMapLinks, getReviewLinks, getMobileMapLinks, isMapProvider } from './utils/map-linker';
 export type {
   MapProvider,
   MapLink,

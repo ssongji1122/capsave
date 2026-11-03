@@ -1,5 +1,11 @@
 export type MapProvider = 'tmap' | 'naver' | 'google' | 'kakao';
 
+const MAP_PROVIDER_VALUES: readonly MapProvider[] = ['tmap', 'naver', 'google', 'kakao'];
+
+export function isMapProvider(value: unknown): value is MapProvider {
+  return typeof value === 'string' && MAP_PROVIDER_VALUES.includes(value as MapProvider);
+}
+
 export interface MapLink {
   provider: MapProvider;
   label: string;

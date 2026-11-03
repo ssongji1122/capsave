@@ -121,6 +121,7 @@ function RootLayoutNav() {
           <Stack.Screen name="guide/index" options={{title:'내 가이드',headerBackTitle:'뒤로'}} />
           <Stack.Screen name="guide/[id]" options={{title:'동선 가이드',headerBackTitle:'뒤로'}} />
           <Stack.Screen name="capture/link" options={{title:'Instagram 링크 저장',headerBackTitle:'뒤로'}} />
+          <Stack.Screen name="settings" options={{title:'설정',headerBackTitle:'뒤로'}} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
