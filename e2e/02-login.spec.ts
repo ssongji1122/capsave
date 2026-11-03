@@ -9,7 +9,7 @@ test.describe('로그인 페이지', () => {
   });
 
   test('로그인 카드 렌더링 — OAuth 버튼만 노출', async ({ page }) => {
-    await expect(page.getByText('Scrave').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Scrave', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: '내 캡처 보관함으로 들어가기' })).toBeVisible();
     await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
     await expect(page.getByRole('button', { name: /카카오로 시작하기/ })).toBeVisible();

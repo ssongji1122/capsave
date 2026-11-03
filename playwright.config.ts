@@ -21,6 +21,10 @@ export default defineConfig({
       },
     },
   ],
-  // 테스트 전에 dev 서버가 이미 켜져 있어야 함
-  // webServer는 별도 실행으로 처리
+  webServer: {
+    command: 'scrave_repo=$(dirname "$(git rev-parse --git-common-dir)"); set -a; if [ -f "$scrave_repo/apps/web/.env.local" ]; then . "$scrave_repo/apps/web/.env.local"; fi; set +a; SCRAVE_E2E_AUTH_BYPASS=1 NEXT_PUBLIC_SCRAVE_E2E_CLIENT_BYPASS=1 npm run dev --workspace=@scrave/web',
+    url: 'http://localhost:3000',
+    reuseExistingServer: false,
+    timeout: 120000,
+  },
 });

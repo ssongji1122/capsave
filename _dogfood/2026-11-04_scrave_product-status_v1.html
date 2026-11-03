@@ -252,7 +252,7 @@
     </section>
 
     <section class="page metrics" aria-label="검증 수치">
-      <div class="metric"><b>883</b><span>공통·웹·모바일 자동 테스트 통과</span></div>
+      <div class="metric"><b>884</b><span>공통·웹·모바일 자동 테스트 통과</span></div>
       <div class="metric"><b>51</b><span>Chromium 핵심 사용자 여정 통과</span></div>
       <div class="metric"><b>3/3</b><span>작업공간 타입 검사 통과</span></div>
       <div class="metric"><b>37</b><span>웹 프로덕션 경로 빌드 완료</span></div>
@@ -286,7 +286,7 @@
       </div>
       <div class="matrix" id="status-matrix">
         <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>웹 보관함과 설치형 웹앱</h3><div><p>게스트 체험, 로그인, 단일·배치 업로드, 분석, 저장, 삭제, 검색, 반응형 레이아웃이 연결돼 있습니다.</p><div class="evidence">Playwright 01–06 · manifest · dashboard</div></div></article>
-        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>Expo 모바일 앱과 네이티브 산출물</h3><div><p>사진 선택, 분석·저장, 보관함, 상세, 장소·텍스트, 지도, 가이드 화면과 서버 세션 연결 코드가 있습니다. Expo 번들과 iOS Simulator Release 앱을 빌드하고, 키체인 오류가 나도 로그인 화면까지 진입하도록 보완했습니다.</p><div class="evidence">Jest 94 · Expo export · Xcode Release · cold relaunch</div></div></article>
+        <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>Expo 모바일 앱과 네이티브 산출물</h3><div><p>사진 선택, 분석·저장, 보관함, 상세, 장소·텍스트, 지도, 가이드 화면과 서버 세션 연결 코드가 있습니다. iOS·Android Expo 번들과 iOS Simulator Release 앱을 빌드하고, 키체인 오류가 나도 로그인 화면까지 진입하도록 보완했습니다.</p><div class="evidence">Jest 95 · Android 1,748 modules · Xcode Release · Light · cold relaunch</div></div></article>
         <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>분류·검색·재발견</h3><div><p>물건·갈 곳·궁금한 정보·여행 분류, 최근·일정·연관 정렬, 연관 근거, 같은 분류 카드 넘기기를 공통 코드로 사용합니다.</p><div class="evidence">@scrave/shared · Vitest 263 passed</div></div></article>
         <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>원본·출처·지도·후기</h3><div><p>원본 확대, 출처 후보 상태, 좌표 캐시, 지도 인증 실패의 정적 지도 전환, 후기·영상 후보가 구현돼 있습니다.</p><div class="evidence">E2E map/authenticated flows</div></div></article>
         <article class="item" data-status="done"><span class="status done">되어 있음</span><h3>가이드와 공유</h3><div><p>장소 선택, 초안, 저장·수정·삭제, 공개 가이드, 공유 미리보기와 모바일 넘침 검증이 있습니다.</p><div class="evidence">/guides · /g/[slug] · Playwright 08</div></div></article>
@@ -295,9 +295,9 @@
         <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>링크 인입을 앱 안에서 끝내기</h3><div><p>링크 인입 계약과 Instagram 검사 스크립트는 있지만, 링크 하나를 앱에서 붙여 넣고 원문·미디어 보존과 분류까지 끝내는 웹·네이티브 공통 여정은 완결되지 않았습니다.</p><div class="evidence">docs/link-intake-contract.md · scripts/inspect-social-link.mjs</div></div></article>
         <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>웹·모바일 데이터 완전 동기화</h3><div><p>로그인 캡처는 서버로 연결됩니다. 스티커 배치와 일부 메모·행동 상태는 기기별로 따로 저장되므로 다른 기기에서 같은 상태를 이어 볼 수 없습니다.</p><div class="evidence">DECISIONS 2026-10-30 · local stores</div></div></article>
         <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>실기기 오프라인과 권한 거부</h3><div><p>SQLite·로컬 저장·오류 단위 테스트는 있으나 네트워크 단절, 앱 종료·재실행, 사진 권한 거부 뒤 복구를 실제 iPhone에서 연속 통과한 증거가 없습니다.</p><div class="evidence">final-acceptance C14–C18 · native QA pending</div></div></article>
-        <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>의존성 보안과 반복 품질 게이트</h3><div><p><code>verify:core</code>와 <code>test:e2e</code>를 추가하고 웹의 치명적 경고를 제거했습니다. 남은 경고는 Expo SDK·React Native 큰 버전 이동이 필요해 별도 마이그레이션과 실기기 회귀 검증이 필요합니다.</p><div class="evidence">npm audit: 47→41 · critical 2→0 · scripts verified</div></div></article>
+        <article class="item" data-status="partial"><span class="status partial">보완 필요</span><h3>의존성 보안과 반복 품질 게이트</h3><div><p><code>verify:core</code>와 <code>test:e2e</code>를 추가하고 웹의 치명적 경고를 제거했습니다. Expo 권장 패치 정렬은 보안 경고가 41건에서 65건으로 늘어 채택하지 않았습니다. 남은 이동은 별도 마이그레이션과 실기기 회귀 검증이 필요합니다.</p><div class="evidence">npm audit: 47→41 · critical 2→0 · Expo Doctor 18/20</div></div></article>
 
-        <article class="item" data-status="blocked"><span class="status blocked">외부 열쇠</span><h3>앱스토어 출시 신원</h3><div><p>iOS 번들 식별자가 <code>com.anonymous.scrave</code>라 출시용 신원이 아닙니다. Apple Developer에 실제 식별자를 등록한 뒤 네이티브 프로젝트와 OAuth 구성을 함께 바꿔야 합니다.</p><div class="evidence">apps/mobile/app.config.ts · Apple account action</div></div></article>
+        <article class="item" data-status="blocked"><span class="status blocked">외부 열쇠</span><h3>앱스토어 출시 신원</h3><div><p>iOS 번들 식별자가 <code>com.anonymous.scrave</code>이고 Android 패키지 이름은 아직 없습니다. 실제 식별자를 확정·등록한 뒤 네이티브 프로젝트와 OAuth 구성을 함께 바꿔야 설치 파일과 스토어 검수를 진행할 수 있습니다.</p><div class="evidence">app.config.ts · android/ absent · account action</div></div></article>
         <article class="item" data-status="blocked"><span class="status blocked">외부 열쇠</span><h3>실제 유료 AI·네이티브 계정 검수</h3><div><p>테스트는 외부 비용이 없는 모킹으로 통과했습니다. 실제 Gemini 호출, 네이티브 Google 로그인, 앱인토스 콘솔 등록은 비용·본인 인증·계정 작업이라 별도 결재가 필요합니다.</p><div class="evidence">paid call 0 · native OAuth pending</div></div></article>
       </div>
     </section>
@@ -322,13 +322,13 @@
     <section class="page section" aria-labelledby="next-title">
       <div class="section-head">
         <h2 id="next-title">이번 라운드 결과와 다음 순서</h2>
-        <p class="section-intro">검증 자동화·모바일 Release 실행·웹 보안 패치는 완료했습니다. 이제 실제 기기와 계정이 필요한 단계부터 남습니다.</p>
+        <p class="section-intro">검증 자동화·양 플랫폼 번들·iOS Release 실행·웹 보안 패치는 완료했습니다. 이제 설치 신원과 실제 기기가 필요한 단계부터 남습니다.</p>
       </div>
       <div class="next">
-        <article><span>✓</span><h3>검증 명령 고정</h3><p><code>verify:core</code>로 883개 테스트와 타입 검사, <code>test:e2e</code>로 51개 브라우저 여정을 재현합니다.</p></article>
-        <article><span>✓</span><h3>모바일 실행 확인</h3><p>Expo iOS 내보내기, Xcode Release 빌드, iPhone 17 Pro 시뮬레이터의 첫 실행과 콜드 재실행이 통과했습니다.</p></article>
+        <article><span>✓</span><h3>검증 명령 고정</h3><p><code>verify:core</code>로 884개 테스트와 타입 검사, <code>test:e2e</code>의 격리 서버로 51개 브라우저 여정을 한 명령에서 재현합니다.</p></article>
+        <article><span>✓</span><h3>모바일 실행 확인</h3><p>Expo iOS·Android 내보내기, Xcode Release 빌드, iPhone 17 Pro 시뮬레이터의 첫 실행과 콜드 재실행이 통과했습니다. iOS 밝은 화면 설정도 네이티브 값과 맞췄습니다.</p></article>
         <article><span>✓</span><h3>치명적 보안 경고 제거</h3><p>Next.js·sharp·PostCSS·shell-quote를 호환 수정판으로 올리고 전체 회귀 검증을 통과했습니다.</p></article>
-        <article><span>1</span><h3>실기기와 출시 신원</h3><p>Apple 번들 식별자를 등록한 뒤 실제 iPhone에서 로그인·사진 권한 거부·오프라인·재실행을 연속 검수합니다.</p></article>
+        <article><span>1</span><h3>실기기와 출시 신원</h3><p>Apple·Android 앱 식별자를 확정한 뒤 설치 파일을 만들고, 실제 휴대폰에서 로그인·사진 권한 거부·오프라인·재실행을 연속 검수합니다.</p></article>
       </div>
     </section>
 

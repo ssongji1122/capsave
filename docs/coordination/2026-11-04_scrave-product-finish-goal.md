@@ -46,12 +46,15 @@
 
 - shared: 263개 통과
 - web: 526개 통과, 3개 의도적 건너뜀
-- mobile: 94개 통과
-- `npm run verify:core`로 세 작업공간 테스트 883개와 타입 검사 통과
+- mobile: 95개 통과
+- `npm run verify:core`로 세 작업공간 테스트 884개와 타입 검사 통과
 - Next.js 15.5.29·sharp 0.35.5에서 웹 프로덕션 37개 경로 빌드 통과
-- `npm run test:e2e`로 Playwright 51개 사용자 여정 통과
+- `npm run test:e2e`가 격리된 웹 서버와 테스트 전용 인증 환경을 자동으로 띄우며 Playwright 51개 사용자 여정을 통과
 - Expo iOS 번들 1,734개 모듈·154개 자산 내보내기 통과
+- Expo Android 번들 1,748개 모듈·162개 자산·32MB 내보내기 통과. 설치 가능한 Android 네이티브 산출물은 패키지 이름과 `android/` 프로젝트가 없어 아직 만들지 않았습니다.
 - Xcode iOS Simulator arm64 네이티브 빌드 통과: `/tmp/scrave-derived/Build/Products/Debug-iphonesimulator/Scrave.app`
-- 환경변수를 빌드 프로세스에만 주입한 Xcode Release 시뮬레이터 앱이 iPhone 17 Pro에서 첫 실행과 콜드 재실행 후 로그인 화면까지 도달했습니다.
+- 환경변수를 빌드 프로세스에만 주입한 Xcode Release arm64 시뮬레이터 앱이 깨끗한 파생 캐시에서 빌드됐고, 산출물의 `UIUserInterfaceStyle=Light`를 확인했습니다. 같은 앱이 iPhone 17 Pro에서 첫 실행과 콜드 재실행 후 로그인 화면까지 도달했습니다.
 - 키체인 권한이 없는 실행 환경에서 인증 초기화가 무한 로딩으로 남던 문제를 실패 테스트 3개로 재현하고, 로그아웃 상태로 안전하게 시작하도록 수정했습니다.
+- `app.config.ts`의 밝은 화면 설정과 체크인된 iOS `Info.plist`의 어두운 화면 설정이 달랐던 문제를 실패 테스트로 재현하고 `Light`로 맞췄습니다.
 - 프로덕션 의존성 감사는 47건(치명적 2)에서 41건(치명적 0)으로 줄였습니다. 남은 직접 위험은 Expo SDK·React Native 큰 버전 마이그레이션 범위입니다.
+- Expo Doctor는 20개 중 18개를 통과했습니다. 권장 패치 정렬은 프로덕션 보안 경고를 41건에서 65건으로 늘려 되돌렸고, 체크인된 iOS 프로젝트와 앱 설정의 수동 동기화 경고는 위 회귀 테스트로 감시합니다.
