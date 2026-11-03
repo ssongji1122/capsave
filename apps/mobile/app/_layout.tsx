@@ -130,6 +130,7 @@ function RootLayoutNav() {
               headerShown: false,
               presentation: 'fullScreenModal',
               animation: 'slide_from_bottom',
+                  gestureEnabled: false,
             }}
           />
           </Stack>

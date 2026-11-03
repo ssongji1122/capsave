@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Alert, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Alert, StatusBar, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -27,6 +27,7 @@ import {
   type MapProvider,
 } from '@scrave/shared';
 import { AnalysisResultEditor } from '@/components/AnalysisResultEditor';
+import { requestAnalysisExit } from '@/services/analysis-exit';
 
 type AnalyzeStatus = 'analyzing' | 'done' | 'error';
 type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
@@ -230,6 +231,34 @@ export default function AnalyzeScreen() {
     );
   };
 
+  const handleExit = useCallback(() => {
+    if (isSaving) return;
+
+    requestAnalysisExit({
+      original: result,
+      draft,
+      onExit: () => router.back(),
+      confirmDiscard: (discard) => {
+        Alert.alert(
+          '수정한 내용을 버리고 나갈까요?',
+          '저장하지 않은 분석 내용은 복구할 수 없습니다.',
+          [
+            { text: '계속 확인', style: 'cancel' },
+            { text: '나가기', style: 'destructive', onPress: discard },
+          ]
+        );
+      },
+    });
+  }, [draft, isSaving, result, router]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleExit();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [handleExit]);
+
   const activeResult = draft ?? result;
   const isPlace = activeResult?.category === 'place';
   const accentColor = isPlace ? colors.placeAccent : colors.textAccent;
@@ -245,7 +274,14 @@ export default function AnalyzeScreen() {
 
       {/* Nav Bar */}
       <View style={styles.navBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="분석 화면 닫기"
+          accessibilityState={{ disabled: isSaving }}
+          disabled={isSaving}
+          onPress={handleExit}
+          style={styles.backBtn}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.navTitle, { color: colors.text }]}>

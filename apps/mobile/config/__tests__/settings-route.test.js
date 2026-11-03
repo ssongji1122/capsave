@@ -28,4 +28,10 @@ describe('native settings route wiring', () => {
       expect(read(file)).toMatch(/getPreferredMapLinks/);
     }
   });
+
+  it('prevents a swipe gesture from bypassing analysis draft confirmation', () => {
+    const layout = read('app/_layout.tsx');
+
+    expect(layout).toMatch(/name="capture\/analyze"[\s\S]*gestureEnabled:\s*false/);
+  });
 });
