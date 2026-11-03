@@ -48,8 +48,8 @@
 
 - shared: 263개 통과
 - web: 546개 통과, 3개 의도적 건너뜀
-- mobile: 122개 통과
-- `npm run verify:core`로 세 작업공간 테스트 931개와 타입 검사 통과
+- mobile: 126개 통과
+- `npm run verify:core`로 세 작업공간 테스트 935개와 타입 검사 통과
 - Next.js 15.5.29·sharp 0.35.5에서 웹 프로덕션 38개 경로 빌드 통과
 - `npm run test:e2e`가 격리된 웹 서버와 테스트 전용 인증 환경을 자동으로 띄우며 Playwright 52개 사용자 여정을 통과
 - `/import`에서 공개 Instagram 링크를 붙여 넣어 원문·작성자·전체 미디어를 확인하고, 저장 뒤 보관함에서 같은 게시물 묶음으로 다시 여는 Chromium 여정을 320px 화면에서 통과
@@ -58,9 +58,11 @@
 - Xcode iOS Simulator arm64 네이티브 빌드 통과: `/tmp/scrave-derived/Build/Products/Debug-iphonesimulator/Scrave.app`
 - 환경변수를 빌드 프로세스에만 주입한 Xcode Release arm64 시뮬레이터 앱이 깨끗한 파생 캐시에서 빌드됐고, 산출물의 `UIUserInterfaceStyle=Light`를 확인했습니다. 같은 앱이 iPhone 17 Pro에서 첫 실행과 콜드 재실행 후 로그인 화면까지 도달했습니다.
 - Supabase 설정이 없는 깨끗한 개발 실행에서 `createClient('', '')`가 앱 시작 전에 예외를 내던 문제를 실패 테스트 4개로 재현했습니다. 초기화를 지연하고, 값 대신 필요한 `EXPO_PUBLIC_SUPABASE_URL=`·`EXPO_PUBLIC_SUPABASE_ANON_KEY=` 이름만 보여 주는 설정 화면으로 바꿨습니다. iPhone 17 Pro 시뮬레이터에서 RedBox 없이 화면이 렌더링되는 것을 확인했으며, 개발 클라이언트 열기 팝업은 macOS 잠금 때문에 닫지 못한 상태로 캡처했습니다. 근거 이미지는 `_dogfood/assets/2026-11-04_scrave-product-status/mobile-missing-config.png`입니다.
+- Supabase 설정만 있고 Google iOS 클라이언트 ID가 없는 실행에서는 인증 훅이 화면 렌더링 전에 예외를 내는 문제를 실측했습니다. 플랫폼별 필수 Google 설정을 실패 테스트 4개로 고정하고, iOS에서는 `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=`, Android·웹에서는 `EXPO_PUBLIC_GOOGLE_CLIENT_ID=`가 없을 때 같은 안전 안내 화면을 보여 줍니다. iPhone 17 Pro 시뮬레이터 재실행에서 기존 `iosClientId must be defined` 오류가 사라진 것을 확인했습니다.
 - 키체인 권한이 없는 실행 환경에서 인증 초기화가 무한 로딩으로 남던 문제를 실패 테스트 3개로 재현하고, 로그아웃 상태로 안전하게 시작하도록 수정했습니다.
 - 사진 권한 거부·영구 차단·취소·선택 실패를 분리하고, 영구 차단 시 운영체제 설정으로 이동할 수 있게 했습니다. 관련 모바일 테스트 5개를 추가했습니다.
 - 로그인 계정과 일치하는 SQLite 사본만 앱 시작 즉시 보여 주고, 서버 동기화 실패 시 사본 유지·오프라인 안내·재시도를 제공합니다. 로그아웃 때 데이터와 계정 표식을 모두 지우며, 계정 전환 중 늦게 도착한 요청은 현재 화면을 덮지 않습니다. 관련 모바일 테스트 12개를 추가했습니다.
+- 메모·저장 이유·다시 보기·완료 상태와 스티커 배치는 웹 `localStorage` 및 모바일 계정별 로컬 파일에만 저장됩니다. 현재 `captures`와 `user_preferences` 스키마에는 이 값을 보관할 열이 없어, 기기 간 동기화는 데이터베이스 마이그레이션 결재와 충돌 규칙 확정 전까지 완료로 셀 수 없습니다.
 - `app.config.ts`의 밝은 화면 설정과 체크인된 iOS `Info.plist`의 어두운 화면 설정이 달랐던 문제를 실패 테스트로 재현하고 `Light`로 맞췄습니다.
 - 프로덕션 의존성 감사는 47건(치명적 2)에서 41건(치명적 0)으로 줄였습니다. 남은 직접 위험은 Expo SDK·React Native 큰 버전 마이그레이션 범위입니다.
 - Expo Doctor는 20개 중 18개를 통과했습니다. 권장 패치 정렬은 프로덕션 보안 경고를 41건에서 65건으로 늘려 되돌렸고, 체크인된 iOS 프로젝트와 앱 설정의 수동 동기화 경고는 위 회귀 테스트로 감시합니다.

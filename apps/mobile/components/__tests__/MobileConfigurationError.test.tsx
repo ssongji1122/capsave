@@ -22,6 +22,7 @@ it('shows a controlled setup screen with key names but no secret values', async 
         missingKeys={[
           'EXPO_PUBLIC_SUPABASE_URL=',
           'EXPO_PUBLIC_SUPABASE_ANON_KEY=',
+          'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=',
         ]}
       />
     );
@@ -31,6 +32,7 @@ it('shows a controlled setup screen with key names but no secret values', async 
   expect(text).toContain('앱 설정이 필요합니다');
   expect(text).toContain('EXPO_PUBLIC_SUPABASE_URL=');
   expect(text).toContain('EXPO_PUBLIC_SUPABASE_ANON_KEY=');
+  expect(text).toContain('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=');
   expect(text).toContain('설정을 추가한 뒤 앱을 다시 실행해 주세요.');
   expect(text).not.toContain('example.supabase.co');
 

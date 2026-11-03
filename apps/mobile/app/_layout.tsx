@@ -2,8 +2,9 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import Constants from 'expo-constants';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -14,6 +15,7 @@ import { CapturesProvider } from '@/contexts/CapturesContext';
 import { UserPreferencesProvider } from '@/contexts/UserPreferencesContext';
 import { MobileConfigurationError } from '@/components/MobileConfigurationError';
 import { supabaseConfiguration } from '@/services/supabase';
+import { resolveGoogleAuthConfiguration } from '@/services/google-auth-config';
 
 export {
   ErrorBoundary,
@@ -24,6 +26,15 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
+
+const googleAuthConfiguration = resolveGoogleAuthConfiguration(
+  Platform.OS,
+  Constants.expoConfig?.extra ?? {},
+  {
+    EXPO_PUBLIC_GOOGLE_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+    EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  }
+);
 
 const ScraveDarkTheme = {
   ...DarkTheme,
@@ -59,8 +70,13 @@ export default function RootLayout() {
     return null;
   }
 
-  if (supabaseConfiguration.status === 'missing') {
-    return <MobileConfigurationError missingKeys={supabaseConfiguration.missingKeys} />;
+  const missingConfigurationKeys = [
+    ...(supabaseConfiguration.status === 'missing' ? supabaseConfiguration.missingKeys : []),
+    ...(googleAuthConfiguration.status === 'missing' ? googleAuthConfiguration.missingKeys : []),
+  ];
+
+  if (missingConfigurationKeys.length > 0) {
+    return <MobileConfigurationError missingKeys={missingConfigurationKeys} />;
   }
 
   return (

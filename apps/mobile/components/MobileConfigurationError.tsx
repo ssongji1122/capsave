@@ -3,9 +3,10 @@ import { StatusBar, StyleSheet, View } from 'react-native';
 import { Text } from './ScraveText';
 import { Colors } from '@/constants/Colors';
 import type { SupabaseConfigurationKey } from '@/services/supabase-config';
+import type { GoogleAuthConfigurationKey } from '@/services/google-auth-config';
 
 interface MobileConfigurationErrorProps {
-  missingKeys: SupabaseConfigurationKey[];
+  missingKeys: Array<SupabaseConfigurationKey | GoogleAuthConfigurationKey>;
 }
 
 export function MobileConfigurationError({ missingKeys }: MobileConfigurationErrorProps) {
