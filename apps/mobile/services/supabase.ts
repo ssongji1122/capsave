@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { buildStoragePath } from './upload-flow';
 import { resolveSupabaseConfiguration } from './supabase-config';
+import { createResilientAuthStorage } from './auth-storage';
 
 export const supabaseConfiguration = resolveSupabaseConfiguration(
   Constants.expoConfig?.extra ?? {},
@@ -12,11 +13,13 @@ export const supabaseConfiguration = resolveSupabaseConfiguration(
   }
 );
 
-const SecureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
-};
+const SecureStoreAdapter = createResilientAuthStorage({
+  getItem: (key) => SecureStore.getItemAsync(key),
+  setItem: (key, value) => SecureStore.setItemAsync(key, value),
+  removeItem: (key) => SecureStore.deleteItemAsync(key),
+}, () => {
+  console.warn('[auth] 보안 저장소를 사용할 수 없어 현재 실행에서만 세션을 유지합니다.');
+});
 
 let supabaseClient: SupabaseClient | null = null;
 
