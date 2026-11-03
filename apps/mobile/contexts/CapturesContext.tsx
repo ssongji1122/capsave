@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { Alert } from 'react-native';
 import {
   CaptureItem,
+  getAllCaptures as getCachedCaptures,
   replaceAllCaptures,
   deleteCapture as dbDeleteCapture,
   saveCapture as dbSaveCapture,
@@ -19,6 +20,7 @@ import {
 import {
   deleteCaptureForSession,
   getSessionVisibleCaptures,
+  loadCachedCapturesForSession,
   loadCapturesForSession,
   searchVisibleCaptures,
   toMobileCapture,
@@ -27,10 +29,17 @@ import {
   assertCanSaveCapture,
   CaptureSaveLimitError,
 } from '@/services/mobile-save-capacity';
+import {
+  clearCaptureCacheOwner,
+  getCaptureCacheOwner,
+  setCaptureCacheOwner,
+} from '@/services/capture-cache-owner';
+import { syncCapturesForSession } from '@/services/capture-sync-flow';
 
 interface CapturesContextValue {
   captures: CaptureItem[];
   isLoading: boolean;
+  syncError: string | null;
   refresh: () => Promise<void>;
   saveCapture: (analysis: AnalysisResult, imageUrl: string) => Promise<void>;
   deleteCapture: (id: number) => Promise<boolean>;
@@ -44,9 +53,12 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [capturesOwnerId, setCapturesOwnerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const { session } = useAuth();
-  const isRefreshing = useRef(false);
+  const refreshGeneration = useRef(0);
   const sessionUserId = session?.user.id ?? null;
+  const sessionUserIdRef = useRef(sessionUserId);
+  sessionUserIdRef.current = sessionUserId;
   const visibleCaptures = useMemo(
     () => getSessionVisibleCaptures(sessionUserId, capturesOwnerId, captures),
     [sessionUserId, capturesOwnerId, captures]
@@ -55,25 +67,45 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setCaptures([]);
     setCapturesOwnerId(null);
+    setSyncError(null);
   }, [sessionUserId]);
 
   const refresh = useCallback(async () => {
-    if (isRefreshing.current) return;
-    isRefreshing.current = true;
-    try {
-      setIsLoading(true);
+    const generation = refreshGeneration.current + 1;
+    refreshGeneration.current = generation;
+    const requestedOwnerId = session?.user.id ?? null;
+    const isCurrentRequest = () => (
+      refreshGeneration.current === generation
+      && sessionUserIdRef.current === requestedOwnerId
+    );
 
-      const mobileItems = await loadCapturesForSession(session, {
+    setIsLoading(true);
+
+    await syncCapturesForSession(session, {
+      loadCache: (activeSession) => loadCachedCapturesForSession(activeSession, {
+        getCachedOwnerId: getCaptureCacheOwner,
+        getCachedCaptures,
+      }),
+      loadServer: (activeSession) => loadCapturesForSession(activeSession, {
         getServerCaptures: () => supaGetAll(supabase),
         replaceCachedCaptures: replaceAllCaptures,
-      });
-      setCaptures(mobileItems);
-      setCapturesOwnerId(session?.user.id ?? null);
-    } catch (error) {
-      console.error('Failed to load captures:', error);
-    } finally {
+        clearCachedOwnerId: clearCaptureCacheOwner,
+        setCachedOwnerId: setCaptureCacheOwner,
+      }),
+      onCaptures: (loadedCaptures) => {
+        if (!isCurrentRequest()) return;
+        setCaptures(loadedCaptures);
+        setCapturesOwnerId(requestedOwnerId);
+        setIsLoading(false);
+      },
+      onSyncError: (message) => {
+        if (!isCurrentRequest()) return;
+        setSyncError(message);
+      },
+    });
+
+    if (isCurrentRequest()) {
       setIsLoading(false);
-      isRefreshing.current = false;
     }
   }, [session]);
 
@@ -148,6 +180,7 @@ export function CapturesProvider({ children }: { children: React.ReactNode }) {
       value={{
         captures: visibleCaptures,
         isLoading,
+        syncError,
         refresh,
         saveCapture,
         deleteCapture,

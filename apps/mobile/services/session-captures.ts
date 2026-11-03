@@ -10,6 +10,13 @@ export interface SessionLike {
 interface LoadCapturesDeps {
   getServerCaptures: () => Promise<Pick<PaginatedResult, 'items'>>;
   replaceCachedCaptures: (captures: MobileCaptureItem[]) => Promise<void>;
+  clearCachedOwnerId: () => Promise<void>;
+  setCachedOwnerId: (userId: string) => Promise<void>;
+}
+
+interface LoadCachedCapturesDeps {
+  getCachedOwnerId: () => Promise<string | null>;
+  getCachedCaptures: () => Promise<MobileCaptureItem[]>;
 }
 
 interface DeleteCaptureForSessionDeps {
@@ -46,8 +53,36 @@ export async function loadCapturesForSession(
 
   const { items } = await deps.getServerCaptures();
   const mobileItems = items.map(toMobileCapture);
-  await deps.replaceCachedCaptures(mobileItems);
+
+  try {
+    await deps.clearCachedOwnerId();
+    await deps.replaceCachedCaptures(mobileItems);
+    await deps.setCachedOwnerId(session.user.id);
+  } catch {
+    try {
+      await deps.clearCachedOwnerId();
+    } catch {
+      // The fresh server response remains usable even when local cache cleanup fails.
+    }
+  }
+
   return mobileItems;
+}
+
+export async function loadCachedCapturesForSession(
+  session: SessionLike | null,
+  deps: LoadCachedCapturesDeps
+): Promise<MobileCaptureItem[]> {
+  if (!session) {
+    return [];
+  }
+
+  const cachedOwnerId = await deps.getCachedOwnerId();
+  if (cachedOwnerId !== session.user.id) {
+    return [];
+  }
+
+  return deps.getCachedCaptures();
 }
 
 export async function deleteCaptureForSession(

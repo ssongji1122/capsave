@@ -2,6 +2,7 @@ import type { CaptureItem as SharedCaptureItem } from '@scrave/shared';
 import {
   deleteCaptureForSession,
   getSessionVisibleCaptures,
+  loadCachedCapturesForSession,
   loadCapturesForSession,
   searchVisibleCaptures,
   toMobileCapture,
@@ -34,12 +35,15 @@ describe('loadCapturesForSession', () => {
     const deps = {
       getServerCaptures: jest.fn(),
       replaceCachedCaptures: jest.fn(),
+      clearCachedOwnerId: jest.fn(),
+      setCachedOwnerId: jest.fn(),
     };
 
     await expect(loadCapturesForSession(null, deps)).resolves.toEqual([]);
 
     expect(deps.getServerCaptures).not.toHaveBeenCalled();
     expect(deps.replaceCachedCaptures).not.toHaveBeenCalled();
+    expect(deps.setCachedOwnerId).not.toHaveBeenCalled();
   });
 
   it('loads authenticated captures from the server and refreshes the local cache', async () => {
@@ -47,24 +51,85 @@ describe('loadCapturesForSession', () => {
     const deps = {
       getServerCaptures: jest.fn().mockResolvedValue({ items: [serverCapture] }),
       replaceCachedCaptures: jest.fn().mockResolvedValue(undefined),
+      clearCachedOwnerId: jest.fn().mockResolvedValue(undefined),
+      setCachedOwnerId: jest.fn().mockResolvedValue(undefined),
     };
 
     const result = await loadCapturesForSession({ user: { id: 'user-1' } }, deps);
 
     expect(result).toEqual([toMobileCapture(serverCapture)]);
     expect(deps.replaceCachedCaptures).toHaveBeenCalledWith(result);
+    expect(deps.clearCachedOwnerId).toHaveBeenCalledTimes(1);
+    expect(deps.setCachedOwnerId).toHaveBeenCalledWith('user-1');
+    expect(deps.clearCachedOwnerId.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.replaceCachedCaptures.mock.invocationCallOrder[0],
+    );
+    expect(deps.replaceCachedCaptures.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.setCachedOwnerId.mock.invocationCallOrder[0],
+    );
   });
 
   it('does not keep stale local captures when the server has none for this session', async () => {
     const deps = {
       getServerCaptures: jest.fn().mockResolvedValue({ items: [] }),
       replaceCachedCaptures: jest.fn().mockResolvedValue(undefined),
+      clearCachedOwnerId: jest.fn().mockResolvedValue(undefined),
+      setCachedOwnerId: jest.fn().mockResolvedValue(undefined),
     };
 
     const result = await loadCapturesForSession({ user: { id: 'user-2' } }, deps);
 
     expect(result).toEqual([]);
     expect(deps.replaceCachedCaptures).toHaveBeenCalledWith([]);
+  });
+
+  it('returns fresh server rows but leaves a failed local cache unowned', async () => {
+    const serverCapture = makeSharedCapture();
+    const deps = {
+      getServerCaptures: jest.fn().mockResolvedValue({ items: [serverCapture] }),
+      replaceCachedCaptures: jest.fn().mockRejectedValue(new Error('sqlite unavailable')),
+      clearCachedOwnerId: jest.fn().mockResolvedValue(undefined),
+      setCachedOwnerId: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await expect(loadCapturesForSession({ user: { id: 'user-1' } }, deps))
+      .resolves.toEqual([toMobileCapture(serverCapture)]);
+
+    expect(deps.clearCachedOwnerId).toHaveBeenCalledTimes(2);
+    expect(deps.setCachedOwnerId).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadCachedCapturesForSession', () => {
+  const cached = [toMobileCapture(makeSharedCapture())];
+
+  it('returns the cache only to the session that owns it', async () => {
+    const getCachedCaptures = jest.fn().mockResolvedValue(cached);
+    await expect(loadCachedCapturesForSession({ user: { id: 'user-1' } }, {
+      getCachedOwnerId: async () => 'user-1',
+      getCachedCaptures,
+    })).resolves.toEqual(cached);
+    expect(getCachedCaptures).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not read a cache owned by another account', async () => {
+    const getCachedCaptures = jest.fn();
+    await expect(loadCachedCapturesForSession({ user: { id: 'user-2' } }, {
+      getCachedOwnerId: async () => 'user-1',
+      getCachedCaptures,
+    })).resolves.toEqual([]);
+    expect(getCachedCaptures).not.toHaveBeenCalled();
+  });
+
+  it('does not read authenticated cache without a session', async () => {
+    const getCachedOwnerId = jest.fn();
+    const getCachedCaptures = jest.fn();
+    await expect(loadCachedCapturesForSession(null, {
+      getCachedOwnerId,
+      getCachedCaptures,
+    })).resolves.toEqual([]);
+    expect(getCachedOwnerId).not.toHaveBeenCalled();
+    expect(getCachedCaptures).not.toHaveBeenCalled();
   });
 });
 

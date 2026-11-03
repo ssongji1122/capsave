@@ -1,6 +1,6 @@
 import { StickerDecoration } from '@/components/StickerDecoration';
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TextInput, Animated, StatusBar, RefreshControl, useWindowDimensions, Alert, Linking } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,12 +16,14 @@ import { useCaptureMeta } from '@/contexts/CaptureMetaContext';
 import { selectArchiveCaptures, ARCHIVE_LENSES } from '@/services/archive-view';
 import type { ArchiveLens } from '../../../../packages/shared/src/utils/capture-intent';
 import { useCaptures } from '@/contexts/CapturesContext';
+import { selectCaptureImage } from '@/services/image-picker-flow';
+import { CaptureSyncNotice } from '@/components/CaptureSyncNotice';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();
-  const { captures: allCaptures, isLoading, refresh, deleteCapture } = useCaptures();
+  const { captures: allCaptures, isLoading, syncError, refresh, deleteCapture } = useCaptures();
 
   const { metaMap, error: metaError } = useCaptureMeta();
   const [lens, setLens] = useState<ArchiveLens>('all');
@@ -59,8 +61,11 @@ export default function HomeScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refresh();
-    setRefreshing(false);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -74,22 +79,39 @@ export default function HomeScreen() {
       Animated.spring(fabScale, { toValue: 1, useNativeDriver: true }),
     ]).start();
 
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('사진 접근 권한이 필요합니다.');
-      return;
-    }
+    try {
+      const result = await selectCaptureImage({
+        requestPermission: ImagePicker.requestMediaLibraryPermissionsAsync,
+        openPicker: ImagePicker.launchImageLibraryAsync,
+        onPermissionDenied: (requiresSettings) => {
+          if (requiresSettings) {
+            Alert.alert(
+              '사진 접근 권한 필요',
+              '설정에서 사진 접근을 허용한 뒤 다시 시도해 주세요.',
+              [
+                { text: '취소', style: 'cancel' },
+                { text: '설정 열기', onPress: () => { void Linking.openSettings(); } },
+              ],
+            );
+            return;
+          }
+          Alert.alert('사진 접근 권한 필요', '사진 접근 요청을 허용한 뒤 다시 시도해 주세요.');
+        },
+      });
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
+      if (result.status !== 'selected') {
+        if (result.status === 'error') {
+          Alert.alert('사진 선택 실패', '선택한 사진을 불러오지 못했습니다. 다시 시도해 주세요.');
+        }
+        return;
+      }
 
-    if (!result.canceled && result.assets[0]) {
       router.push({
         pathname: '/capture/analyze',
-        params: { imageUri: result.assets[0].uri },
+        params: { imageUri: result.imageUri },
       });
+    } catch {
+      Alert.alert('사진 선택 실패', '사진 보관함을 열지 못했습니다. 다시 시도해 주세요.');
     }
   };
 
@@ -135,6 +157,12 @@ export default function HomeScreen() {
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="내 가이드" onPress={()=>router.push('/guide' as never)} style={{minHeight:44,justifyContent:'center'}}><Text style={{color:colors.primary,fontSize:13}}>내 가이드</Text></TouchableOpacity>
         </View>
       </View>
+
+      <CaptureSyncNotice
+        message={syncError}
+        onRetry={() => { void handleRefresh(); }}
+        retrying={refreshing}
+      />
 
       <View style={styles.archiveFilters} accessibilityLabel="다시 꺼내 보기">
         {ARCHIVE_LENSES.map(option=><TouchableOpacity key={option.id} accessibilityRole="button" accessibilityLabel={option.label} accessibilityState={{selected:lens===option.id}} onPress={()=>setLens(option.id)} style={[styles.archiveFilter,{borderBottomColor:lens===option.id?colors.primary:'transparent'}]}><Text style={{fontSize:13,color:lens===option.id?colors.text:colors.textSecondary}}>{option.label}</Text></TouchableOpacity>)}

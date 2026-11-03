@@ -9,6 +9,7 @@ import { restoreAuthSession } from '../services/auth-bootstrap';
 import { signOutAndClearLocalCaptures } from '../services/auth-session';
 import { clearAllCaptures } from '../services/database';
 import { completeGoogleSignIn } from '../services/google-sign-in';
+import { clearCaptureCacheOwner } from '../services/capture-cache-owner';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOutAndClearLocalCaptures({
       signOut: () => supabase.auth.signOut(),
       clearCaptures: clearAllCaptures,
+      clearCacheOwner: clearCaptureCacheOwner,
     });
     setSession(null);
   }, []);
