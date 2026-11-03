@@ -46,10 +46,12 @@
 
 - shared: 263개 통과
 - web: 526개 통과, 3개 의도적 건너뜀
-- mobile: 91개 통과
-- `npm run verify:core`로 세 작업공간 테스트 880개와 타입 검사 통과
+- mobile: 94개 통과
+- `npm run verify:core`로 세 작업공간 테스트 883개와 타입 검사 통과
 - Next.js 15.5.29·sharp 0.35.5에서 웹 프로덕션 37개 경로 빌드 통과
 - `npm run test:e2e`로 Playwright 51개 사용자 여정 통과
 - Expo iOS 번들 1,734개 모듈·154개 자산 내보내기 통과
 - Xcode iOS Simulator arm64 네이티브 빌드 통과: `/tmp/scrave-derived/Build/Products/Debug-iphonesimulator/Scrave.app`
+- 환경변수를 빌드 프로세스에만 주입한 Xcode Release 시뮬레이터 앱이 iPhone 17 Pro에서 첫 실행과 콜드 재실행 후 로그인 화면까지 도달했습니다.
+- 키체인 권한이 없는 실행 환경에서 인증 초기화가 무한 로딩으로 남던 문제를 실패 테스트 3개로 재현하고, 로그아웃 상태로 안전하게 시작하도록 수정했습니다.
 - 프로덕션 의존성 감사는 47건(치명적 2)에서 41건(치명적 0)으로 줄였습니다. 남은 직접 위험은 Expo SDK·React Native 큰 버전 마이그레이션 범위입니다.

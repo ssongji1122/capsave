@@ -5,6 +5,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { supabase } from '../services/supabase';
+import { restoreAuthSession } from '../services/auth-bootstrap';
 import { signOutAndClearLocalCaptures } from '../services/auth-session';
 import { clearAllCaptures } from '../services/database';
 import { completeGoogleSignIn } from '../services/google-sign-in';
@@ -36,8 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Restore session on mount
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
+    restoreAuthSession(() => supabase.auth.getSession()).then(({ session: restoredSession, error }) => {
+      if (error) {
+        const message = error instanceof Error ? error.message : '알 수 없는 오류';
+        console.warn('[auth] 저장된 세션을 읽지 못해 로그아웃 상태로 시작합니다.', message);
+      }
+      setSession(restoredSession);
       setIsLoading(false);
     });
 
