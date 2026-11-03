@@ -53,8 +53,9 @@
 - Next.js 15.5.29·sharp 0.35.5에서 웹 프로덕션 38개 경로 빌드 통과
 - `npm run test:e2e`가 격리된 웹 서버와 테스트 전용 인증 환경을 자동으로 띄우며 Playwright 52개 사용자 여정을 통과
 - `/import`에서 공개 Instagram 링크를 붙여 넣어 원문·작성자·전체 미디어를 확인하고, 저장 뒤 보관함에서 같은 게시물 묶음으로 다시 여는 Chromium 여정을 320px 화면에서 통과
-- Expo iOS 번들 1,742개 모듈·154개 자산 내보내기 통과
-- Expo Android 번들 1,755개 모듈·162개 자산 내보내기 통과. 설치 가능한 Android 네이티브 산출물은 패키지 이름과 `android/` 프로젝트가 없어 아직 만들지 않았습니다.
+- Expo iOS 번들 1,747개 모듈·154개 자산 내보내기 통과
+- Expo Android 번들 1,760개 모듈·162개 자산 내보내기 통과. 설치 가능한 Android 네이티브 산출물은 패키지 이름과 `android/` 프로젝트가 없어 아직 만들지 않았습니다.
+- 최신 iOS·Android 내보내기의 `metadata.json`에서 `openaiApiKey`·`aiProvider`·Supabase·Google 설정 필드가 모두 없음을 값 노출 없이 확인했습니다. 현재 내보내기는 설정값을 포함하지 않습니다. `app.config.ts`와 클라이언트 분석 코드에는 OpenAI 키 주입 경로가 남아 있어, 제거 승인 전까지 구조적 위험으로 분류합니다.
 - Xcode iOS Simulator arm64 네이티브 빌드 통과: `/tmp/scrave-derived/Build/Products/Debug-iphonesimulator/Scrave.app`
 - 환경변수를 빌드 프로세스에만 주입한 Xcode Release arm64 시뮬레이터 앱이 깨끗한 파생 캐시에서 빌드됐고, 산출물의 `UIUserInterfaceStyle=Light`를 확인했습니다. 같은 앱이 iPhone 17 Pro에서 첫 실행과 콜드 재실행 후 로그인 화면까지 도달했습니다.
 - Supabase 설정이 없는 깨끗한 개발 실행에서 `createClient('', '')`가 앱 시작 전에 예외를 내던 문제를 실패 테스트 4개로 재현했습니다. 초기화를 지연하고, 값 대신 필요한 `EXPO_PUBLIC_SUPABASE_URL=`·`EXPO_PUBLIC_SUPABASE_ANON_KEY=` 이름만 보여 주는 설정 화면으로 바꿨습니다. iPhone 17 Pro 시뮬레이터에서 RedBox 없이 화면이 렌더링되는 것을 확인했으며, 개발 클라이언트 열기 팝업은 macOS 잠금 때문에 닫지 못한 상태로 캡처했습니다. 근거 이미지는 `_dogfood/assets/2026-11-04_scrave-product-status/mobile-missing-config.png`입니다.
