@@ -10,7 +10,7 @@ import {
   uploadMobileSocialLinkImage,
   type MobileSocialLinkCapture,
 } from '@/services/social-link-intake';
-import { deleteImageFromStorage, supabase } from '@/services/supabase';
+import { deleteImageFromStorage, getSupabaseClient } from '@/services/supabase';
 
 function getServerUrl(): string {
   return (
@@ -21,7 +21,7 @@ function getServerUrl(): string {
 }
 
 async function getToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSupabaseClient().auth.getSession();
   return data.session?.access_token ?? null;
 }
 

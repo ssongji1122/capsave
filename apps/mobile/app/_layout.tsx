@@ -12,6 +12,8 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CaptureMetaProvider } from '@/contexts/CaptureMetaContext';
 import { CapturesProvider } from '@/contexts/CapturesContext';
 import { UserPreferencesProvider } from '@/contexts/UserPreferencesContext';
+import { MobileConfigurationError } from '@/components/MobileConfigurationError';
+import { supabaseConfiguration } from '@/services/supabase';
 
 export {
   ErrorBoundary,
@@ -55,6 +57,10 @@ export default function RootLayout() {
 
   if (!loaded) {
     return null;
+  }
+
+  if (supabaseConfiguration.status === 'missing') {
+    return <MobileConfigurationError missingKeys={supabaseConfiguration.missingKeys} />;
   }
 
   return (

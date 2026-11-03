@@ -4,7 +4,7 @@ import { Session, User } from '@supabase/supabase-js';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
-import { supabase } from '../services/supabase';
+import { getSupabaseClient } from '../services/supabase';
 import { restoreAuthSession } from '../services/auth-bootstrap';
 import { signOutAndClearLocalCaptures } from '../services/auth-session';
 import { clearAllCaptures } from '../services/database';
@@ -25,6 +25,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = getSupabaseClient();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

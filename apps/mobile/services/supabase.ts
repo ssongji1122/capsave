@@ -1,16 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { buildStoragePath } from './upload-flow';
+import { resolveSupabaseConfiguration } from './supabase-config';
 
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    '[supabase] 환경변수가 없습니다. .env 파일에 EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY를 설정하고 expo start --clear로 재시작하세요.'
-  );
-}
+export const supabaseConfiguration = resolveSupabaseConfiguration(
+  Constants.expoConfig?.extra ?? {},
+  {
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  }
+);
 
 const SecureStoreAdapter = {
   getItem: (key: string) => SecureStore.getItemAsync(key),
@@ -18,14 +18,24 @@ const SecureStoreAdapter = {
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: SecureStoreAdapter,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+let supabaseClient: SupabaseClient | null = null;
+
+export function getSupabaseClient(): SupabaseClient {
+  if (supabaseConfiguration.status === 'missing') {
+    throw new Error(`Supabase configuration is missing: ${supabaseConfiguration.missingKeys.join(', ')}`);
+  }
+
+  supabaseClient ??= createClient(supabaseConfiguration.url, supabaseConfiguration.anonKey, {
+    auth: {
+      storage: SecureStoreAdapter,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+
+  return supabaseClient;
+}
 
 /**
  * 로컬 이미지 URI를 Supabase Storage에 업로드하고 path를 반환한다.
@@ -40,7 +50,7 @@ export async function uploadImageToStorage(
   const response = await fetch(localUri);
   const blob = await response.blob();
 
-  const { error } = await supabase.storage
+  const { error } = await getSupabaseClient().storage
     .from('captures')
     .upload(path, blob, {
       contentType: 'image/jpeg',
@@ -57,7 +67,7 @@ export async function uploadImageToStorage(
 export async function deleteImageFromStorage(path: string): Promise<void> {
   if (!path) return;
 
-  const { error } = await supabase.storage
+  const { error } = await getSupabaseClient().storage
     .from('captures')
     .remove([path]);
 

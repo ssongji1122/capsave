@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import { Text } from '@/components/ScraveText';
-import { deleteImageFromStorage, supabase, uploadImageToStorage } from '@/services/supabase';
+import { deleteImageFromStorage, getSupabaseClient, uploadImageToStorage } from '@/services/supabase';
 import { getAllCaptures, replaceAllCaptures } from '@/services/database';
 import { saveCapture as supaSave } from '@scrave/shared';
 import { migrateLocalCapturesToAccount } from '@/services/local-migration';
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export function MigrationModal({ visible, userId, localCount, onComplete, onSkip }: Props) {
+  const supabase = getSupabaseClient();
   const [migrating, setMigrating] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: localCount });
   const colorScheme = useColorScheme() ?? 'dark';

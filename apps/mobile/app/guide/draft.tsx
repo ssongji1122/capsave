@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { PlaceReviews } from '@/components/PlaceReviews';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import {
   getCurrentMobileGuideDraft,
   moveMobileGuidePlace,
@@ -17,7 +17,7 @@ import {
 } from '@/services/guides';
 
 async function getToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSupabaseClient().auth.getSession();
   return data.session?.access_token ?? null;
 }
 

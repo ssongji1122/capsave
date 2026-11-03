@@ -10,7 +10,7 @@ import { CaptureCard } from '@/components/CaptureCard';
 import { PlacesMapView } from '@/components/PlacesMapView';
 import { useCaptures } from '@/contexts/CapturesContext';
 import { PlaceInfo } from '@/services/analyzers/types';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import {
   MIN_GUIDE_CAPTURES,
   createMobileGuideDraft,
@@ -21,7 +21,7 @@ import {
 type ViewMode = 'map' | 'list';
 
 async function getToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSupabaseClient().auth.getSession();
   return data.session?.access_token ?? null;
 }
 

@@ -3,12 +3,13 @@ import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Text } from '@/components/ScraveText';
 import Constants from 'expo-constants';
 import { buildArchiveLinks, buildSourceQuery, safeArchiveUrl, type ArchiveCapture } from '@scrave/shared';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import { openUrl } from '@/services/map-linker';
 import { ArchiveIllustration } from '@/components/ArchiveIllustration';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 export function ArchiveSources({ capture }: { capture: ArchiveCapture }) {
+  const supabase = getSupabaseClient();
   const colors = Colors[useColorScheme() ?? 'dark'];
   const query = buildSourceQuery(capture);
   const [status, setStatus] = useState('');

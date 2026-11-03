@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { MapProvider } from '@scrave/shared';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import { useAuth } from './AuthContext';
 
 interface UserPreferences {
@@ -12,6 +12,7 @@ const DEFAULT: UserPreferences = { preferredNavApp: 'tmap' };
 const UserPreferencesContext = createContext<UserPreferences>(DEFAULT);
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
+  const supabase = getSupabaseClient();
   const { session } = useAuth();
   const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT);
 

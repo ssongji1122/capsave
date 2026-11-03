@@ -1,5 +1,5 @@
 import type { AnalysisResult } from '@scrave/shared';
-import { supabase } from './supabase';
+import { getSupabaseClient } from './supabase';
 import { buildStoragePath } from './upload-flow';
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -72,7 +72,7 @@ interface MobileSocialLinkUploadOptions extends MobileSocialLinkApiOptions {
 }
 
 async function uploadBytesToStorage(path: string, bytes: Uint8Array, contentType: string) {
-  const { error } = await supabase.storage.from('captures').upload(path, bytes, {
+  const { error } = await getSupabaseClient().storage.from('captures').upload(path, bytes, {
     contentType,
     upsert: false,
   });

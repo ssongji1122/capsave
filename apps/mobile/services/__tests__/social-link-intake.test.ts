@@ -1,9 +1,9 @@
 jest.mock('../supabase', () => ({
-  supabase: {
+  getSupabaseClient: () => ({
     storage: {
       from: jest.fn(),
     },
-  },
+  }),
 }));
 
 import {

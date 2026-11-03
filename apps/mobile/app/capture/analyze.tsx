@@ -9,7 +9,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { analyzeImage, AnalysisResult, PlaceInfo } from '@/services/ai-analyzer';
 import { getMapLinks, openMap, openUrl } from '@/services/map-linker';
 import { useCaptures } from '@/contexts/CapturesContext';
-import { deleteImageFromStorage, supabase, uploadImageToStorage } from '@/services/supabase';
+import { deleteImageFromStorage, getSupabaseClient, uploadImageToStorage } from '@/services/supabase';
 import {
   ANALYZE_IMAGE_URI_MISSING_ERROR,
   getAnalyzeImageUriState,
@@ -37,6 +37,7 @@ function getProviderColor(provider: MapProvider, colors: typeof Colors.dark): st
 }
 
 export default function AnalyzeScreen() {
+  const supabase = getSupabaseClient();
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const router = useRouter();

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getSignedImageUrl, DEFAULT_SIGNED_URL_EXPIRY } from '@scrave/shared';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 
 const cache = new Map<string, { url: string; expiresAt: number }>();
 const TTL_MS = (DEFAULT_SIGNED_URL_EXPIRY - 600) * 1000;
@@ -24,6 +24,7 @@ function getCached(path: string): string | null {
 }
 
 export function useSignedImage(pathOrUrl: string | null | undefined): string | null {
+  const supabase = getSupabaseClient();
   const [url, setUrl] = useState<string | null>(() => {
     if (!pathOrUrl) return null;
     if (passthrough(pathOrUrl)) return pathOrUrl;

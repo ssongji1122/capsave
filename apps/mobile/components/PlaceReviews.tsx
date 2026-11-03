@@ -9,7 +9,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { openUrl } from '@/services/map-linker';
 import { describeReviewSource, fetchPlaceReviews, formatSceneLine } from '@/services/place-reviews';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 
 interface PlaceReviewsProps {
   placeName: string;
@@ -23,7 +23,7 @@ type LoadState =
   | { status: 'error'; message: string };
 
 async function getToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSupabaseClient().auth.getSession();
   return data.session?.access_token ?? null;
 }
 

@@ -9,7 +9,7 @@ import {
 } from '@/services/database';
 import { CaptureCategory, AnalysisResult } from '@/services/ai-analyzer';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import {
   MAX_FREE_CAPTURES,
   countUserCaptures,
@@ -50,6 +50,7 @@ interface CapturesContextValue {
 const CapturesContext = createContext<CapturesContextValue | null>(null);
 
 export function CapturesProvider({ children }: { children: React.ReactNode }) {
+  const supabase = getSupabaseClient();
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [capturesOwnerId, setCapturesOwnerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
