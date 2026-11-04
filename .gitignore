@@ -56,3 +56,4 @@ supabase/.temp/
 .vercel
 
 .envrc
+.env.local
