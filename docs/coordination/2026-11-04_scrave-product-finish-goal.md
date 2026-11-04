@@ -48,12 +48,13 @@
 
 - 열린 변경 요청은 [드래프트 PR #30](https://github.com/ssongji1122/capsave/pull/30) 한 건입니다. 가상 병합에서 9개 파일이 충돌했습니다. 현재 구현의 좌표 저장·30일 만료·가이드 전달 표적 테스트 119개가 통과했으며, [통합 감사](../plans/2026-11-04_pr30-integration-audit.md)에서는 최신 가이드·갤러리 타입을 지키기 위해 그대로 병합하지 않고 대체 여부를 확인한 뒤 닫는 안을 추천합니다.
 - shared: 275개 통과
-- web: 554개 통과, 3개 의도적 건너뜀
+- web: 555개 통과, 3개 의도적 건너뜀
 - mobile: 151개 통과
-- `npm run verify:core`로 세 작업공간 테스트 980개와 타입 검사 통과
+- `npm run verify:core`로 세 작업공간 테스트 981개와 타입 검사 통과
 - Next.js 15.5.29·sharp 0.35.5에서 웹 프로덕션 38개 경로 빌드 통과
 - `npm run test:e2e`가 격리된 웹 서버와 테스트 전용 인증 환경을 자동으로 띄우며 Playwright 53개 사용자 여정을 통과
 - 기존 운영 배포 `https://scrave.vercel.app`의 홈·로그인·가져오기 화면은 390px·1440px에서 모두 HTTP 200, 가로 넘침 0개, 깨진 이미지 0개, 화면 오류 0개였습니다. 비로그인 `/api/guides` 요청은 HTTP 401로 보호됐습니다. 이는 현재 운영 기준선 검증이며 이 작업 브랜치의 배포 완료를 뜻하지 않습니다.
+- 현재 브랜치 preview `dpl_9Q6DEGhxWUZYpLkmJwT8t8EGpxqE`는 Ready입니다. Supabase 설정이 없는 첫 preview에서 `/api/guides` HTTP 500을 재현한 뒤, 인증 진입점이 클라이언트를 만들지 않고 비로그인으로 끝나게 실패 테스트부터 고쳤습니다. 후속 preview의 홈·로그인·가져오기는 인증된 Vercel curl에서 HTTP 200, 비로그인 `/api/guides`는 HTTP 401이며 같은 배포의 HTTP 500 로그는 0건입니다. preview 자체는 Vercel 배포 보호로 일반 접속 시 로그인 화면으로 이동합니다.
 - `/import`에서 공개 Instagram 링크를 붙여 넣어 원문·작성자·전체 미디어를 확인하고, 저장 뒤 보관함에서 같은 게시물 묶음으로 다시 여는 Chromium 여정을 320px 화면에서 통과
 - Expo iOS 번들 1,750개 모듈·154개 자산 내보내기 통과
 - Expo Android 번들 1,763개 모듈·162개 자산 내보내기 통과. 설치 가능한 Android 네이티브 산출물은 패키지 이름과 `android/` 프로젝트가 없어 아직 만들지 않았습니다.
