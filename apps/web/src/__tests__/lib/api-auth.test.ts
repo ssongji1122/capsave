@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 const mocks = vi.hoisted(() => ({
@@ -44,8 +44,26 @@ function requestWithoutBearer() {
 describe('getAuthUserAndTouch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-anon-key');
     mocks.createSupabaseClient.mockReturnValue(mocks.bearerClient);
     mocks.createServerClient.mockResolvedValue(mocks.cookieClient);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('returns null without creating an auth client when Supabase configuration is missing', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+
+    const { getAuthUserAndTouch } = await import('@/lib/api-auth');
+    const user = await getAuthUserAndTouch(requestWithoutBearer());
+
+    expect(user).toBeNull();
+    expect(mocks.createSupabaseClient).not.toHaveBeenCalled();
+    expect(mocks.createServerClient).not.toHaveBeenCalled();
   });
 
   it('returns null and does not touch activity for anonymous bearer users', async () => {

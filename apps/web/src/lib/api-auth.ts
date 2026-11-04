@@ -4,6 +4,13 @@ import { createSupabaseClient, extractBearerToken, touchUserSeen } from '@scrave
 import { createClient } from '@/lib/supabase/server';
 import { getRealUserId } from '@/lib/auth-user';
 
+function hasSupabasePublicConfig() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  );
+}
+
 /**
  * Resolve the authenticated user from a request (Bearer token first, cookie fallback).
  * Side effect: fire-and-forget upsert into user_activity for session-DAU tracking.
@@ -11,6 +18,13 @@ import { getRealUserId } from '@/lib/auth-user';
  * Returns null for unauthenticated requests (no error thrown).
  */
 export async function getAuthUserAndTouch(request: NextRequest) {
+  if (!hasSupabasePublicConfig()) {
+    console.warn(
+      '[api-auth] Supabase configuration is missing: NEXT_PUBLIC_SUPABASE_URL= and NEXT_PUBLIC_SUPABASE_ANON_KEY= are required.'
+    );
+    return null;
+  }
+
   const token = extractBearerToken(request.headers.get('authorization'));
 
   if (token) {
