@@ -6,8 +6,10 @@ import type { CaptureUserMeta } from '@/lib/capture-intent';
 import { swipeStep } from '@/lib/capture-swipe';
 import { CaptureCard } from './CaptureCard';
 
-export function CaptureDeck({ captures, onDelete, onMetaChange, initialCategory }: {
+export function CaptureDeck({ captures, onDelete, onMetaChange, initialCategory, searchQuery, searchSources }: {
   captures: CaptureItem[];
+  searchQuery?: string;
+  searchSources?: readonly CaptureItem[];
   initialCategory?: ArchiveSection;
   onDelete: (id: number) => void;
   onMetaChange?: (id: number, meta: CaptureUserMeta) => void;
@@ -62,7 +64,7 @@ export function CaptureDeck({ captures, onDelete, onMetaChange, initialCategory 
         }}
         onPointerCancel={() => {start.current = null; dragged.current = false; setOffset(0);}}
       >
-        <CaptureCard key={item.id} item={item} onDelete={onDelete} onMetaChange={onMetaChange} />
+        <CaptureCard searchQuery={searchQuery} searchSources={searchSources} key={item.id} item={item} onDelete={onDelete} onMetaChange={onMetaChange} />
       </div>
       <div className="flex justify-between items-center gap-3 mt-4">
         <button type="button" aria-label="이전 카드" disabled={index === 0} onClick={() => move(-1)} className="min-h-11 min-w-11 rounded-full border border-border px-4 text-primary disabled:opacity-40">←</button>

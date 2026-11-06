@@ -7,6 +7,7 @@ import { CaptureCard } from './CaptureCard';
 
 interface UncertainQueueProps {
   captures: CaptureItem[];
+  searchQuery?: string;
   onDelete: (id: number) => void;
   onReclassify: (
     id: number,
@@ -15,7 +16,7 @@ interface UncertainQueueProps {
   ) => Promise<CaptureItem | null | void>;
 }
 
-export function UncertainQueue({ captures, onDelete, onReclassify }: UncertainQueueProps) {
+export function UncertainQueue({ captures, onDelete, onReclassify, searchQuery }: UncertainQueueProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [reclassifying, setReclassifying] = useState<number | null>(null);
 
@@ -55,7 +56,7 @@ export function UncertainQueue({ captures, onDelete, onReclassify }: UncertainQu
         <div className="mt-3 space-y-3">
           {captures.map((item) => (
             <div key={item.id} className="relative">
-              <CaptureCard item={item} onDelete={onDelete} />
+              <CaptureCard searchQuery={searchQuery} item={item} onDelete={onDelete} />
               {/* Reclassify actions */}
               <div className="flex gap-2 px-4 pb-4 -mt-1">
                 <span className="text-xs text-text-tertiary self-center mr-1">분류 변경:</span>

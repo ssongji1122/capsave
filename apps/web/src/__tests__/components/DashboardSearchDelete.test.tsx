@@ -93,14 +93,14 @@ describe('dashboard search results', () => {
     });
 
     await waitFor(() => expect(searchCaptures).toHaveBeenCalledWith('삭제'));
-    await screen.findByText('삭제할 검색 결과');
+    await screen.findByRole('heading', { name: '삭제할 검색 결과' });
 
     fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
     fireEvent.click(screen.getByRole('button', { name: '삭제할 검색 결과 삭제' }));
 
     await waitFor(() => expect(deleteCapture).toHaveBeenCalledWith(1));
     await waitFor(() => {
-      expect(screen.queryByText('삭제할 검색 결과')).toBeNull();
+      expect(screen.queryByRole('heading', { name: '삭제할 검색 결과' })).toBeNull();
     });
   });
 
@@ -184,13 +184,13 @@ describe('dashboard search results', () => {
     });
 
     await waitFor(() => expect(searchCaptures).toHaveBeenCalledWith('삭제 실패'));
-    await screen.findByText('삭제 실패 검색 결과');
+    await screen.findByRole('heading', { name: '삭제 실패 검색 결과' });
 
     fireEvent.click(screen.getByRole('button', { name: '더 보기' }));
     fireEvent.click(screen.getByRole('button', { name: '삭제 실패 검색 결과 삭제' }));
 
     await waitFor(() => expect(deleteCapture).toHaveBeenCalledWith(3));
-    expect(screen.getByText('삭제 실패 검색 결과')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '삭제 실패 검색 결과' })).toBeTruthy();
   });
 
   it('moves a reclassified search result out of the uncertain queue immediately', async () => {
@@ -228,6 +228,7 @@ describe('dashboard search results', () => {
 
     await waitFor(() => expect(searchCaptures).toHaveBeenCalledWith('재분류'));
     await screen.findByText('확인 필요');
+    expect(screen.getByLabelText('검색 근거').textContent).toContain('제목에서 찾음: 재분류할 검색 결과');
 
     fireEvent.click(screen.getByRole('button', { name: '장소' }));
 
@@ -281,5 +282,30 @@ describe('dashboard search results', () => {
 
     await screen.findByText('게스트 성수 카페');
     expect(searchCaptures).not.toHaveBeenCalled();
+    expect((await screen.findByLabelText('검색 근거')).textContent).toContain('장소 주소에서 찾음: 서울 성동구 연무장길');
+    fireEvent.click(screen.getByRole('button', { name: '한 장씩' }));
+    expect(screen.getByLabelText('검색 근거').textContent).toContain('연무장길');
+    fireEvent.click(screen.getByRole('button', { name: '검색어 지우기' }));
+    await waitFor(() => expect(screen.queryByLabelText('검색 근거')).toBeNull());
   });
+
+  it('does not attach a newer query to stale asynchronous results after clearing', async () => {
+    let resolveSearch!: (items: CaptureItem[]) => void;
+    const searchCaptures = vi.fn(() => new Promise<CaptureItem[]>(resolve => { resolveSearch = resolve; }));
+    mocks.useCaptures.mockReturnValue({
+      captures: [], isLoading: false, hasMore: false, isLoadingMore: false,
+      loadMore: vi.fn(), deleteCapture: vi.fn(), searchCaptures, reclassifyCapture: vi.fn(),
+      saveCapture: vi.fn(), isFreeLimitReached: false, freeRemaining: 10,
+      isAuthenticated: true, isAuthReady: true,
+    });
+    render(React.createElement(HomePage));
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '파스타' } });
+    await waitFor(() => expect(searchCaptures).toHaveBeenCalledWith('파스타'));
+    fireEvent.click(screen.getByRole('button', { name: '검색어 지우기' }));
+    await new Promise(resolve => setTimeout(resolve, 350));
+    resolveSearch([capture(99, '늦은 응답 카드', { extractedText: '파스타' })]);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(screen.queryByText('늦은 응답 카드')).toBeNull();
+  });
+
 });
