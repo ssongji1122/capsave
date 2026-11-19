@@ -286,7 +286,7 @@ export default function HomePage() {
       <div className="px-4 mb-4"><a href="/import" className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4">정리한 캡처 가져오기</a></div>
 
       {/* Search */}
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar onSearch={handleSearch} storageKey="scrave_dashboard_search_query" />
 
       {/* Uncertain queue */}
       {uncertain.length > 0 && (
