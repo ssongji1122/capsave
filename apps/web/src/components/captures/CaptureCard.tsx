@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getCaptureSearchEvidence } from '@/lib/archive-search';
+import { SearchEvidence } from './SearchEvidence';
 import { createPortal } from 'react-dom';
 import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import { StickerDecoration } from '../stickers/StickerDecoration';
@@ -48,6 +50,8 @@ import { classifyArchiveCapture, ARCHIVE_SECTIONS } from '@scrave/shared';
 import { PlaceReviews } from './PlaceReviews';
 
 interface CaptureCardProps {
+  searchQuery?: string;
+  searchSources?: readonly CaptureItem[];
   item: CaptureItem;
   onDelete: (id: number) => void;
   onMetaChange?: (captureId: number, meta: CaptureUserMeta) => void;
@@ -60,7 +64,7 @@ const PROVIDER_DOT_CLASS: Record<string, string> = {
 };
 const COLLAPSED_TEXT_PREVIEW_LENGTH = 96;
 
-export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: CaptureCardProps) {
+export function CaptureCard({ item: initialItem, onDelete, onMetaChange, searchQuery = '', searchSources }: CaptureCardProps) {
   const [sourceUpdate, setSourceUpdate] = useState<Partial<CaptureItem>>({});
   const [imageIndex, setImageIndex] = useState(0);
   const item = { ...initialItem, ...sourceUpdate };
@@ -249,6 +253,7 @@ export function CaptureCard({ item: initialItem, onDelete, onMetaChange }: Captu
       <div className="p-4">
         <h3 className="font-bold text-[17px] leading-6 text-text-primary">{item.title}</h3>
         <p className="text-sm text-text-secondary mt-1.5 leading-5 truncate" title={item.summary}>{item.summary || primaryPlace?.name || '저장한 캡처'}</p>
+        <SearchEvidence evidence={getCaptureSearchEvidence(initialItem, searchQuery, searchSources)} />
         {originalPost && <a href={originalPost} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-xs text-primary">게시물 열기 ↗</a>}
         <div data-card-actions className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
           {primaryPlace && <Link href={`/map?capture=${item.id}`} className="inline-flex min-h-11 items-center gap-1 text-xs text-primary"><MapPin size={14} aria-hidden="true" />지도 보기</Link>}

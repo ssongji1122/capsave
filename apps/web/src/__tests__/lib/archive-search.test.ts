@@ -3,6 +3,7 @@ import type { CaptureItem } from '@scrave/shared';
 import {
   filterCapturesByArchiveQuery,
   mergeArchiveCaptures,
+  getCaptureSearchEvidence,
 } from '@/lib/archive-search';
 
 function capture(
@@ -88,4 +89,62 @@ describe('filterCapturesByArchiveQuery', () => {
 
     expect(filterCapturesByArchiveQuery(captures, '성수 카페').map((item) => item.id)).toEqual([1]);
   });
+});
+
+
+describe('getCaptureSearchEvidence', () => {
+  it('explains a match found only in extracted text without inventing original text', () => {
+    const item = capture(1, '저녁 메모', { extractedText: '토마토 파스타 소스 비율' });
+    expect(getCaptureSearchEvidence(item, '파스타')).toEqual([
+      { label: '사진에서 읽은 글', excerpt: '토마토 파스타 소스 비율' },
+    ]);
+  });
+
+  it('covers terms in separate fields, preserving existing AND search', () => {
+    const item = capture(1, '저녁 메모', {
+      extractedText: '토마토 파스타', places: [{ name: '식당', address: '서울 성수' }],
+    });
+    expect(getCaptureSearchEvidence(item, '성수 파스타').map(row => row.label))
+      .toEqual(['장소 주소', '사진에서 읽은 글']);
+    expect(filterCapturesByArchiveQuery([item], '성수 없는말')).toEqual([]);
+  });
+
+  it('uses literal matching and keeps source case', () => {
+    const item = capture(1, 'C++ [메모]');
+    expect(getCaptureSearchEvidence(item, 'c++ [메모]')).toEqual([
+      { label: '제목', excerpt: 'C++ [메모]' },
+    ]);
+    expect(getCaptureSearchEvidence(item, '   ')).toEqual([]);
+    expect(getCaptureSearchEvidence(item, '없는말')).toEqual([]);
+  });
+
+  it('shows a match near the end of long text, and later terms in that same field', () => {
+    const item = capture(1, '메모', { extractedText: '시작 ' + '가'.repeat(200) + ' 연무장길' });
+    const rows = getCaptureSearchEvidence(item, '시작 연무장길');
+    expect(rows.some(row => row.excerpt.includes('시작'))).toBe(true);
+    expect(rows.some(row => row.excerpt.includes('연무장길'))).toBe(true);
+    expect(rows.every(row => row.excerpt.length < 100)).toBe(true);
+  });
+
+  it('labels generated related terms separately', () => {
+    expect(getCaptureSearchEvidence(capture(1, '메모', { relatedSearchTerms: ['레시피'] }), '레시피'))
+      .toEqual([{ label: '연관 검색어', excerpt: '레시피' }]);
+  });
+
+  it('keeps evidence from a grouped post member whose title was not retained', () => {
+    const links = ['https://www.instagram.com/p/Example/'];
+    const first = capture(1, '첫 장', { links });
+    const second = capture(2, '둘째 장 파스타', { links });
+    const unrelated = capture(3, '다른 게시물 파스타');
+    expect(getCaptureSearchEvidence(first, '파스타', [first, second, unrelated]))
+      .toEqual([{ label: '묶인 캡처의 제목', excerpt: '둘째 장 파스타' }]);
+  });
+});
+
+
+it('maps case-expanded and non-BMP text back to the saved characters', () => {
+  const item = capture(1, '검증', { extractedText: 'İ' + '🙂'.repeat(30) + '연무장길' });
+  const rows = getCaptureSearchEvidence(item, '연무장길');
+  expect(rows[0].excerpt).toContain('연무장길');
+  expect(rows[0].excerpt).not.toContain('�');
 });

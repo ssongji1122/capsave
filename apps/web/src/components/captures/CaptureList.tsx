@@ -93,11 +93,13 @@ export function CaptureList({
         <div className="flex gap-3 overflow-x-auto pb-2">{related.map(({capture,reasons})=><button type="button" key={capture.id} onClick={()=>setAnchorId(capture.id)} className="w-40 shrink-0 rounded-xl border border-border p-2 text-left"><img src={isDataUri(capture.imageUrl)?capture.imageUrl:`/api/image?path=${encodeURIComponent(extractStoragePath(capture.imageUrl))}`} alt={`${capture.title} 원본`} className="h-32 w-full object-contain" loading="lazy"/><span className="mt-2 block text-sm font-medium">{capture.title}</span><span className="mt-1 block text-xs text-text-secondary">{reasons.join(' / ')}</span></button>)}</div>
         {related.length===0 && <p className="text-sm text-text-secondary">아직 연결 근거가 있는 카드가 없습니다.</p>}
       </section>}
-      {view === 'deck' ? <CaptureDeck key={`${sort}:${anchor.id}`} captures={ordered} initialCategory={sort==='related' ? classifyArchiveCapture(anchor) : undefined} onDelete={onDelete} onMetaChange={onMetaChange} /> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+      {view === 'deck' ? <CaptureDeck key={`${sort}:${anchor.id}`} captures={ordered} searchQuery={searchQuery} searchSources={captures} initialCategory={sort==='related' ? classifyArchiveCapture(anchor) : undefined} onDelete={onDelete} onMetaChange={onMetaChange} /> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
         {ordered.map((item) => (
           <CaptureCard
             key={item.id}
             item={item}
+            searchQuery={searchQuery}
+            searchSources={captures}
             onDelete={onDelete}
             onMetaChange={onMetaChange}
           />

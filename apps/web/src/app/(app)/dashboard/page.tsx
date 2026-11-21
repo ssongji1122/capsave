@@ -1,7 +1,8 @@
 'use client';
 
+import { showErrorToast } from '@/lib/notifications';
 import { StickerDecoration } from '@/components/stickers/StickerDecoration';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useCaptures, MAX_FREE_CAPTURES } from '@/contexts/CapturesContext';
 import { useGuestCaptures } from '@/contexts/GuestCapturesContext';
 import { CaptureList } from '@/components/captures/CaptureList';
@@ -12,7 +13,6 @@ import { AnalyzeModal } from '@/components/upload/AnalyzeModal';
 import { BatchAnalyzeModal } from '@/components/upload/BatchAnalyzeModal';
 import { CaptureItem, AnalysisResult, CaptureCategory, PlaceInfo, extractStoragePath } from '@scrave/shared';
 import { filterCapturesByArchiveQuery, mergeArchiveCaptures } from '@/lib/archive-search';
-import { getVisibleArchiveCaptures, SAMPLE_CAPTURES } from '@/lib/sample-captures';
 import { findUnusedImagePaths } from '@/lib/batch-save-mapper';
 import { createClient } from '@/lib/supabase/browser';
 import {
@@ -69,6 +69,8 @@ export default function HomePage() {
   } = useGuestCaptures();
   const [displayCaptures, setDisplayCaptures] = useState<CaptureItem[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const searchRequest = useRef(0);
+  const [isSearchPending, setIsSearchPending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
@@ -99,17 +101,24 @@ export default function HomePage() {
   }, []);
 
   const handleSearch = useCallback(async (query: string) => {
+    const request = ++searchRequest.current;
     setSearchQuery(query);
-    if (query) {
-      const sampleResults = false
-        ? filterCapturesByArchiveQuery(SAMPLE_CAPTURES, query)
-        : [];
+    if (!query.trim()) {
+      setDisplayCaptures(null);
+      setIsSearchPending(false);
+      return;
+    }
+    setDisplayCaptures([]);
+    setIsSearchPending(true);
+    try {
       const guestResults = filterCapturesByArchiveQuery(guestCaptures, query);
       const dbResults = isAuthenticated ? await searchCaptures(query) : [];
-      const results = mergeArchiveCaptures([...dbResults, ...sampleResults], guestResults);
-      setDisplayCaptures(results);
-    } else {
-      setDisplayCaptures(null);
+      if (request !== searchRequest.current) return;
+      setDisplayCaptures(mergeArchiveCaptures(dbResults, guestResults));
+    } catch {
+      if (request === searchRequest.current) showErrorToast('검색하지 못했습니다. 잠시 후 다시 검색해 주세요.');
+    } finally {
+      if (request === searchRequest.current) setIsSearchPending(false);
     }
   }, [archiveCaptures.length, guestCaptures, isAuthenticated, searchCaptures]);
 
@@ -277,12 +286,13 @@ export default function HomePage() {
       <div className="px-4 mb-4"><a href="/import" className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4">정리한 캡처 가져오기</a></div>
 
       {/* Search */}
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar onSearch={handleSearch} storageKey="scrave_dashboard_search_query" />
 
       {/* Uncertain queue */}
       {uncertain.length > 0 && (
         <UncertainQueue
           captures={uncertain}
+          searchQuery={searchQuery}
           onDelete={handleDelete}
           onReclassify={handleReclassify}
         />
@@ -291,7 +301,7 @@ export default function HomePage() {
       {/* List */}
       <CaptureList
         captures={confident}
-        isLoading={!isAuthReady || (visibleArchiveCaptures.length === 0 && isLoading)}
+        isLoading={isSearchPending || !isAuthReady || (visibleArchiveCaptures.length === 0 && isLoading)}
         onDelete={handleDelete}
         onMetaChange={handleMetaChange}
         emptyIcon={<ArchiveIllustration kind="add" size={88} />}
